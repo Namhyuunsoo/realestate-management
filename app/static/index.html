@@ -1,0 +1,494 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <title>매물 프로토타입 v0.3</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="/static/css/style.css?v=20250803">
+  <script src="/static/js/main-new.js"></script>
+  <script>
+    async function loadNaverMapsAPI() {
+      return new Promise(async (resolve, reject) => {
+        try {
+          // 서버에서 API 키 가져오기
+          console.log('🔑 API 설정 요청 중...');
+          const response = await fetch('/api/config/maps');
+          if (!response.ok) {
+            throw new Error(`API 설정 요청 실패: ${response.status} ${response.statusText}`);
+          }
+          
+          const config = await response.json();
+          console.log('🔑 네이버 지도 API 설정 로드됨:', config);
+          
+          // API 키 유효성 검사
+          if (!config.ncpKeyId) {
+            throw new Error('API 키가 설정되지 않았습니다.');
+          }
+          
+          // 인증 실패 처리 함수 정의
+          window.navermap_authFailure = function () {
+            console.error('❌ 네이버 지도 API 인증 실패');
+            showToast('네이버 지도 API 인증에 실패했습니다. 관리자에게 문의해주세요.', 'error');
+          };
+          
+          // 스크립트 생성 (문서에 따른 올바른 방식)
+          const script = document.createElement('script');
+          script.type = 'text/javascript';
+          // ncpKeyId만 사용 (ncpClientId는 더 이상 사용하지 않음)
+          const apiUrl = `https://openapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=${config.ncpKeyId}&submodules=geocoder,panorama`;
+          script.src = apiUrl;
+          console.log('🔗 네이버 지도 API URL:', apiUrl);
+          
+          // 로드 성공 시
+          script.onload = function() {
+            console.log('✅ 네이버 지도 API 스크립트 로드 완료');
+            window.naverMapLoadStatus = 'loaded';
+            
+            // naver.maps API가 완전히 로드되었는지 확인
+            const checkAPILoaded = () => {
+              if (window.naver && window.naver.maps && 
+                  typeof naver.maps.Map === 'function' && 
+                  typeof naver.maps.LatLng === 'function' &&
+                  typeof naver.maps.Size === 'function') {
+                console.log('✅ 모든 naver.maps API가 로드됨');
+                
+                // initMap 함수가 정의될 때까지 대기
+                const checkInitMap = () => {
+                  if (typeof window.initMap === 'function') {
+                    console.log('✅ initMap 함수 발견, 지도 초기화 시작');
+                    // 약간의 지연을 두고 initMap 호출
+                    setTimeout(() => {
+                      try {
+                        window.initMap();
+                        resolve();
+                      } catch (error) {
+                        console.error('❌ initMap 실행 실패:', error);
+                        reject(error);
+                      }
+                    }, 100);
+                  } else {
+                    console.log('🔄 initMap 함수 대기 중...');
+                    setTimeout(checkInitMap, 100);
+                  }
+                };
+                checkInitMap();
+              } else {
+                console.log('🔄 naver.maps API 로드 대기 중...');
+                console.log('🔍 naver:', !!window.naver);
+                console.log('🔍 naver.maps:', !!window.naver?.maps);
+                console.log('🔍 naver.maps.Map:', typeof window.naver?.maps?.Map);
+                console.log('🔍 naver.maps.LatLng:', typeof window.naver?.maps?.LatLng);
+                console.log('🔍 naver.maps.Size:', typeof window.naver?.maps?.Size);
+                setTimeout(checkAPILoaded, 100);
+              }
+            };
+            
+            // 즉시 체크 시작
+            checkAPILoaded();
+          };
+          
+          // 로드 실패 시
+          script.onerror = function(error) {
+            console.error('❌ 네이버 지도 API 로드 실패:', error);
+            window.naverMapLoadStatus = 'error';
+            reject(new Error('네이버 지도 API를 로드할 수 없습니다.'));
+          };
+          
+          // 스크립트를 head에 추가
+          document.head.appendChild(script);
+          
+        } catch (error) {
+          console.error('❌ API 설정 로드 실패:', error);
+          reject(error);
+        }
+      });
+    }
+    
+    // 페이지 로드 시 네이버 지도 API 로드
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', loadNaverMapsAPI);
+    } else {
+      loadNaverMapsAPI();
+    }
+  </script>
+</head>
+
+<body>
+  <!-- 로그인 필요 안내 화면 -->
+  <div id="loginRequiredScreen" class="login-required-screen hidden">
+    <div class="login-required-box">
+      <h2 style="margin-bottom:16px;">로그인이 필요합니다</h2>
+      <p style="margin-bottom:24px; color:#666;">매물 관리 시스템을 사용하려면 로그인해주세요.</p>
+      <a href="/login" class="btn btn-primary">로그인하기</a>
+    </div>
+  </div>
+
+  <!-- 실제 앱 화면 -->
+  <div id="appRoot" class="hidden">
+    <!-- 상단바 -->
+    <header id="topbar">
+      <div class="office-info">
+        <span id="officeName">SK공인중개사사무소</span>
+        <span id="userRoleName" class="user-role-name">직책 / 사용자명</span>
+      </div>
+      <div class="auth-links">
+        <!-- 어드민 전용 메뉴 -->
+        <div class="admin-only hidden">
+          <button id="userManagementBtn" class="admin-btn" type="button">사용자 관리</button>
+          <button id="adminStatsBtn" class="admin-btn" type="button">통계</button>
+        </div>
+        <a id="naverLoginBtn" href="/auth/naver/login" class="hidden">네이버 아이디로 로그인</a>
+        <a id="logoutBtn" href="/auth/logout" class="hidden">로그아웃</a>
+      </div>
+    </header>
+
+    <!-- 상태 카운트 -->
+    <div id="statusCounts">
+      총 <span id="countTotal">0</span>건 / 필터 후 <span id="countFiltered">0</span>건
+    </div>
+
+    <!-- 상단 필터바 -->
+    <section id="topFilterBar" class="top-filter">
+      <!-- 라벨 행 -->
+      <div class="tf-row tf-labels">
+        <div>지역</div><div>지번</div><div>건물명</div><div>층수</div><div>가게명</div>
+        <div>분양</div><div>실평수</div><div>보증금</div><div>월세</div><div>권리금</div>
+        <div>비고</div><div>담당자</div><div>지역2</div><div>연락처</div><div>의뢰인</div>
+        <div>비고3</div><div class="tf-actions"></div>
+      </div>
+      <!-- 입력 행 -->
+      <div class="tf-row tf-inputs">
+        <input id="tf_region"    placeholder="쉼표로 복수검색">
+        <input id="tf_jibun"     placeholder="예: 123-45, 12-3">
+        <input id="tf_building"  placeholder="건물명">
+        <input id="tf_floor"     placeholder="단일 또는 a-b">
+        <input id="tf_store"     placeholder="가게명">
+        <input id="tf_area_sale" placeholder="분양평 (>=값 또는 a‑b)">
+        <input id="tf_area_real" placeholder="실평수 (>=값 또는 a‑b)">
+        <input id="tf_deposit"   placeholder="보증금 (<=값 또는 a‑b)">
+        <input id="tf_rent"      placeholder="월세 (<=값 또는 a‑b)">
+        <input id="tf_premium"   placeholder="권리금 (<=값 또는 a‑b)">
+        <input id="tf_note"      placeholder="비고">
+        <input id="tf_manager"   placeholder="담당자">
+        <input id="tf_region2"   placeholder="지역2">
+        <input id="tf_phone"     placeholder="연락처">
+        <input id="tf_client"    placeholder="의뢰인">
+        <input id="tf_note3"     placeholder="비고3">
+        <div class="tf-actions">
+          <button id="topFilterApplyBtn" type="button">적용</button>
+          <button id="topFilterResetBtn" type="button">초기화</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 본문 레이아웃 -->
+    <div id="layout">
+      <!-- 1차 사이드바 -->
+      <aside id="sidebar">
+        <!-- 고객 컨트롤 -->
+        <div id="customerControls" class="block">
+          <div class="button-row">
+            <button id="customerListBtn" type="button">고객List</button>
+            <button id="newCustomerBtn" type="button">신규등록</button>
+          </div>
+          
+          <!-- 고객 목록 (고객List 클릭 시 표시) -->
+          <div id="customerListContainer" class="customer-list-container hidden">
+            <div id="customerListContent1">
+              <!-- 고객 목록이 여기에 동적으로 로드됩니다 -->
+            </div>
+          </div>
+          
+          <!-- 선택된 고객 정보 (고객 선택 시 표시) -->
+          <div id="selectedCustomerInfo" class="selected-customer-info hidden">
+            <div id="customerInfoContent">
+              <!-- 선택된 고객 정보가 여기에 표시됩니다 -->
+            </div>
+          </div>
+        </div>
+
+        <!-- 매물 리스트 컨트롤 -->
+        <div id="listingControls" class="block">
+          <div class="listing-header">
+            <div class="listing-mode-buttons hidden">
+              <button id="propertyListBtn" type="button" class="mode-btn active">매물리스트</button>
+              <button id="briefingListBtn" type="button" class="mode-btn">브리핑리스트</button>
+            </div>
+          </div>
+          <div class="listing-actions">
+            <button id="viewAllBtn" type="button">전체보기</button>
+            <button class="sortBtn" data-sort="latest" type="button">최신</button>
+            <button class="sortBtn" data-sort="area"   type="button">면적</button>
+            <button class="sortBtn" data-sort="deposit" type="button">보증금</button>
+            <button class="sortBtn" data-sort="rent"    type="button">월세</button>
+            <button class="sortBtn" data-sort="index"   type="button">색인</button>
+          </div>
+        </div>
+
+        <!-- 매물 목록 -->
+        <div id="listingSidebarWrap" class="block listings-block">
+          <ul id="listingList"></ul>
+          
+          <!-- 클러스터 매물 목록 -->
+          <div id="clusterList" class="cluster-list hidden">
+            <div class="cluster-list-header">
+              <label class="cluster-list-title">클러스터 매물 목록</label>
+              <button id="clusterListCloseBtn" class="cluster-close-btn" type="button" title="닫기">×</button>
+            </div>
+            <ul id="clusterItemList"></ul>
+          </div>
+        </div>
+      </aside>
+
+      <!-- 2차 사이드바: panel-view 외 불필요한 div/컨테이너 제거, 구조 명확화 -->
+      <aside id="secondaryPanel" class="sidepanel hidden">
+        <div class="panel-header">
+          <span id="secondaryPanelTitle">상세정보</span>
+          <button id="secondaryPanelClose" class="panel-close" type="button" onclick="closeSecondaryPanel(); return false;">×</button>
+        </div>
+  <div class="panel-body" id="secondaryPanelBody">
+    <div id="viewCustomerList" class="panel-view hidden">
+      <div class="customer-list-container">
+        <div id="customerListContent2"></div>
+      </div>
+    </div>
+    <div id="viewCustomerDetail" class="panel-view hidden">
+      <div class="customer-detail-container">
+        <div id="customerDetailContent"></div>
+      </div>
+    </div>
+    <div id="viewCustomerForm" class="panel-view hidden">
+      <form id="customerForm"></form>
+    </div>
+    <div id="viewCustomerEdit" class="panel-view hidden">
+      <form id="customerEditForm"></form>
+    </div>
+    <div id="viewListingDetail" class="panel-view hidden"></div>
+  </div>
+</aside>
+
+
+      <!-- 메인 콘텐츠(지도) -->
+      <main id="mainContent">
+        <div id="mapWrap">
+          <div id="map"></div>
+          <div id="mapCenterCross"></div>
+          
+          <!-- 지도 컨트롤 -->
+          <div id="mapControls" class="map-controls">
+            <div class="map-control-group">
+              <!-- 브리핑현황 필터 -->
+              <div id="briefingFilter" class="briefing-filter map-control-briefing-filter">
+                <button id="briefingFilterBtn" class="briefing-filter-btn" onclick="toggleBriefingFilter()">
+                  브리핑
+                </button>
+                <div id="briefingFilterDropdown" class="briefing-filter-dropdown hidden">
+                  <label class="briefing-option">
+                    <input type="checkbox" id="filterNormal" checked>
+                    <span class="briefing-status normal"></span>
+                    <span class="briefing-text">일반</span>
+                  </label>
+                  <label class="briefing-option">
+                    <input type="checkbox" id="filterPending" checked>
+                    <span class="briefing-status pending"></span>
+                    <span class="briefing-text">예정</span>
+                  </label>
+                  <label class="briefing-option">
+                    <input type="checkbox" id="filterCompleted" checked>
+                    <span class="briefing-status completed"></span>
+                    <span class="briefing-text">완료</span>
+                  </label>
+                  <label class="briefing-option">
+                    <input type="checkbox" id="filterOnHold" checked>
+                    <span class="briefing-status onhold"></span>
+                    <span class="briefing-text">보류</span>
+                  </label>
+                </div>
+              </div>
+              
+              <button id="roadviewBtn" class="map-control-btn" title="로드뷰">
+                <span class="control-icon">🛣️</span>
+              </button>
+              <button id="cadastralBtn" class="map-control-btn" title="위성지도">
+                <span class="control-icon">🛰️</span>
+              </button>
+              <button id="distanceBtn" class="map-control-btn" title="거리제기">
+                <span class="control-icon">📏</span>
+              </button>
+            </div>
+          </div>
+          
+          <!-- 로드뷰 컨테이너 -->
+          <div id="roadviewContainer" class="roadview-container hidden">
+            <!-- 로드뷰 닫기 버튼 -->
+            <button id="roadviewCloseBtn" class="roadview-close-btn">×</button>
+            
+            <!-- 로드뷰 메인 콘텐츠 -->
+            <div id="roadview" class="roadview-content"></div>
+            
+            <!-- 주소 정보 박스 (미니맵 위에 배치) -->
+            <div class="roadview-address-box">
+              <div class="address-icon">📍</div>
+              <div class="address-content">
+                <div class="road-name">부평대로</div>
+                <div class="address">인천 부평구 부평동</div>
+              </div>
+              <div class="address-actions">
+                <span class="date-badge">2025년 05월(최신)</span>
+                <span class="view-mode">3D</span>
+              </div>
+            </div>
+            
+            <!-- 로드뷰 미니맵 -->
+            <div id="roadviewMiniMap" class="roadview-minimap">
+              <div class="minimap-label">🗺️ 미니맵</div>
+              <div class="minimap-header">
+                <button class="minimap-menu-btn">☰</button>
+              </div>
+              <div class="minimap-content"></div>
+              <div class="minimap-controls">
+                <button class="minimap-expand-btn">⤢</button>
+                <div class="minimap-zoom">
+                  <button class="zoom-in">+</button>
+                  <button class="zoom-out">-</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 전체보기 패널 -->
+        <div id="fullListPanel" class="full-list-panel hidden">
+          <div class="full-list-header">
+            <span>전체보기</span>
+            <button id="fullListCloseBtn" type="button" style="background: #dc3545; color: white; border: none; padding: 4px 8px; border-radius: 4px; font-size: 11px; cursor: pointer; margin-left: auto;">닫기</button>
+          </div>
+          <div id="fullListContent" class="full-list-body">
+            <div style="padding:12px;color:#666;">(전체보기 내용이 여기 표시됩니다)</div>
+          </div>
+        </div>
+
+        <!-- 전체 브리핑 리스트 패널 -->
+        <div id="fullBriefingListPanel" class="full-list-panel hidden">
+          <div class="full-list-header">
+            <span>전체 브리핑 리스트</span>
+            <button id="fullBriefingListCloseBtn" type="button" style="background: #dc3545; color: white; border: none; padding: 4px 8px; border-radius: 4px; font-size: 11px; cursor: pointer; margin-left: auto;">닫기</button>
+          </div>
+          <div id="fullBriefingListContent" class="full-list-body">
+            <div style="padding:12px;color:#666;">(전체 브리핑 리스트 내용이 여기 표시됩니다)</div>
+          </div>
+        </div>
+      </main>
+
+    </div>
+
+    <!-- 어드민 모달들 -->
+    <!-- 사용자 관리 모달 -->
+    <div id="userManagementModal" class="modal hidden">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>사용자 관리</h2>
+          <button class="modal-close-btn">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="table-container" style="max-height: 400px; overflow-y: auto;">
+            <table class="user-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>이메일</th>
+                  <th>이름</th>
+                  <th>역할</th>
+                  <th>상태</th>
+                  <th>가입일</th>
+                  <th>작업</th>
+                </tr>
+              </thead>
+              <tbody id="userListTableBody">
+                <!-- 사용자 목록이 여기에 동적으로 로드됩니다 -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 사용자 추가/편집 모달 -->
+    <div id="userFormModal" class="modal hidden">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 id="userFormTitle">사용자 추가</h3>
+          <button class="modal-close-btn">&times;</button>
+        </div>
+        <div class="modal-body">
+          <form id="userForm">
+            <div class="form-group">
+              <label for="userEmail">이메일</label>
+              <input type="email" id="userEmail" name="email" required>
+            </div>
+            <div class="form-group">
+              <label for="userName">이름</label>
+              <input type="text" id="userName" name="name" required>
+            </div>
+            <div class="form-group">
+              <label for="userRole">역할</label>
+              <select id="userRole" name="role">
+                <option value="user">일반 사용자</option>
+                <option value="manager">매니저</option>
+                <option value="admin">관리자</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>상태</label>
+              <div id="userStatusGroup" class="radio-group">
+                <label style="margin-right:12px;"><input type="radio" name="is_active" value="true"> 활성</label>
+                <label><input type="radio" name="is_active" value="false"> 비활성</label>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>비밀번호 재설정</label>
+              <div style="display: flex; gap: 10px; align-items: center;">
+                <input type="password" id="userNewPassword" placeholder="새 비밀번호 (6자 이상)" style="flex: 1;">
+                <button type="button" id="resetPasswordBtn" class="btn-secondary">재설정</button>
+              </div>
+              <small style="color: #666; font-size: 12px;">비밀번호를 잃어버린 경우에만 사용하세요.</small>
+            </div>
+            <div class="form-actions">
+              <button type="submit" class="admin-btn">저장</button>
+              <button type="button" id="userFormCancelBtn" class="btn-secondary">취소</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- 통계 모달 -->
+    <div id="adminStatsModal" class="modal hidden">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>관리자 통계</h3>
+          <button class="modal-close-btn">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div id="statsContent">
+            <!-- 통계 내용이 여기에 동적으로 로드됩니다 -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // MarkerClustering 로딩 확인
+      document.addEventListener('DOMContentLoaded', function() {
+        console.log('🔍 초기 MarkerClustering 상태:', typeof MarkerClustering);
+        if (typeof MarkerClustering !== 'undefined') {
+          console.log('✅ MarkerClustering이 정상적으로 로드되었습니다.');
+        } else {
+          console.log('⏳ MarkerClustering이 아직 로드되지 않았습니다. 네이버 지도 API 로드 후 동적 로드됩니다.');
+        }
+      });
+    </script>
+  </div>
+</body>
+</html>

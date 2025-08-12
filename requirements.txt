@@ -1,0 +1,11 @@
+#requirements.txt
+
+Flask==3.1.1
+python-dotenv
+pandas
+openpyxl
+gspread
+google-auth
+google-auth-oauthlib
+google-api-python-client
+requests
