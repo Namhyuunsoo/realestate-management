@@ -1,0 +1,31 @@
+{
+  "customers": {
+    "cus_000001": {
+      "id": "cus_000001",
+      "user": "darkbirth1@gmail.com",
+      "name": "테스트1",
+      "phone": "010-0000-0000",
+      "region": "부천",
+      "created_at": 1752987276
+    }
+  },
+  "briefings": {
+    "brf_000001": {
+      "id": "brf_000001",
+      "user": "darkbirth1@gmail.com",
+      "customer_id": "cus_000001",
+      "listing_ids": [
+        "lst_000001",
+        "lst_000002"
+      ],
+      "overrides": {
+        "lst_000001": {
+          "월세": "조정가능"
+        }
+      },
+      "tags": {},
+      "created_at": 1752987615
+    }
+  },
+  "saved_at": 1752987883
+}

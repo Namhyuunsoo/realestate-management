@@ -1,0 +1,23 @@
+{
+  "customers": [
+    {
+      "id": "cus_1752982739689",
+      "name": "A고객",
+      "phone": "010-1111-2222",
+      "region": "부천시",
+      "notes": "",
+      "owner": "darkbirth1@gmail.com",
+      "created_at": null
+    },
+    {
+      "id": "cus_1752982752305",
+      "name": "A고객",
+      "phone": "010-1111-2222",
+      "region": "부천시",
+      "notes": "",
+      "owner": "darkbirth1@gmail.com",
+      "created_at": null
+    }
+  ],
+  "briefings": []
+}
