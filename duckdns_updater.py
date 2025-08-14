@@ -13,8 +13,13 @@ logging.basicConfig(
 )
 
 def update_duckdns():
-    token = "ad2c018b-41a7-4c42-b144-adb49787bd43"
+    token = os.getenv("DUCKDNS_TOKEN", "")
     domain = "realestate"
+    
+    if not token:
+        logging.error("DUCKDNS_TOKEN 환경변수가 설정되지 않았습니다.")
+        print("❌ DUCKDNS_TOKEN 환경변수가 설정되지 않았습니다.")
+        return
     
     url = f"https://www.duckdns.org/update?domains={domain}&token={token}"
     
