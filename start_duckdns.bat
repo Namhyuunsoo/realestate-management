@@ -11,3 +11,4 @@ echo.
 pause
 python duckdns_updater.py
 pause
+

@@ -3,7 +3,7 @@ from app import create_app
 
 # Flask CLI에서도 0.0.0.0으로 실행되도록 환경변수 설정
 os.environ['FLASK_RUN_HOST'] = '0.0.0.0'
-os.environ['FLASK_RUN_PORT'] = '5000'
+os.environ['FLASK_RUN_PORT'] = '8081'
 
 app = create_app()
 

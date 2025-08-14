@@ -14,7 +14,7 @@ logging.basicConfig(
 
 def update_duckdns():
     token = "ad2c018b-41a7-4c42-b144-adb49787bd43"
-    domain = "realestate"
+    domain = "skrealestate"
     
     url = f"https://www.duckdns.org/update?domains={domain}&token={token}"
     
@@ -32,7 +32,7 @@ def update_duckdns():
 
 def main():
     print("🚀 DuckDNS 자동 IP 업데이트 시작...")
-    print("도메인: realestate.duckdns.org")
+    print("도메인: skrealestate.duckdns.org")
     print("업데이트 주기: 5분")
     print("로그 파일: duckdns_update.log")
     print("=" * 50)
@@ -56,3 +56,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

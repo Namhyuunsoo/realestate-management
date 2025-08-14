@@ -1464,6 +1464,97 @@ div:has(> .cluster-bubble) {
   gap: 8px;
   margin-bottom: 8px;
 }
+
+/* ──────────────────────────────────────────────────
+   DPI 배율별 반응형 상단필터바
+────────────────────────────────────────────────── */
+
+/* 기본 상단필터바 컬럼 너비를 줄임 (125% 배율 대응) */
+.top-filter .tf-row {
+  display: grid;
+  grid-template-columns: repeat(16, minmax(70px, 1fr)) 100px;
+  gap: 6px;
+  margin-bottom: 6px;
+  min-width: 1400px; /* 최소 너비 보장 */
+}
+
+/* 125% DPI 배율 이상일 때 (Windows 125% 배율) */
+@media screen and (min-resolution: 120dpi), 
+       screen and (-webkit-device-pixel-ratio: 1.25),
+       screen and (device-pixel-ratio: 1.25) {
+  
+  .top-filter .tf-row {
+    grid-template-columns: repeat(16, minmax(70px, 1fr)) 100px;
+    gap: 6px;
+    margin-bottom: 6px;
+  }
+  
+  .top-filter .tf-row.tf-inputs input {
+    font-size: 11px;
+    padding: 0 4px;
+  }
+  
+  .top-filter .tf-row.tf-labels div {
+    font-size: 11px;
+  }
+  
+  #topFilterApplyBtn, #topFilterResetBtn {
+    height: 26px;
+    padding: 0 8px;
+    font-size: 11px;
+  }
+}
+
+/* 150% DPI 배율 이상일 때 */
+@media screen and (min-resolution: 144dpi), 
+       screen and (-webkit-device-pixel-ratio: 1.5),
+       screen and (device-pixel-ratio: 1.5) {
+  
+  .top-filter .tf-row {
+    grid-template-columns: repeat(16, minmax(60px, 1fr)) 80px;
+    gap: 4px;
+    margin-bottom: 4px;
+  }
+  
+  .top-filter .tf-row.tf-inputs input {
+    font-size: 10px;
+    padding: 0 3px;
+  }
+  
+  .top-filter .tf-row.tf-labels div {
+    font-size: 10px;
+  }
+  
+  #topFilterApplyBtn, #topFilterResetBtn {
+    height: 24px;
+    padding: 0 6px;
+    font-size: 10px;
+  }
+}
+
+/* 강제 가로 스크롤 적용 (모든 화면 크기) */
+.top-filter {
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  white-space: nowrap;
+}
+
+/* 작은 화면에서 가로 스크롤 적용 */
+@media screen and (max-width: 1600px) {
+  .top-filter .tf-row {
+    min-width: 1400px; /* 최소 너비 보장 */
+    grid-template-columns: repeat(16, minmax(70px, 1fr)) 100px;
+  }
+}
+
+/* 매우 작은 화면에서 가로 스크롤 + 더 작은 컬럼 */
+@media screen and (max-width: 1200px) {
+  .top-filter .tf-row {
+    min-width: 1200px;
+    grid-template-columns: repeat(16, minmax(60px, 1fr)) 90px;
+  }
+}
+
 /* ──────────────────────────────────────────────────
    사이드바: 매물 리스트 빈 공간 제거
 ────────────────────────────────────────────────── */
@@ -2090,9 +2181,9 @@ html, body {
   box-sizing: border-box;
 }
 
-/* 고객 목록 뷰에서만 스크롤 활성화 */
+/* 고객 목록 뷰에서만 스크롤 활성화 - 중복 제거 */
 #viewCustomerList:not(.hidden) {
-  overflow-y: auto !important;
+  /* overflow-y: auto !important; 제거 - 이미 panel-view에서 처리됨 */
 }
 
 #viewCustomerList {
@@ -2101,7 +2192,7 @@ html, body {
   height: calc(100% - 60px); /* 버튼 공간 확보 */
   position: relative;
   z-index: 1000;
-  overflow-y: auto; /* 스크롤 활성화 */
+  /* overflow-y: auto; 제거 - 이미 panel-view에서 처리됨 */
 }
 
 #viewCustomerList:not(.hidden) {
@@ -2792,4 +2883,479 @@ html, body {
   margin-top: 20px;
   padding-top: 16px;
   border-top: 1px solid #e9ecef;
+}
+
+/* 강제 가로 스크롤 적용 (모든 화면 크기) */
+.top-filter {
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  white-space: nowrap;
+}
+
+/* 작은 화면에서 가로 스크롤 적용 */
+@media screen and (max-width: 1600px) {
+  .top-filter .tf-row {
+    min-width: 1400px; /* 최소 너비 보장 */
+    grid-template-columns: repeat(16, minmax(70px, 1fr)) 100px;
+  }
+}
+
+/* 매우 작은 화면에서 가로 스크롤 + 더 작은 컬럼 */
+@media screen and (max-width: 1200px) {
+  .top-filter .tf-row {
+    min-width: 1200px;
+    grid-template-columns: repeat(16, minmax(60px, 1fr)) 90px;
+  }
+}
+
+/* ──────────────────────────────────────────────────
+   가로 스크롤 강제 적용을 위한 Flexbox 전환
+────────────────────────────────────────────────── */
+
+/* 작은 화면에서 Grid → Flexbox 전환 */
+@media screen and (max-width: 1400px) {
+  .top-filter .tf-row {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    min-width: 1400px;
+    gap: 6px;
+    margin-bottom: 6px;
+  }
+  
+  .top-filter .tf-row > div,
+  .top-filter .tf-row > input {
+    flex: 0 0 70px;
+    min-width: 70px;
+    max-width: 70px;
+  }
+  
+  .top-filter .tf-actions {
+    flex: 0 0 100px;
+    min-width: 100px;
+    max-width: 100px;
+  }
+}
+
+@media screen and (max-width: 1000px) {
+  .top-filter .tf-row {
+    min-width: 1200px;
+  }
+  
+  .top-filter .tf-row > div,
+  .top-filter .tf-row > input {
+    flex: 0 0 60px;
+    min-width: 60px;
+    max-width: 60px;
+  }
+  
+  .top-filter .tf-actions {
+    flex: 0 0 90px;
+    min-width: 90px;
+    max-width: 90px;
+  }
+}
+
+/* ──────────────────────────────────────────────────
+   CSS Grid 완전 무력화 + 가로 스크롤 강제 적용
+────────────────────────────────────────────────── */
+
+/* 모든 화면 크기에서 가로 스크롤 강제 적용 */
+#topFilterBar .top-filter,
+.top-filter {
+  overflow-x: scroll !important;
+  overflow-y: hidden !important;
+  white-space: nowrap !important;
+  width: 100% !important;
+}
+
+/* CSS Grid를 완전히 무력화하고 Flexbox 강제 적용 */
+#topFilterBar .top-filter .tf-row,
+.top-filter .tf-row {
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+  align-items: center !important;
+  min-width: 1400px !important;
+  width: 1400px !important;
+  gap: 6px !important;
+  margin-bottom: 6px !important;
+  
+  /* Grid 속성 완전 제거 */
+  grid-template-columns: none !important;
+  grid-template-rows: none !important;
+  grid-template-areas: none !important;
+  grid-column: none !important;
+  grid-row: none !important;
+}
+
+/* 각 필드와 입력 요소 강제 크기 설정 */
+#topFilterBar .top-filter .tf-row > div,
+#topFilterBar .top-filter .tf-row > input,
+.top-filter .tf-row > div,
+.top-filter .top-filter .tf-row > input {
+  flex: 0 0 70px !important;
+  min-width: 70px !important;
+  max-width: 70px !important;
+  width: 70px !important;
+  box-sizing: border-box !important;
+}
+
+/* 액션 버튼 영역 강제 크기 설정 */
+#topFilterBar .top-filter .tf-actions,
+.top-filter .tf-actions {
+  flex: 0 0 100px !important;
+  min-width: 100px !important;
+  max-width: 100px !important;
+  width: 100px !important;
+  box-sizing: border-box !important;
+}
+
+/* ──────────────────────────────────────────────────
+   상단필터바 기본 설정 복원 + 가로 스크롤 추가
+────────────────────────────────────────────────── */
+
+/* 기본 상단필터바 설정 복원 */
+.top-filter {
+  border-bottom: 1px solid #ddd;
+  background: #fafafa;
+  padding: 6px 8px 10px;
+  font-size: 12px;
+  overflow-x: auto; /* 가로 스크롤 추가 */
+}
+
+/* 기본 Grid 레이아웃 복원 */
+.top-filter .tf-row {
+  display: grid;
+  grid-template-columns: repeat(16, minmax(100px, 1fr)) 120px; /* 적당한 크기로 조정 */
+  gap: 4px;
+  margin-bottom: 4px;
+  min-width: 1800px; /* 최소 너비 설정으로 스크롤 유도 */
+}
+
+/* 125% DPI 배율 대응 */
+@media screen and (min-resolution: 120dpi), 
+       screen and (-webkit-device-pixel-ratio: 1.25),
+       screen and (device-pixel-ratio: 1.25) {
+  
+  .top-filter .tf-row {
+    grid-template-columns: repeat(16, minmax(90px, 1fr)) 110px;
+    min-width: 1600px;
+  }
+}
+
+/* 작은 화면에서 가로 스크롤 강화 */
+@media screen and (max-width: 1600px) {
+  .top-filter .tf-row {
+    min-width: 1800px;
+    grid-template-columns: repeat(16, minmax(100px, 1fr)) 120px;
+  }
+}
+
+@media screen and (max-width: 1200px) {
+  .top-filter .tf-row {
+    min-width: 1600px;
+    grid-template-columns: repeat(16, minmax(90px, 1fr)) 110px;
+  }
+}
+
+/* ──────────────────────────────────────────────────
+   상단필터바 Grid 레이아웃 수정 + 가로 스크롤 강제 적용
+────────────────────────────────────────────────── */
+
+/* 상단필터바 전체에 가로 스크롤 강제 적용 */
+#topFilterBar,
+.top-filter {
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  white-space: nowrap !important;
+}
+
+/* Grid 레이아웃 정렬 및 적절한 크기 설정 */
+.top-filter .tf-row {
+  display: grid !important;
+  grid-template-columns: repeat(16, minmax(100px, 1fr)) 120px !important; /* 반응형으로 변경 */
+  gap: 6px !important;
+  margin-bottom: 8px !important;
+  min-width: 1800px !important; /* 최소 너비 보장 */
+  width: auto !important; /* 자동 너비 조정 */
+  align-items: center !important;
+}
+
+/* 100% DPI 배율 (기본) - 충분한 크기 */
+@media screen and (max-resolution: 119dpi), 
+       screen and (-webkit-device-pixel-ratio: 1),
+       screen and (device-pixel-ratio: 1) {
+  
+  .top-filter .tf-row {
+    grid-template-columns: repeat(16, minmax(110px, 1fr)) 130px !important;
+    min-width: 1900px !important;
+    gap: 8px !important;
+  }
+}
+
+/* 125% DPI 배율 (서버컴) - 적당한 크기 */
+@media screen and (min-resolution: 120dpi) and (max-resolution: 143dpi), 
+       screen and (-webkit-device-pixel-ratio: 1.25),
+       screen and (device-pixel-ratio: 1.25) {
+  
+  .top-filter .tf-row {
+    grid-template-columns: repeat(16, minmax(90px, 1fr)) 110px !important;
+    min-width: 1550px !important;
+    gap: 5px !important;
+  }
+}
+
+/* 150% DPI 배율 이상 - 작은 크기 */
+@media screen and (min-resolution: 144dpi), 
+       screen and (-webkit-device-pixel-ratio: 1.5),
+       screen and (device-pixel-ratio: 1.5) {
+  
+  .top-filter .tf-row {
+    grid-template-columns: repeat(16, minmax(80px, 1fr)) 100px !important;
+    min-width: 1400px !important;
+    gap: 4px !important;
+  }
+}
+
+/* 작은 화면에서 가로 스크롤 강화 */
+@media screen and (max-width: 1600px) {
+  .top-filter .tf-row {
+    min-width: 1800px !important;
+  }
+}
+
+@media screen and (max-width: 1200px) {
+  .top-filter .tf-row {
+    min-width: 1600px !important;
+  }
+}
+
+/* 레이블과 입력 필드 정렬 */
+.top-filter .tf-row.tf-labels div {
+  font-weight: 600;
+  text-align: center;
+  padding: 2px 0;
+  height: 20px;
+  line-height: 20px;
+}
+
+.top-filter .tf-row.tf-inputs input {
+  width: 100%;
+  height: 26px;
+  padding: 0 6px;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+  font-size: 12px;
+  box-sizing: border-box;
+}
+
+/* 액션 버튼 영역 */
+.top-filter .tf-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  align-items: center;
+  height: 26px;
+}
+
+#topFilterApplyBtn, #topFilterResetBtn {
+  height: 26px;
+  padding: 0 12px;
+  font-size: 12px;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+  background: #f8f9fa;
+  cursor: pointer;
+}
+
+#topFilterApplyBtn:hover, #topFilterResetBtn:hover {
+  background: #e9ecef;
+}
+
+/* 125% DPI 배율 대응 - 더 작은 크기 */
+@media screen and (min-resolution: 120dpi), 
+       screen and (-webkit-device-pixel-ratio: 1.25),
+       screen and (device-pixel-ratio: 1.25) {
+  
+  .top-filter .tf-row {
+    grid-template-columns: repeat(16, 85px) 100px !important;
+    min-width: 1470px !important;
+    width: 1470px !important;
+    gap: 4px !important;
+  }
+}
+
+/* 고객수정탭 스크롤 활성화 */
+#viewCustomerEdit:not(.hidden) {
+  overflow-y: auto !important;
+  height: calc(100% - 24px) !important;
+  padding: 12px !important;
+  box-sizing: border-box !important;
+}
+
+#viewCustomerEdit {
+  display: block !important;
+  background: white;
+  height: calc(100% - 60px);
+  position: relative;
+  z-index: 1000;
+  overflow-y: auto; /* 스크롤 활성화 */
+}
+
+/* ──────────────────────────────────────────────────
+   고객상세정보탭과 고객수정탭 해상도별 스크롤 최적화
+────────────────────────────────────────────────── */
+
+/* 고객상세정보탭 - panel-view에서 스크롤 처리됨 */
+#viewCustomerDetail:not(.hidden) {
+  /* overflow-y: auto !important; 제거 - 이미 panel-view에서 처리됨 */
+  /* height: calc(100% - 24px) !important; 제거 - 이미 panel-view에서 처리됨 */
+  /* padding: 12px !important; 제거 - 이미 panel-view에서 처리됨 */
+  /* box-sizing: border-box !important; 제거 - 이미 panel-view에서 처리됨 */
+}
+
+#viewCustomerDetail {
+  display: block !important;
+  background: white;
+  height: calc(100% - 60px); /* 버튼 공간 확보 */
+  position: relative;
+  z-index: 1000;
+  /* overflow-y: auto; 제거 - 이미 panel-view에서 처리됨 */
+}
+
+#viewCustomerDetail:not(.hidden) {
+  display: block !important;
+}
+
+#viewCustomerDetail.hidden {
+  display: none !important;
+}
+
+/* 고객상세정보 컨테이너 - 스크롤 제거 (고객목록과 동일) */
+#viewCustomerDetail .customer-detail-container {
+  height: auto; /* 높이 자동 조정 */
+  overflow: visible; /* 내부 스크롤 제거 */
+  margin: 0;
+  border: none;
+  background: white;
+  border-radius: 0; /* 모서리 둥글기 제거 */
+}
+
+#viewCustomerDetail #customerDetailContent {
+  height: auto; /* 높이 자동 조정 */
+  overflow: visible; /* 내부 스크롤 제거 */
+  background: white;
+  color: black;
+  font-size: 14px;
+  position: relative;
+  z-index: 1001;
+  padding: 0;
+  width: 100%;
+  visibility: visible;
+  opacity: 1;
+}
+
+/* 고객수정폼 - panel-view에서 스크롤 처리됨 */
+#viewCustomerEdit:not(.hidden) {
+  /* overflow-y: auto !important; 제거 - 이미 panel-view에서 처리됨 */
+  /* height: calc(100% - 24px) !important; 제거 - 이미 panel-view에서 처리됨 */
+  /* padding: 12px !important; 제거 - 이미 panel-view에서 처리됨 */
+  /* box-sizing: border-box !important; 제거 - 이미 panel-view에서 처리됨 */
+}
+
+#viewCustomerEdit {
+  display: block !important;
+  background: white;
+  height: calc(100% - 60px); /* 버튼 공간 확보 */
+  position: relative;
+  z-index: 1000;
+  /* overflow-y: auto; 제거 - 이미 panel-view에서 처리됨 */
+}
+
+#viewCustomerEdit:not(.hidden) {
+  display: block !important;
+}
+
+#viewCustomerEdit.hidden {
+  display: none !important;
+}
+
+/* 고객수정폼 내부 - 스크롤 제거 (고객목록과 동일) */
+#viewCustomerEdit #customerEditForm {
+  height: auto; /* 높이 자동 조정 */
+  overflow: visible; /* 내부 스크롤 제거 */
+  padding: 0;
+  margin: 0;
+  background: white;
+}
+
+/* 125% DPI 배율에서 스크롤 최적화 */
+@media screen and (min-resolution: 120dpi), 
+       screen and (-webkit-device-pixel-ratio: 1.25),
+       screen and (device-pixel-ratio: 1.25) {
+  
+  #viewCustomerDetail:not(.hidden),
+  #viewCustomerEdit:not(.hidden) {
+    height: calc(100% - 20px) !important;
+    padding: 10px !important;
+    overflow-y: auto !important; /* 고객목록과 동일하게 */
+  }
+  
+  #viewCustomerDetail,
+  #viewCustomerEdit {
+    height: calc(100% - 50px);
+    overflow-y: auto !important; /* 고객목록과 동일하게 */
+  }
+}
+
+/* 150% DPI 배율에서 스크롤 최적화 */
+@media screen and (min-resolution: 144dpi), 
+       screen and (-webkit-device-pixel-ratio: 1.5),
+       screen and (device-pixel-ratio: 1.5) {
+  
+  #viewCustomerDetail:not(.hidden),
+  #viewCustomerEdit:not(.hidden) {
+    height: calc(100% - 16px) !important;
+    padding: 8px !important;
+    overflow-y: auto !important; /* 고객목록과 동일하게 */
+  }
+  
+  #viewCustomerDetail,
+  #viewCustomerEdit {
+    height: calc(100% - 40px);
+    overflow-y: auto !important; /* 고객목록과 동일하게 */
+  }
+}
+
+/* 고객상세정보 컨테이너 - 기본 설정 */
+#viewCustomerDetail .customer-detail-container {
+  height: auto;
+  overflow: visible;
+  margin: 0;
+  border: none;
+  background: white;
+  border-radius: 0;
+}
+
+#viewCustomerDetail #customerDetailContent {
+  height: auto;
+  overflow: visible;
+  background: white;
+  color: black;
+  font-size: 14px;
+  position: relative;
+  z-index: 1001;
+  padding: 0;
+  width: 100%;
+  visibility: visible;
+  opacity: 1;
+}
+
+/* 고객수정폼 - 기본 설정 */
+#viewCustomerEdit #customerEditForm {
+  height: auto;
+  overflow: visible;
+  padding: 0;
+  margin: 0;
+  background: white;
 }
