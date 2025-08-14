@@ -1056,9 +1056,42 @@ html, body {
   font-size:12px;
   color:#333;
 }
+.auth-links {
+  display: flex;
+  align-items: center;
+  gap: 15px; /* 버튼 간격 */
+}
+
 .auth-links a{
-  margin-left:10px;
-  font-size:12px;
+  margin-left: 0; /* 기존 margin 제거 */
+  font-size: 12px;
+  text-decoration: none;
+  color: #007bff;
+  padding: 6px 12px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  display: inline-block;
+  min-width: 60px;
+  text-align: center;
+}
+
+.auth-links a:hover {
+  background: #f8f9fa;
+  color: #0056b3;
+  transform: translateY(-1px);
+}
+
+/* 로그아웃 버튼 특별 스타일 */
+#logoutBtn {
+  background: #dc3545;
+  color: white !important;
+  border: 1px solid #dc3545;
+}
+
+#logoutBtn:hover {
+  background: #c82333 !important;
+  border-color: #c82333;
+  color: white !important;
 }
 
 /* === 사이드바에 매물리스트 붙이기 위한 레이아웃 보강 ================== */
@@ -1385,6 +1418,434 @@ div:has(> .cluster-bubble) {
 .listing-detail-briefing-status.briefing-pending { background: #ff9800; }
 .listing-detail-briefing-status.briefing-completed { background: #4caf50; }
 .listing-detail-briefing-status.briefing-onhold { background: #9e9e9e; }
+
+
+
+
+
+/* 모달 스타일 */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.modal-overlay.show {
+  opacity: 1;
+}
+
+.modal {
+  background: white;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 500px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+  transform: scale(0.9);
+  transition: transform 0.3s ease;
+}
+
+.modal-overlay.show .modal {
+  transform: scale(1);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 20px 15px;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #333;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #6c757d;
+  padding: 0;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+}
+
+.modal-close:hover {
+  background: #f8f9fa;
+  color: #333;
+}
+
+.modal-body {
+  padding: 20px;
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+  color: #333;
+}
+
+.form-group input[type="text"],
+.form-group input[type="url"],
+.form-group select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #ced4da;
+  border-radius: 6px;
+  font-size: 14px;
+  transition: border-color 0.2s ease;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 0 3px rgba(0,123,255,0.1);
+}
+
+.form-group small {
+  display: block;
+  margin-top: 5px;
+  font-size: 12px;
+  color: #6c757d;
+}
+
+.form-group input[type="checkbox"] {
+  margin-right: 8px;
+}
+
+/* 개인 API 필드 스타일 */
+.personal-api-fields {
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 6px;
+  padding: 15px;
+  margin-top: 15px;
+}
+
+.personal-api-fields .form-group {
+  margin-bottom: 15px;
+}
+
+.personal-api-fields .form-group:last-child {
+  margin-bottom: 0;
+}
+
+.personal-api-fields textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #ced4da;
+  border-radius: 6px;
+  font-size: 12px;
+  font-family: 'Courier New', monospace;
+  resize: vertical;
+  min-height: 80px;
+}
+
+.personal-api-fields textarea:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 0 3px rgba(0,123,255,0.1);
+}
+
+/* API 테스트 버튼 */
+#testApiBtn {
+  background: #17a2b8;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+#testApiBtn:hover {
+  background: #138496;
+}
+
+#testApiBtn:disabled {
+  background: #6c757d;
+  cursor: not-allowed;
+}
+
+/* 시트 선택 스타일 */
+.sheet-selection {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+/* 상태카운트바 매물장 컨트롤 스타일 */
+#statusCounts {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 20px;
+  background: #f8f9fa;
+  border-bottom: 1px solid #dee2e6;
+}
+
+.count-info {
+  font-size: 14px;
+  color: #495057;
+  font-weight: 500;
+}
+
+.sheet-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-left: auto; /* 우측 정렬 */
+}
+
+.sheet-buttons {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.sheet-button {
+  padding: 6px 12px;
+  background: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  color: #6c757d;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  min-width: 80px;
+  text-align: center;
+  position: relative;
+}
+
+.sheet-button:not(.selected):hover {
+  background: #e9ecef;
+  border-color: #adb5bd;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+
+
+.sheet-button.selected {
+  background: #007bff !important;
+  color: white !important;
+  border-color: #007bff !important;
+  box-shadow: 0 2px 4px rgba(0, 123, 255, 0.3);
+  transform: translateY(-1px);
+  font-weight: 600;
+}
+
+.sheet-button.selected::before {
+  content: "✓";
+  font-weight: bold;
+  margin-right: 6px;
+  font-size: 14px;
+  color: #ffffff;
+}
+
+.sheet-button.add-new {
+  background: #28a745;
+  color: white;
+  border-color: #28a745;
+  font-weight: 500;
+}
+
+.sheet-button.add-new:hover {
+  background: #218838;
+  border-color: #218838;
+}
+
+/* 컨텍스트 메뉴 스타일 */
+.context-menu {
+  position: fixed;
+  background: white;
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  padding: 8px 0;
+  min-width: 140px;
+  z-index: 9999;
+  display: none;
+  /* 테스트용: 항상 보이게 */
+  /* display: block !important; */
+  /* background: red !important; */
+}
+
+.context-menu.show {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+.context-menu-item {
+  padding: 8px 16px;
+  cursor: pointer;
+  font-size: 13px;
+  color: #495057;
+  transition: background-color 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.context-menu-item:hover {
+  background: #f8f9fa;
+  color: #007bff;
+}
+
+.context-menu-item.danger:hover {
+  background: #f8d7da;
+  color: #dc3545;
+}
+
+.context-menu-separator {
+  height: 1px;
+  background: #dee2e6;
+  margin: 4px 0;
+}
+
+.btn-sheet-open {
+  padding: 6px 12px;
+  background: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  white-space: nowrap;
+  min-width: 120px; /* 텍스트 길이에 맞게 너비 조정 */
+}
+
+.btn-sheet-open:hover {
+  background: #0056b3;
+}
+
+.btn-sheet-open:disabled,
+.btn-sheet-open.disabled {
+  background: #6c757d !important;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.btn-sheet-edit {
+  padding: 6px 12px;
+  background: #28a745;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  white-space: nowrap;
+  min-width: 80px;
+}
+
+.btn-sheet-edit:hover {
+  background: #218838;
+}
+
+.sheet-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid #e9ecef;
+  border-radius: 6px;
+  background: #f8f9fa;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.sheet-checkbox:hover {
+  background: #e9ecef;
+  border-color: #007bff;
+}
+
+.sheet-checkbox input[type="checkbox"] {
+  margin: 0;
+  width: 18px;
+  height: 18px;
+}
+
+.sheet-checkbox .sheet-name {
+  font-weight: 600;
+  color: #495057;
+  flex: 1;
+}
+
+.sheet-checkbox small {
+  color: #6c757d;
+  font-size: 12px;
+}
+
+.form-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 30px;
+  padding-top: 20px;
+  border-top: 1px solid #e9ecef;
+}
+
+.btn-primary,
+.btn-secondary {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-primary {
+  background: #007bff;
+  color: white;
+}
+
+.btn-primary:hover {
+  background: #0056b3;
+}
+
+.btn-secondary {
+  background: #6c757d;
+  color: white;
+}
+
+.btn-secondary:hover {
+  background: #545b62;
+}
 
 /* ──────────────────────────────────────────────────
    상단 필터바 고정 + 사이즈 조정 및 스크롤 제거
@@ -2531,15 +2992,26 @@ html, body {
   background: #007bff;
   color: white;
   border: none;
-  padding: 4px 12px;
+  padding: 6px 12px;
   border-radius: 4px;
   font-size: 12px;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: all 0.2s ease;
+  min-width: 80px; /* 최소 너비 설정 */
+  text-align: center;
 }
 
 .admin-btn:hover {
   background: #0056b3;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* 어드민 전용 메뉴 컨테이너 */
+.admin-only {
+  display: flex;
+  align-items: center;
+  gap: 10px; /* 어드민 버튼 간격 */
 }
 
 /* 모달 스타일 */

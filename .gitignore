@@ -1,0 +1,80 @@
+# 환경변수 및 보안 파일
+.env
+*.env
+security.env
+service_account.json
+credentials.json
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# 가상환경
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# 로그 파일
+*.log
+logs/
+duckdns_update.log
+
+# 데이터 파일
+data/cache/
+data/state/
+*.json
+!package.json
+!package-lock.json
+!requirements.txt
+
+# 백업 파일
+*.backup
+*.bak
+*.old
+*_old.*
+
+# IDE 및 편집기
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS 생성 파일
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# 임시 파일
+*.tmp
+*.temp
+payload.json

@@ -138,14 +138,36 @@
           <button id="userManagementBtn" class="admin-btn" type="button">사용자 관리</button>
           <button id="adminStatsBtn" class="admin-btn" type="button">통계</button>
         </div>
-        <a id="naverLoginBtn" href="/auth/naver/login" class="hidden">네이버 아이디로 로그인</a>
+
         <a id="logoutBtn" href="/auth/logout" class="hidden">로그아웃</a>
       </div>
     </header>
 
     <!-- 상태 카운트 -->
     <div id="statusCounts">
-      총 <span id="countTotal">0</span>건 / 필터 후 <span id="countFiltered">0</span>건
+      <div class="count-info">
+        총 <span id="countTotal">0</span>건 / 필터 후 <span id="countFiltered">0</span>건
+      </div>
+              <div class="sheet-controls">
+          <div class="sheet-buttons">
+            <!-- 매물장 버튼들이 여기에 동적으로 로드됩니다 -->
+          </div>
+          <button id="openGoogleSheetBtn" class="btn-sheet-open">
+            선택된 시트 열기
+          </button>
+
+        </div>
+    </div>
+    
+    <!-- 컨텍스트 메뉴 -->
+    <div id="contextMenu" class="context-menu">
+      <div class="context-menu-item" data-action="edit">
+        <span>✏️</span> 수정
+      </div>
+      <div class="context-menu-separator"></div>
+      <div class="context-menu-item danger" data-action="delete">
+        <span>🗑️</span> 삭제
+      </div>
     </div>
 
     <!-- 상단 필터바 -->
@@ -207,6 +229,8 @@
             </div>
           </div>
         </div>
+
+
 
         <!-- 매물 리스트 컨트롤 -->
         <div id="listingControls" class="block">

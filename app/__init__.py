@@ -122,6 +122,7 @@ def register_blueprints(app):
     from .routes.admin import bp as admin_bp
     from .routes.users import bp as users_bp
     from .routes.security import bp as security_bp
+    from .routes.user_sheets import bp as user_sheets_bp
 
     app.register_blueprint(health_bp)
     app.register_blueprint(listings_bp)
@@ -132,3 +133,4 @@ def register_blueprints(app):
     app.register_blueprint(admin_bp)
     app.register_blueprint(users_bp)
     app.register_blueprint(security_bp)
+    app.register_blueprint(user_sheets_bp)

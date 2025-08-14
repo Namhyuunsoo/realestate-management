@@ -323,10 +323,8 @@ async function syncUserFromSession() {
         usEl.textContent = roleText;
       }
       
-      const nl = document.getElementById('naverLoginBtn');
       const lo = document.getElementById('logoutBtn');
       const mu = document.getElementById('manualUserWrap');
-      if (nl) nl.classList.add('hidden');
       if (lo) lo.classList.remove('hidden');
       if (mu) mu.classList.add('hidden');
 

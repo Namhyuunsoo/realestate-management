@@ -117,11 +117,9 @@ function loadUserFromStorage() {
 }
 
 function toggleLoginLogoutUI(isLoggedIn) {
-  const loginBtn = document.getElementById("naverLoginBtn");
   const logoutBtn = document.getElementById("logoutBtn");
   const manualWrap = document.getElementById("manualUserWrap");
 
-  if (loginBtn)  loginBtn.classList.toggle("hidden", isLoggedIn);
   if (logoutBtn) logoutBtn.classList.toggle("hidden", !isLoggedIn);
   if (manualWrap) manualWrap.classList.toggle("hidden", isLoggedIn);
 }

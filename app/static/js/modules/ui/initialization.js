@@ -370,6 +370,26 @@ window.initializeApp = async function() {
     }
   }
   
+  // 8) 사용자별 개별매물장 기능 초기화
+  if (typeof initUserSheets === 'function') {
+    try {
+      await initUserSheets();
+      console.log('✅ 사용자별 개별매물장 기능 초기화 완료');
+    } catch (error) {
+      console.error('사용자별 개별매물장 초기화 실패:', error);
+    }
+  }
+  
+  // 9) 상태카운트바 매물장 컨트롤 초기화
+  if (typeof initStatusBarSheets === 'function') {
+    try {
+      await initStatusBarSheets();
+      console.log('✅ 상태카운트바 매물장 컨트롤 초기화 완료');
+    } catch (error) {
+      console.error('상태카운트바 매물장 컨트롤 초기화 실패:', error);
+    }
+  }
+  
   
 };
 
