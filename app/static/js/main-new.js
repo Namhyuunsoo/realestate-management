@@ -101,15 +101,23 @@ async function loadModules() {
     await loadModule('/static/js/modules/ui/customer-list-detail.js');
     console.log('✅ customer-list-detail.js 로드 완료');
     
-    // 20. 고객 관리 UI 관리 (initialization.js보다 먼저 로드)
+    // 20. 사용자별 개별매물장 관리
+    await loadModule('/static/js/modules/ui/user-sheets.js');
+    console.log('✅ user-sheets.js 로드 완료');
+    
+    // 21. 상태카운트바 매물장 컨트롤
+    await loadModule('/static/js/modules/ui/status-bar-sheets.js');
+    console.log('✅ status-bar-sheets.js 로드 완료');
+    
+    // 22. 고객 관리 UI 관리 (initialization.js보다 먼저 로드)
     await loadModule('/static/js/modules/ui/customer-management.js');
     console.log('✅ customer-management.js 로드 완료');
     
-    // 21. 사용자 관리 UI 관리 (어드민 전용)
+    // 23. 사용자 관리 UI 관리 (어드민 전용)
     await loadModule('/static/js/modules/ui/user-management.js');
     console.log('✅ user-management.js 로드 완료');
     
-    // 22. 초기화 관련 함수들 관리 (마지막에 로드)
+    // 24. 초기화 관련 함수들 관리 (마지막에 로드)
     await loadModule('/static/js/modules/ui/initialization.js');
     console.log('✅ initialization.js 로드 완료');
     

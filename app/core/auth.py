@@ -17,7 +17,6 @@ def get_current_user() -> CurrentUser:
     
     # Flask 애플리케이션의 설정에서 관리자 목록 가져오기
     admin_users = current_app.config.get("ADMIN_USERS", [])
-    
     return CurrentUser(user_id=user_id, is_admin=user_id in admin_users)
 
 def require_user(f):

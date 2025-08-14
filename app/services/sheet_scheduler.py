@@ -120,3 +120,7 @@ class SheetScheduler:
         
         self.logger.info(f"실행 간격 변경: {old_interval}분 → {new_interval_minutes}분")
         return True
+
+
+
+
