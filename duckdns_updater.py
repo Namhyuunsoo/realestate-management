@@ -3,6 +3,7 @@ import time
 from datetime import datetime
 import logging
 import os
+import re
 
 # 로깅 설정
 logging.basicConfig(
@@ -11,6 +12,26 @@ logging.basicConfig(
     format='%(asctime)s - %(levelname)s - %(message)s',
     encoding='utf-8'
 )
+
+def load_env_file(file_path='security.env'):
+    """환경변수 파일을 로드하여 os.environ에 설정"""
+    if not os.path.exists(file_path):
+        logging.warning(f"환경변수 파일을 찾을 수 없습니다: {file_path}")
+        return
+    
+    try:
+        with open(file_path, 'r', encoding='utf-8') as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith('#') and '=' in line:
+                    key, value = line.split('=', 1)
+                    os.environ[key.strip()] = value.strip()
+                    logging.info(f"환경변수 로드: {key.strip()}")
+    except Exception as e:
+        logging.error(f"환경변수 파일 로드 오류: {e}")
+
+# 환경변수 파일 로드
+load_env_file()
 
 def update_duckdns():
     token = os.getenv("DUCKDNS_TOKEN", "")
