@@ -2,6 +2,7 @@
 .env
 *.env
 security.env
+security.env.example
 service_account.json
 credentials.json
 *.pem
@@ -42,7 +43,6 @@ venv.bak/
 # 로그 파일
 *.log
 logs/
-duckdns_update.log
 
 # 데이터 파일
 data/cache/
