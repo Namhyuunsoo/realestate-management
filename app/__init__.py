@@ -50,6 +50,22 @@ def create_app(config_object=None):
     except Exception as e:
         print(f"⚠️ 시트 동기화 시작 실패: {e}")
         print("   Google Sheets 자동 동기화 기능이 비활성화됩니다.")
+    
+    # 지오코딩 동기화 시작 (Flask 컨텍스트에서)
+    try:
+        # GeocodingScheduler 초기화
+        from app.services.geocoding_scheduler import GeocodingScheduler
+        geocoding_scheduler = GeocodingScheduler()
+        data_manager.geocoding_scheduler = geocoding_scheduler
+        
+        # 지오코딩 스케줄러 시작
+        if data_manager.start_geocoding_sync():
+            print("✅ 자동 지오코딩이 시작되었습니다.")
+        else:
+            print("⚠️ 자동 지오코딩을 시작할 수 없습니다.")
+    except Exception as e:
+        print(f"⚠️ 지오코딩 동기화 시작 실패: {e}")
+        print("   자동 지오코딩 기능이 비활성화됩니다.")
 
     # Blueprint 등록
     register_blueprints(app)
@@ -90,8 +106,9 @@ def create_app(config_object=None):
     @app.route("/api/config/maps")
     def get_maps_config():
         """네이버 지도 API 설정을 반환"""
-        ncp_key_id = os.getenv("NAVER_MAPS_NCP_KEY_ID", "")
-        ncp_client_id = os.getenv("NAVER_MAPS_NCP_CLIENT_ID", "")
+        ncp_key_id = current_app.config.get("NAVER_MAPS_NCP_KEY_ID", "")
+        ncp_client_id = current_app.config.get("NAVER_MAPS_NCP_CLIENT_ID", "")
+        ncp_client_secret = current_app.config.get("NAVER_MAPS_NCP_CLIENT_SECRET", "")
         
         # API 키가 설정되지 않은 경우 기본값 사용
         if not ncp_key_id:
@@ -104,9 +121,14 @@ def create_app(config_object=None):
             print("⚠️ NAVER_MAPS_NCP_CLIENT_ID가 설정되지 않아 기본값을 사용합니다.")
             print("⚠️ 실제 사용을 위해서는 네이버 클라우드 플랫폼에서 유효한 API 키를 발급받아야 합니다.")
         
+        if not ncp_client_secret:
+            print("⚠️ NAVER_MAPS_NCP_CLIENT_SECRET이 설정되지 않았습니다.")
+            print("⚠️ 지오코딩 기능을 사용하려면 이 값도 설정해야 합니다.")
+        
         return jsonify({
             "ncpKeyId": ncp_key_id,
-            "ncpClientId": ncp_client_id
+            "ncpClientId": ncp_client_id,
+            "ncpClientSecret": ncp_client_secret
         })
 
     return app
@@ -123,6 +145,7 @@ def register_blueprints(app):
     from .routes.users import bp as users_bp
     from .routes.security import bp as security_bp
     from .routes.user_sheets import bp as user_sheets_bp
+    from .routes.geocoding import bp as geocoding_bp
 
     app.register_blueprint(health_bp)
     app.register_blueprint(listings_bp)
@@ -134,3 +157,4 @@ def register_blueprints(app):
     app.register_blueprint(users_bp)
     app.register_blueprint(security_bp)
     app.register_blueprint(user_sheets_bp)
+    app.register_blueprint(geocoding_bp)
