@@ -49,8 +49,9 @@ class AppConfig:
     SHEET_DOWNLOAD_INTERVAL: int = int(os.getenv("SHEET_DOWNLOAD_INTERVAL", "5"))
     
     # Naver 지도 API 설정
-    NAVER_MAP_CLIENT_ID: str = os.getenv("NAVER_MAP_CLIENT_ID", "")
-    NAVER_MAP_CLIENT_SECRET: str = os.getenv("NAVER_MAP_CLIENT_SECRET", "")
+    NAVER_MAPS_NCP_KEY_ID: str = os.getenv("NAVER_MAPS_NCP_KEY_ID", "")
+    NAVER_MAPS_NCP_CLIENT_ID: str = os.getenv("NAVER_MAPS_NCP_CLIENT_ID", "")
+    NAVER_MAPS_NCP_CLIENT_SECRET: str = os.getenv("NAVER_MAPS_NCP_CLIENT_SECRET", "")
     
     # Naver 로그인 API 설정
     NAVER_LOGIN_CLIENT_ID: str = os.getenv("NAVER_LOGIN_CLIENT_ID", "")
@@ -87,8 +88,9 @@ class AppConfig:
             'SPREADSHEET_ID': self.SPREADSHEET_ID,
             'SHEET_DOWNLOAD_DIR': self.SHEET_DOWNLOAD_DIR,
             'SHEET_DOWNLOAD_INTERVAL': self.SHEET_DOWNLOAD_INTERVAL,
-            'NAVER_MAP_CLIENT_ID': self.NAVER_MAP_CLIENT_ID,
-            'NAVER_MAP_CLIENT_SECRET': '***' if self.NAVER_MAP_CLIENT_SECRET else '',
+            'NAVER_MAPS_NCP_KEY_ID': self.NAVER_MAPS_NCP_KEY_ID,
+            'NAVER_MAPS_NCP_CLIENT_ID': self.NAVER_MAPS_NCP_CLIENT_ID,
+            'NAVER_MAPS_NCP_CLIENT_SECRET': '***' if self.NAVER_MAPS_NCP_CLIENT_SECRET else '',
             'NAVER_LOGIN_CLIENT_ID': self.NAVER_LOGIN_CLIENT_ID,
             'NAVER_LOGIN_CLIENT_SECRET': '***' if self.NAVER_LOGIN_CLIENT_SECRET else '',
             'NAVER_LOGIN_REDIRECT_URI': self.NAVER_LOGIN_REDIRECT_URI,
@@ -134,8 +136,9 @@ def load_config(app):
     app.config['SHEET_DOWNLOAD_INTERVAL'] = config.SHEET_DOWNLOAD_INTERVAL
     
     # Naver 지도 API 설정
-    app.config['NAVER_MAP_CLIENT_ID'] = config.NAVER_MAP_CLIENT_ID
-    app.config['NAVER_MAP_CLIENT_SECRET'] = config.NAVER_MAP_CLIENT_SECRET
+    app.config['NAVER_MAPS_NCP_KEY_ID'] = config.NAVER_MAPS_NCP_KEY_ID
+    app.config['NAVER_MAPS_NCP_CLIENT_ID'] = config.NAVER_MAPS_NCP_CLIENT_ID
+    app.config['NAVER_MAPS_NCP_CLIENT_SECRET'] = config.NAVER_MAPS_NCP_CLIENT_SECRET
     
     # Naver 로그인 API 설정
     app.config['NAVER_LOGIN_CLIENT_ID'] = config.NAVER_LOGIN_CLIENT_ID

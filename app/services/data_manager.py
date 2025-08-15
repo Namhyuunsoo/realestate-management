@@ -8,6 +8,7 @@ from .briefing_service import BriefingService
 from .user_service import UserService
 from .sheet_download_service import SheetDownloadService
 from .sheet_scheduler import SheetScheduler
+from .geocoding_scheduler import GeocodingScheduler
 
 class DataManager:
     """중앙 데이터 관리자"""
@@ -22,6 +23,7 @@ class DataManager:
         self.user_service: Optional[UserService] = None
         self.sheet_download_service: Optional[SheetDownloadService] = None
         self.sheet_scheduler: Optional[SheetScheduler] = None
+        self.geocoding_scheduler: Optional[GeocodingScheduler] = None
         
         # 기존 호환성을 위한 데이터
         self.customers = {}
@@ -56,6 +58,10 @@ class DataManager:
         except Exception as e:
             print(f"⚠️ SheetDownloadService 초기화 실패: {e}")
             print("   Google Sheets 자동 동기화 기능이 비활성화됩니다.")
+        
+        # 지오코딩 스케줄러는 나중에 초기화 (Flask 컨텍스트 필요)
+        self.geocoding_scheduler = None
+        print("⏳ GeocodingScheduler는 Flask 컨텍스트에서 초기화됩니다.")
         
         # 기존 호환성을 위한 데이터 로드
         self._load_compatibility_data()
@@ -180,4 +186,45 @@ class DataManager:
         """브리핑 조회 (기존 호환성)"""
         if self.briefing_service:
             return self.briefing_service.get_briefing(briefing_id)
-        return None 
+        return None
+    
+    # 지오코딩 관련 메서드들
+    def start_geocoding_sync(self):
+        """지오코딩 동기화 스케줄러 시작"""
+        if self.geocoding_scheduler:
+            try:
+                self.geocoding_scheduler.start()
+                print("✅ 지오코딩 동기화 스케줄러 시작됨")
+                return True
+            except Exception as e:
+                print(f"❌ 지오코딩 동기화 스케줄러 시작 실패: {e}")
+                return False
+        else:
+            print("⚠️ GeocodingScheduler가 초기화되지 않았습니다.")
+            return False
+    
+    def stop_geocoding_sync(self):
+        """지오코딩 동기화 스케줄러 중지"""
+        if self.geocoding_scheduler:
+            self.geocoding_scheduler.stop()
+            print("✅ 지오코딩 동기화 스케줄러 중지됨")
+    
+    def get_geocoding_sync_status(self) -> Optional[Dict[str, Any]]:
+        """지오코딩 동기화 상태 조회"""
+        if self.geocoding_scheduler:
+            return self.geocoding_scheduler.get_status()
+        return None
+    
+    def run_geocoding_now(self) -> Dict[str, Any]:
+        """즉시 지오코딩 실행 (수동 실행용)"""
+        if self.geocoding_scheduler:
+            try:
+                result = self.geocoding_scheduler.run_now()
+                print(f"✅ 수동 지오코딩 실행 완료: {result}")
+                return result
+            except Exception as e:
+                print(f"❌ 수동 지오코딩 실행 실패: {e}")
+                return {"error": str(e)}
+        else:
+            print("⚠️ GeocodingScheduler가 초기화되지 않았습니다.")
+            return {"error": "GeocodingScheduler not initialized"} 
