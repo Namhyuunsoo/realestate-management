@@ -4,6 +4,8 @@ Flask==3.1.1
 python-dotenv
 pandas
 openpyxl
+xlrd
+odfpy
 gspread
 google-auth
 google-auth-oauthlib

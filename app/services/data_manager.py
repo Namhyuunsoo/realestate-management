@@ -107,6 +107,16 @@ class DataManager:
                 return False
         return False
     
+    def initialize_geocoding_scheduler(self, app):
+        """지오코딩 스케줄러 초기화 (Flask 앱 컨텍스트 필요)"""
+        try:
+            self.geocoding_scheduler = GeocodingScheduler(app=app)
+            print("✅ GeocodingScheduler 초기화 완료")
+            return True
+        except Exception as e:
+            print(f"❌ GeocodingScheduler 초기화 실패: {e}")
+            return False
+    
     def _load_compatibility_data(self):
         """기존 호환성을 위한 데이터 로드"""
         # 기존 데이터 구조 유지를 위한 호환성 레이어

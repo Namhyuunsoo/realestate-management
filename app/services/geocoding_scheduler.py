@@ -9,7 +9,8 @@ from .geocoding_service import GeocodingService
 class GeocodingScheduler:
     """지오코딩 자동화 스케줄러"""
     
-    def __init__(self, interval_minutes: int = 30):
+    def __init__(self, app=None, interval_minutes: int = 30):
+        self.app = app
         self.interval_minutes = interval_minutes
         self.interval_seconds = interval_minutes * 60
         
@@ -20,14 +21,8 @@ class GeocodingScheduler:
         self.run_count = 0
         self.last_result = None
         
-        # 지오코딩 서비스
-        self.geocoding_service = GeocodingService()
-        
-        # Flask 컨텍스트가 있을 때 설정 업데이트
-        try:
-            self.geocoding_service.update_config()
-        except Exception as e:
-            self.logger.warning(f"설정 업데이트 실패: {e}")
+        # 지오코딩 서비스는 Flask 컨텍스트에서 초기화
+        self.geocoding_service = None
         
         # 로깅 설정
         logging.basicConfig(level=logging.INFO)
@@ -79,10 +74,33 @@ class GeocodingScheduler:
         """지오코딩 실행"""
         try:
             self.logger.info(f"지오코딩 업데이트 시작 (실행 횟수: {self.run_count + 1})")
+            self.logger.info(f"Flask 앱 상태: {self.app is not None}")
             
-            # 지오코딩 서비스 실행
-            result = self.geocoding_service.run_geocoding_update()
-            self.last_result = result
+            # Flask 앱 컨텍스트가 있으면 사용
+            if self.app:
+                self.logger.info("Flask 앱 컨텍스트 사용")
+                with self.app.app_context():
+                    # 지오코딩 서비스 초기화 및 설정 업데이트
+                    if not self.geocoding_service:
+                        self.logger.info("GeocodingService 생성 중...")
+                        self.geocoding_service = GeocodingService()
+                        self.logger.info("update_config 호출 중...")
+                        self.geocoding_service.update_config()
+                        self.logger.info("update_config 완료")
+                    else:
+                        self.logger.info("기존 GeocodingService 사용")
+                    
+                    # 지오코딩 서비스 실행
+                    result = self.geocoding_service.run_geocoding_update()
+                    self.last_result = result
+            else:
+                # Flask 앱 컨텍스트가 없는 경우
+                self.logger.warning("Flask 앱 컨텍스트 없음 - 환경변수 사용")
+                if not self.geocoding_service:
+                    self.geocoding_service = GeocodingService()
+                
+                result = self.geocoding_service.run_geocoding_update()
+                self.last_result = result
             
             # 결과 로깅
             if result["new"] > 0:
@@ -98,20 +116,29 @@ class GeocodingScheduler:
     def run_now(self) -> dict:
         """즉시 지오코딩 실행 (수동 실행용)"""
         try:
-            self.logger.info("수동 지오코딩 실행 시작...")
-            result = self.geocoding_service.run_geocoding_update()
+            self.logger.info("수동 지오코딩 실행 시작")
+            
+            # Flask 앱 컨텍스트가 있으면 사용
+            if self.app:
+                with self.app.app_context():
+                    result = self.geocoding_service.run_geocoding_update()
+            else:
+                result = self.geocoding_service.run_geocoding_update()
+            
             self.last_result = result
+            self.logger.info("수동 지오코딩 실행 완료")
             return result
+            
         except Exception as e:
             self.logger.error(f"수동 지오코딩 실행 실패: {str(e)}")
             return {"error": str(e)}
     
     def get_status(self) -> dict:
-        """스케줄러 상태 조회"""
+        """스케줄러 상태 반환"""
         return {
             "is_running": self.is_running,
             "interval_minutes": self.interval_minutes,
-            "run_count": self.run_count,
             "last_run_time": self.last_run_time,
+            "run_count": self.run_count,
             "last_result": self.last_result
         }
