@@ -77,7 +77,6 @@ html, body {
   min-height: 92px;
   max-height: 92px;
   flex-shrink: 0;
-  overflow: hidden;
   /* UI 변동 방지를 위한 추가 설정 */
   box-sizing: border-box !important;
   width: 100% !important;
@@ -997,7 +996,7 @@ html, body {
 }
 .top-filter .tf-row{
   display:grid;
-  grid-template-columns: repeat(16, minmax(120px, 1fr)) 120px; /* 16필드 + 버튼영역 */
+  grid-template-columns: repeat(16, 1fr) 120px; /* 16필드 + 버튼영역 - 1920px에 맞게 정확히 조정 */
   gap:4px;
   margin-bottom:4px;
 }
@@ -1019,11 +1018,14 @@ html, body {
   gap:4px;
   justify-content:center;
   align-items:center;
+  min-width: 120px;
 }
 #topFilterApplyBtn, #topFilterResetBtn{
   height:26px;
   padding:0 8px;
   font-size:12px;
+  white-space: nowrap;
+  min-width: 50px;
 }
 
 /* 상단바(사무소명/직책/이름) 보강 */
@@ -1848,33 +1850,8 @@ div:has(> .cluster-bubble) {
 }
 
 /* ──────────────────────────────────────────────────
-   상단 필터바 고정 + 사이즈 조정 및 스크롤 제거
+   상단 필터바 버튼 스타일링
 ────────────────────────────────────────────────── */
-/* 중복된 #topFilterBar 스타일 제거 - 위에서 이미 정의됨 */
-
-/* .top-filter 클래스를 가진 섹션 전체에 패딩을 늘리고
-   가로/세로 스크롤을 제거합니다. */
-.top‑filter {
-  border-bottom: 1px solid #ddd;
-  background: #fafafa;
-  
-  /* 상하 패딩을 늘려 높이를 확보합니다. */
-  padding: 12px 16px;
-  
-  /* 스크롤바가 나타나지 않도록 모두 보이게 설정 */
-  overflow: visible;
-  font-size: 12px;
-}
-
-/* 필터 항목 행(row) 간격을 조금 넓혀줍니다 */
-.top‑filter .tf-row {
-  display: grid;
-  /* 16개의 필드 + 액션 버튼 영역 */
-  grid-template-columns: repeat(16, minmax(120px, 1fr)) 120px;
-  gap: 8px;
-  margin-bottom: 8px;
-}
-
 /* 버튼 높이도 필터바 높이에 맞춰 조정 */
 #topFilterApplyBtn,
 #topFilterResetBtn {
@@ -1886,45 +1863,8 @@ div:has(> .cluster-bubble) {
    1차 사이드바 매물 리스트 아래 빈 공간 제거
 ────────────────────────────────────────────────── */
 
-/* ──────────────────────────────────────────────────
-   상단 필터바 스크롤 제거 (한 화면에 다 보이도록)
-────────────────────────────────────────────────── */
-.top-filter {
-  overflow-x: visible !important;  /* 가로 스크롤 없애기 */
-  overflow-y: visible !important;  /* 세로 스크롤도 없애기 */
-}
-/* ──────────────────────────────────────────────────
-   상단 필터바: 높이 자동 확장 + 스크롤 제거
-────────────────────────────────────────────────── */
-#topFilterBar,
-.top-filter {
-  /* 높이를 고정하여 레이아웃 안정성 확보 */
-  min-height: 92px;
-  max-height: 92px; /* 높이 고정 */
-  flex-shrink: 0; /* 크기 고정 */
 
-  /* 스크롤바가 절대 나타나지 않도록 설정 */
-  overflow-x: visible !important;
-  overflow-y: visible !important;
-  padding: 12px 16px; /* 필요시 높이를 더 확보하려면 이 값을 늘려주세요 */
-}
 
-/* 만약 .top-filter 내부에 별도의 래퍼가 height 고정되어 있다면
-   아래처럼 모두 해제해 주세요. */
-.top-filter .filter-wrapper {
-  height: auto !important;
-  max-height: none !important;
-  overflow: visible !important;
-}
-
-/* 필터 항목 행(row)이 한 줄에 모두 들어가도록
-   열 개수를 조정합니다. 필요하다면 minmax값을 조절하세요 */
-.top-filter .tf-row {
-  display: grid;
-  grid-template-columns: repeat(16, minmax(100px, 1fr)) 120px;
-  gap: 8px;
-  margin-bottom: 8px;
-}
 /* ──────────────────────────────────────────────────
    사이드바: 매물 리스트 빈 공간 제거
 ────────────────────────────────────────────────── */
@@ -2930,16 +2870,7 @@ html, body {
   flex-shrink: 0; /* 크기 고정 */
 }
 
-/* 상단 필터바 고정 높이 */
-#topFilterBar {
-  background: #fff;
-  border-bottom: 1px solid #e0e0e0;
-  padding: 8px 12px;
-  min-height: 92px;
-  max-height: 92px; /* 높이 고정 */
-  flex-shrink: 0; /* 크기 고정 */
-  overflow: hidden;
-}
+
 
 /* 모든 UI 크기 고정 - 절대 변경 불가 */
 /* 2차 사이드바가 열릴 때 메인 콘텐츠 조정 - 제거됨 */
