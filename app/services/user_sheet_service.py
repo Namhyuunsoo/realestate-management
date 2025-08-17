@@ -14,7 +14,8 @@ class UserSheetService:
     """사용자별 개별매물장 시트 관리 서비스"""
     
     def __init__(self, data_store_path: str = None):
-        self.data_store_path = data_store_path or "./data/user_sheets.json"
+        # 하드코딩된 절대 경로로 서버에 고정 저장
+        self.data_store_path = data_store_path or "C:/code1/realestate-management/data/user_sheets.json"
         self.sheets: Dict[str, UserSheet] = {}
         self.load_sheets()
     

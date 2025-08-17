@@ -439,6 +439,8 @@ def create_customer(user_email: str, payload: dict) -> dict:
     # 사용자 파일
     user_path = _user_file(user_email)
     df_u = pd.DataFrame([record])
+    
+    # 사용자 파일이 존재하면 기존 데이터 읽어서 추가, 없으면 새로 생성
     if os.path.exists(user_path):
         try:
             existing_df = pd.read_excel(user_path)
@@ -455,7 +457,9 @@ def create_customer(user_email: str, payload: dict) -> dict:
                 if existing_df[col].dtype == 'object':
                     existing_df[col] = existing_df[col].astype(str).replace(['nan', 'NaN', 'NAN'], '')
             
+            # 기존 데이터에 새 고객 추가
             df_u = pd.concat([existing_df, df_u], ignore_index=True)
+            print(f"✅ 사용자 파일에 기존 데이터 {len(existing_df)}개 + 새 고객 1개 추가")
         except Exception as e:
             print(f"사용자 파일 읽기 오류, 복구 시도: {e}")
             # 파일 복구 시도
@@ -464,19 +468,27 @@ def create_customer(user_email: str, payload: dict) -> dict:
                     existing_df = pd.read_excel(user_path)
                     existing_df = existing_df.fillna("")
                     df_u = pd.concat([existing_df, df_u], ignore_index=True)
+                    print(f"✅ 복구된 사용자 파일에 기존 데이터 {len(existing_df)}개 + 새 고객 1개 추가")
                 except Exception as e2:
                     print(f"복구된 사용자 파일 읽기 실패: {e2}")
+                    print("사용자 파일 복구 실패, 새로 생성")
             else:
                 print("사용자 파일 복구 실패, 새로 생성")
+    else:
+        print(f"📁 사용자 파일이 존재하지 않음, 새로 생성: {user_path}")
     
+    # 사용자 파일 저장
     try:
         df_u.to_excel(user_path, index=False)
+        print(f"✅ 사용자 파일 저장 완료: {user_path}")
     except Exception as e:
-        print(f"사용자 파일 저장 오류: {e}")
+        print(f"❌ 사용자 파일 저장 오류: {e}")
     
     # 관리자 통합 파일
     admin_path = _admin_file()
     df_a = pd.DataFrame([record])
+    
+    # 관리자 파일이 존재하면 기존 데이터 읽어서 추가, 없으면 새로 생성
     if os.path.exists(admin_path):
         try:
             existing_df = pd.read_excel(admin_path)
@@ -493,7 +505,9 @@ def create_customer(user_email: str, payload: dict) -> dict:
                 if existing_df[col].dtype == 'object':
                     existing_df[col] = existing_df[col].astype(str).replace(['nan', 'NaN', 'NAN'], '')
             
+            # 기존 데이터에 새 고객 추가
             df_a = pd.concat([existing_df, df_a], ignore_index=True)
+            print(f"✅ 관리자 파일에 기존 데이터 {len(existing_df)}개 + 새 고객 1개 추가")
         except Exception as e:
             print(f"관리자 파일 읽기 오류, 복구 시도: {e}")
             # 파일 복구 시도
@@ -502,15 +516,21 @@ def create_customer(user_email: str, payload: dict) -> dict:
                     existing_df = pd.read_excel(admin_path)
                     existing_df = existing_df.fillna("")
                     df_a = pd.concat([existing_df, df_a], ignore_index=True)
+                    print(f"✅ 복구된 관리자 파일에 기존 데이터 {len(existing_df)}개 + 새 고객 1개 추가")
                 except Exception as e2:
                     print(f"복구된 관리자 파일 읽기 실패: {e2}")
+                    print("관리자 파일 복구 실패, 새로 생성")
             else:
                 print("관리자 파일 복구 실패, 새로 생성")
+    else:
+        print(f"📁 관리자 파일이 존재하지 않음, 새로 생성: {admin_path}")
     
+    # 관리자 파일 저장
     try:
         df_a.to_excel(admin_path, index=False)
+        print(f"✅ 관리자 파일 저장 완료: {admin_path}")
     except Exception as e:
-        print(f"관리자 파일 저장 오류: {e}")
+        print(f"❌ 관리자 파일 저장 오류: {e}")
     
     return record
 

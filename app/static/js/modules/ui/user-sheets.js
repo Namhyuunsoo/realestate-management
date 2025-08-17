@@ -309,83 +309,31 @@ function createUserSheetModal(title, sheet) {
             <small>구글 시트의 공유 링크를 입력하세요</small>
           </div>
           
+
+          
           <div class="form-group">
-            <label for="syncInterval">동기화 간격</label>
-            <select id="syncInterval" name="sync_interval">
-              <option value="300" ${sheet && sheet.sync_interval === 300 ? 'selected' : ''}>5분</option>
-              <option value="900" ${sheet && sheet.sync_interval === 900 ? 'selected' : ''}>15분</option>
-              <option value="1800" ${sheet && sheet.sync_interval === 1800 ? 'selected' : ''}>30분</option>
-              <option value="3600" ${!sheet || sheet.sync_interval === 3600 ? 'selected' : ''}>1시간</option>
-              <option value="7200" ${sheet && sheet.sync_interval === 7200 ? 'selected' : ''}>2시간</option>
-            </select>
+            <label for="googleApiKey">구글 API 키 *</label>
+            <input type="password" id="googleApiKey" name="google_api_key" 
+                   value="${sheet ? escapeHtml(sheet.google_api_key || '') : ''}" 
+                   placeholder="개인 API 키를 입력하세요" required>
+            <small>구글 스프레드시트에 접근하기 위한 API 키입니다</small>
           </div>
           
           <div class="form-group">
-            <label>연동할 시트 선택 *</label>
-            <div class="sheet-selection">
-              <label class="sheet-checkbox">
-                <input type="checkbox" name="selected_sheets" value="상가임대차" 
-                       ${sheet && sheet.selected_sheets && sheet.selected_sheets.includes('상가임대차') ? 'checked' : ''}>
-                <span class="sheet-name">상가임대차</span>
-                <small>임대료, 면적, 위치 등</small>
-              </label>
-              <label class="sheet-checkbox">
-                <input type="checkbox" name="selected_sheets" value="구분상가매매" 
-                       ${sheet && sheet.selected_sheets && sheet.selected_sheets.includes('구분상가매매') ? 'checked' : ''}>
-                <span class="sheet-name">구분상가매매</span>
-                <small>매매가, 분류, 상태 등</small>
-              </label>
-              <label class="sheet-checkbox">
-                <input type="checkbox" name="selected_sheets" value="건물토지매매" 
-                       ${sheet && sheet.selected_sheets && sheet.selected_sheets.includes('건물토지매매') ? 'checked' : ''}>
-                <span class="sheet-name">건물토지매매</span>
-                <small>토지면적, 건물면적, 용도 등</small>
-              </label>
-            </div>
-            <small>연동하고 싶은 시트들을 선택하세요. 각 시트는 다른 헤더와 정보를 가질 수 있습니다.</small>
+            <label for="serviceAccount">서비스어카운트 JSON *</label>
+            <textarea id="serviceAccount" name="service_account_json" 
+                      placeholder='{"type": "service_account", "project_id": "...", ...}'
+                      rows="4" required>${sheet ? escapeHtml(sheet.service_account_json || '') : ''}</textarea>
+            <small>개인 서비스어카운트 정보를 입력하세요</small>
           </div>
           
           <div class="form-group">
-            <label>
-              <input type="checkbox" name="auto_sync" 
-                     ${!sheet || sheet.settings?.auto_sync !== false ? 'checked' : ''}>
-              자동 동기화 활성화
-            </label>
+            <button type="button" id="testApiBtn" class="btn-secondary">
+              🔍 API 연결 테스트
+            </button>
+            <small>API 키가 올바르게 설정되었는지 테스트합니다</small>
           </div>
-          
-          <div class="form-group">
-            <label>
-              <input type="checkbox" id="usePersonalApi" name="use_personal_api" 
-                     ${sheet && sheet.has_personal_api ? 'checked' : ''}>
-              개인 API 키 사용
-            </label>
-            <small>체크하면 개인 API 키나 서비스어카운트를 사용합니다</small>
-          </div>
-          
-          <div id="personalApiFields" class="personal-api-fields" style="display: none;">
-            <div class="form-group">
-              <label for="googleApiKey">구글 API 키 (선택사항)</label>
-              <input type="password" id="googleApiKey" name="google_api_key" 
-                     value="${sheet ? escapeHtml(sheet.google_api_key || '') : ''}" 
-                     placeholder="개인 API 키를 입력하세요">
-              <small>비워두면 시스템 기본 키를 사용합니다</small>
-            </div>
-            
-            <div class="form-group">
-              <label for="serviceAccount">서비스어카운트 JSON (선택사항)</label>
-              <textarea id="serviceAccount" name="service_account_json" 
-                        placeholder='{"type": "service_account", "project_id": "...", ...}'
-                        rows="4">${sheet ? escapeHtml(sheet.service_account_json || '') : ''}</textarea>
-              <small>개인 서비스어카운트 정보를 입력하세요</small>
-            </div>
-            
-            <div class="form-group">
-              <button type="button" id="testApiBtn" class="btn-secondary">
-                🔍 API 연결 테스트
-              </button>
-              <small>API 키가 올바르게 설정되었는지 테스트합니다</small>
-            </div>
-          </div>
+
           
           <div class="form-actions">
             <button type="button" class="btn-secondary" onclick="this.closest('.modal-overlay').remove()">
@@ -407,18 +355,7 @@ function createUserSheetModal(title, sheet) {
     handleUserSheetSubmit(sheet?.id);
   });
   
-  // 개인 API 사용 체크박스 이벤트
-  const usePersonalApiCheckbox = modal.querySelector("#usePersonalApi");
-  const personalApiFields = modal.querySelector("#personalApiFields");
-  
-  usePersonalApiCheckbox.addEventListener("change", () => {
-    personalApiFields.style.display = usePersonalApiCheckbox.checked ? "block" : "none";
-  });
-  
-  // 초기 상태 설정
-  if (usePersonalApiCheckbox.checked) {
-    personalApiFields.style.display = "block";
-  }
+
   
   // API 테스트 버튼 이벤트
   const testApiBtn = modal.querySelector("#testApiBtn");
@@ -435,29 +372,13 @@ async function handleUserSheetSubmit(sheetId = null) {
   const form = document.getElementById("userSheetForm");
   const formData = new FormData(form);
   
-  // 선택된 시트들 가져오기
-  const selectedSheets = [];
-  form.querySelectorAll('input[name="selected_sheets"]:checked').forEach(checkbox => {
-    selectedSheets.push(checkbox.value);
-  });
-  
-  // 최소 1개 시트는 선택해야 함
-  if (selectedSheets.length === 0) {
-    showError("최소 1개 이상의 시트를 선택해야 합니다.");
-    return;
-  }
+
   
   const data = {
     sheet_name: formData.get("sheet_name"),
     sheet_url: formData.get("sheet_url"),
-    sync_interval: parseInt(formData.get("sync_interval")),
-    selected_sheets: selectedSheets,
-    google_api_key: formData.get("google_api_key") || "",
-    service_account_json: formData.get("service_account_json") || "",
-    settings: {
-      auto_sync: formData.get("auto_sync") === "on",
-      use_personal_api: formData.get("use_personal_api") === "on"
-    }
+    google_api_key: formData.get("google_api_key"),
+    service_account_json: formData.get("service_account_json")
   };
   
   try {
