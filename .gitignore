@@ -40,6 +40,28 @@ ENV/
 env.bak/
 venv.bak/
 
+# Python 경로 관련 파일들 (추가)
+pyvenv.cfg
+.python-version
+.python-version.*
+python.exe
+pythonw.exe
+pip.exe
+pip3.exe
+easy_install.exe
+easy_install-*.exe
+activate
+activate.bat
+activate.ps1
+deactivate.bat
+deactivate.ps1
+Scripts/
+bin/
+include/
+Lib/
+lib/
+share/
+
 # 로그 파일
 *.log
 logs/
