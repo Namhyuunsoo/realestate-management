@@ -6,7 +6,24 @@ import os
 from datetime import timedelta
 
 # 환경변수 로드 (반드시 Flask 앱 생성 전에)
-load_dotenv('.env')
+print("🔍 환경변수 로딩 시작...")
+print(f"현재 작업 디렉토리: {os.getcwd()}")
+print(f".env 파일 존재 여부: {os.path.exists('.env')}")
+
+# .env 파일 경로를 명시적으로 지정
+env_path = os.path.join(os.getcwd(), '.env')
+print(f".env 파일 경로: {env_path}")
+print(f".env 파일 존재 여부 (절대 경로): {os.path.exists(env_path)}")
+
+# 환경변수 로드 시도
+load_dotenv(env_path)
+
+# 로드된 환경변수 확인
+naver_client_id = os.getenv("NAVER_MAPS_NCP_CLIENT_ID")
+naver_client_secret = os.getenv("NAVER_MAPS_NCP_CLIENT_SECRET")
+print(f"로드된 NAVER_MAPS_NCP_CLIENT_ID: {'설정됨' if naver_client_id else 'None'}")
+print(f"로드된 NAVER_MAPS_NCP_CLIENT_SECRET: {'설정됨' if naver_client_secret else 'None'}")
+print("🔍 환경변수 로딩 완료")
 
 def create_app(config_object=None):
     """
