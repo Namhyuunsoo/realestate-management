@@ -74,10 +74,40 @@ function initMap() {
     });
     console.log('✅ 지도 객체 생성 완료:', MAP);
     
+    // MAP 객체를 전역에 할당
+    window.MAP = MAP;
+    console.log('✅ MAP 객체를 window.MAP에 할당 완료');
+    
     // 지도가 성공적으로 생성되었는지 확인
     if (!MAP) {
       throw new Error('지도 객체 생성 실패');
     }
+    
+    // MAP 객체 생성 완료 후 initMapControls 호출 (함수가 준비될 때까지 기다림)
+    console.log('🔄 MAP 객체 생성 완료, initMapControls 함수 대기 중...');
+    
+    let retryCount = 0;
+    const maxRetries = 30; // 최대 6초 대기 (200ms * 30)
+    
+    const waitForInitMapControls = () => {
+      if (typeof window.initMapControls === 'function') {
+        console.log('✅ initMapControls 함수 준비됨, 초기화 시작');
+        window.initMapControls();
+      } else if (retryCount < maxRetries) {
+        retryCount++;
+        console.log(`🔄 initMapControls 함수 대기 중... (${retryCount}/${maxRetries})`);
+        setTimeout(waitForInitMapControls, 200);
+      } else {
+        console.error('❌ initMapControls 함수를 찾을 수 없습니다. 최대 재시도 횟수 초과');
+        console.error('❌ 로드된 모듈들 확인:', {
+          'window.initMapControls': typeof window.initMapControls,
+          'window.toggleRoadview': typeof window.toggleRoadview,
+          'window.openRoadview': typeof window.openRoadview
+        });
+      }
+    };
+    
+    waitForInitMapControls();
     
   } catch (error) {
     console.error('❌ 지도 객체 생성 실패:', error);
@@ -242,10 +272,7 @@ function initMap() {
     }
   }, 1000);
   
-  // 지도 컨트롤 초기화
-  if (typeof initMapControls === 'function') {
-    initMapControls();
-  }
+  // 지도 컨트롤 초기화는 MAP 객체 생성 완료 후 즉시 호출됨 (위에서 처리)
 }
 
 /**************************************
