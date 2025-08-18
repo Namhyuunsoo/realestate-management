@@ -7,31 +7,20 @@
  **************************************/
 
 function initMapControls() {
-  console.log('🔍 initMapControls 시작');
-  console.log('🔍 MAP 객체 상태:', !!window.MAP, typeof window.MAP);
-  console.log('🔍 MAP 객체 상세 정보:', {
-    'window.MAP': !!window.MAP,
-    'typeof window.MAP': typeof window.MAP,
-    'window.MAP.setMap': typeof window.MAP?.setMap,
-    'window.MAP.constructor': window.MAP?.constructor?.name,
-    'window.MAP.zoom': window.MAP?.getZoom?.()
-  });
-  
   // MAP 객체가 준비되지 않은 경우 경고
   if (!window.MAP || !window.MAP.getCenter || !window.MAP.setMapTypeId) {
-    console.warn('⚠️ initMapControls 호출 시 MAP 객체가 아직 준비되지 않음');
-    console.warn('⚠️ 이는 정상적인 상황일 수 있습니다. MAP 객체 생성 후 자동으로 재시도됩니다.');
   }
   
   // 로드뷰 버튼
   const roadviewBtn = document.getElementById('roadviewBtn');
   if (roadviewBtn) {
-    console.log('✅ 로드뷰 버튼 찾음, 이벤트 리스너 등록');
     roadviewBtn.addEventListener('click', function(e) {
       e.preventDefault();
       e.stopPropagation();
-      console.log('🛣️ 로드뷰 버튼 클릭됨');
-      toggleRoadview();
+      // 성능 최적화: 즉시 실행
+      requestAnimationFrame(() => {
+        toggleRoadview();
+      });
     });
   } else {
     console.error('❌ roadviewBtn을 찾을 수 없습니다.');
@@ -40,21 +29,33 @@ function initMapControls() {
   // 지적편집도 버튼
   const cadastralBtn = document.getElementById('cadastralBtn');
   if (cadastralBtn) {
-    cadastralBtn.addEventListener('click', toggleCadastralMap);
+    cadastralBtn.addEventListener('click', function(e) {
+      e.preventDefault();
+      requestAnimationFrame(() => {
+        toggleCadastralMap();
+      });
+    });
   }
   
   // 거리제기 버튼
   const distanceBtn = document.getElementById('distanceBtn');
   if (distanceBtn) {
-    distanceBtn.addEventListener('click', toggleDistanceMeasure);
+    distanceBtn.addEventListener('click', function(e) {
+      e.preventDefault();
+      requestAnimationFrame(() => {
+        toggleDistanceMeasure();
+      });
+    });
   }
   
   // 로드뷰 닫기 버튼
   const roadviewCloseBtn = document.getElementById('roadviewCloseBtn');
   if (roadviewCloseBtn) {
-    roadviewCloseBtn.addEventListener('click', function() {
-      console.log('🔄 로드뷰 닫기 버튼 클릭됨');
-      closePanorama();
+    roadviewCloseBtn.addEventListener('click', function(e) {
+      e.preventDefault();
+      requestAnimationFrame(() => {
+        closePanorama();
+      });
     });
   } else {
     console.error('❌ roadviewCloseBtn을 찾을 수 없습니다.');
@@ -69,35 +70,25 @@ function initMapControls() {
     }
   });
   
-  console.log('✅ initMapControls 완료');
 }
 
 // 로드뷰 토글
 function toggleRoadview() {
-  console.log('🔄 toggleRoadview 호출됨');
-  
   const container = document.getElementById('roadviewContainer');
   if (!container) {
     console.error('❌ roadviewContainer를 찾을 수 없습니다.');
     return;
   }
   
-  console.log('🔍 roadviewContainer 상태:', container.classList.contains('hidden'));
-  console.log('🔍 MAP 객체 상태:', !!window.MAP, typeof window.MAP);
-  console.log('🔍 MAP._streetLayer 상태:', !!window.MAP?._streetLayer);
-  
   if (container.classList.contains('hidden')) {
-    console.log('🔄 로드뷰 열기 시도...');
     openRoadview();
   } else {
-    console.log('🔄 로드뷰 닫기 시도...');
     closeRoadview();
   }
 }
 
 // 거리뷰 레이어 토글
 function openRoadview() {
-  console.log('🔄 openRoadview 호출됨');
   
   // MAP 객체 확인 - 네이버 지도 객체인지 정확히 확인
   if (!window.MAP || !window.MAP.getCenter || !window.MAP.setMapTypeId) {
@@ -117,7 +108,6 @@ function openRoadview() {
     // MAP 객체가 준비되지 않은 경우 1초 후 재시도
     setTimeout(() => {
       if (window.MAP && window.MAP.getCenter && window.MAP.setMapTypeId) {
-        console.log('🔄 MAP 객체 준비됨, openRoadview 재시도');
         openRoadview();
       } else {
         console.error('❌ MAP 객체 재시도 실패');
@@ -133,11 +123,8 @@ function openRoadview() {
     return;
   }
   
-  console.log('✅ MAP 객체 확인됨:', window.MAP);
-  
   // 거리뷰 레이어가 이미 표시되어 있는지 확인
   if (window.MAP._streetLayer) {
-    console.log('🔄 기존 거리뷰 레이어 제거');
     // 레이어 제거
     window.MAP._streetLayer.setMap(null);
     window.MAP._streetLayer = null;
@@ -146,20 +133,15 @@ function openRoadview() {
   
   // 거리뷰 레이어 생성 및 표시
   try {
-    console.log('🔄 거리뷰 레이어 생성 시작');
-    console.log('🔍 naver.maps.StreetLayer:', typeof naver.maps.StreetLayer);
     
     // StreetLayer 생성
     window.MAP._streetLayer = new naver.maps.StreetLayer();
-    console.log('✅ StreetLayer 객체 생성됨:', window.MAP._streetLayer);
     
     // 지도에 레이어 추가
     window.MAP._streetLayer.setMap(window.MAP);
-    console.log('✅ StreetLayer를 지도에 추가 완료');
     
     // 거리뷰 레이어 클릭 이벤트 - 가장 가까운 거리뷰 지점으로 자동 이동
     naver.maps.Event.addListener(window.MAP._streetLayer, 'click', function(e) {
-      console.log('📍 거리뷰 레이어 클릭:', e.coord);
       // 클릭한 위치에서 가장 가까운 거리뷰 지점으로 자동 이동
       if (e.coord) {
         openPanorama(e.coord);
@@ -169,7 +151,6 @@ function openRoadview() {
     // 지도 클릭 이벤트에서도 거리뷰 레이어 클릭 처리
     naver.maps.Event.addListener(window.MAP, 'click', function(e) {
       if (window.MAP._streetLayer) {
-        console.log('📍 지도 클릭 (거리뷰 레이어 활성화됨):', e.coord);
         // 거리뷰 레이어 클릭 이벤트를 직접 호출
         if (e.coord) {
           openPanorama(e.coord);
@@ -187,16 +168,11 @@ function openRoadview() {
       console.log('✅ 거리뷰 레이어 로드 완료');
     });
     
-    console.log('✅ 거리뷰 레이어 생성 완료');
-    
     // 거리뷰 레이어가 제대로 생성되었는지 확인
     setTimeout(() => {
       if (window.MAP._streetLayer) {
-        console.log('✅ 거리뷰 레이어 상태 확인:', window.MAP._streetLayer);
-        console.log('🔍 지도에 레이어가 표시되었는지 확인');
         
         // 지도 타입 확인
-        console.log('🔍 현재 지도 타입:', window.MAP.getMapTypeId());
         
         // 레이어가 지도에 제대로 추가되었는지 확인
         if (window.MAP._streetLayer.getMap() === window.MAP) {
@@ -209,11 +185,6 @@ function openRoadview() {
       }
     }, 500);
     
-    // 안내 메시지 제거
-    // if (typeof window.showToast === 'function') {
-    //   window.showToast('거리뷰 레이어가 활성화되었습니다. 지도를 클릭하면 로드뷰가 열립니다.', 'info');
-    // }
-    
   } catch (error) {
     console.error('❌ 거리뷰 레이어 생성 실패:', error);
     console.error('❌ 에러 상세:', error.message, error.stack);
@@ -225,16 +196,6 @@ function openRoadview() {
 
 // 거리뷰 레이어에서 클릭 시 파노라마 열기
 function openPanorama(position) {
-  console.log('🔄 openPanorama 호출됨, 위치:', position);
-  
-  if (typeof naver.maps.Panorama === 'undefined') {
-    console.error('❌ Panorama API가 정의되지 않음');
-    if (typeof window.showToast === 'function') {
-      window.showToast('로드뷰 API가 아직 준비되지 않았습니다.', 'error');
-    }
-    return;
-  }
-  
   const container = document.getElementById('roadviewContainer');
   const roadviewDiv = document.getElementById('roadview');
   const minimapContent = document.querySelector('.minimap-content');
@@ -245,7 +206,6 @@ function openPanorama(position) {
   }
   
   try {
-    console.log('🔄 파노라마 초기화 시작');
     
     // 컨테이너 표시
     container.classList.remove('hidden');
@@ -257,7 +217,6 @@ function openPanorama(position) {
     // 컨테이너 크기 확인 (안전한 방식)
     const containerWidth = roadviewDiv.offsetWidth || window.innerWidth || 800;
     const containerHeight = roadviewDiv.offsetHeight || window.innerHeight || 600;
-    console.log('📏 컨테이너 크기:', containerWidth, 'x', containerHeight);
     
     // 파노라마를 roadview div에 생성 - 위치 정확성 향상
     const panoramaOptions = {
@@ -285,29 +244,21 @@ function openPanorama(position) {
           // 생성된 객체가 유효한지 확인
           if (size && typeof size.width === 'function' && typeof size.height === 'function') {
             panoramaOptions.size = size;
-            console.log('✅ naver.maps.Size 생성 성공:', size);
           } else {
-            console.warn('⚠️ 생성된 Size 객체가 유효하지 않음');
             delete panoramaOptions.size;
           }
         } else {
-          console.warn('⚠️ 컨테이너 크기가 유효하지 않음:', containerWidth, 'x', containerHeight);
           delete panoramaOptions.size;
         }
       } catch (error) {
-        console.warn('⚠️ naver.maps.Size 생성 실패:', error);
-        // size 옵션을 제거하고 기본값 사용
         delete panoramaOptions.size;
       }
     } else {
-      console.warn('⚠️ naver.maps.Size가 사용할 수 없음');
       delete panoramaOptions.size;
     }
     
     // 전역 변수에 저장
     window.ROADVIEW = new naver.maps.Panorama(roadviewDiv, panoramaOptions);
-    
-    console.log('✅ Panorama 객체 생성 완료:', window.ROADVIEW);
     
     // 미니맵 생성 (minimapContent가 있는 경우에만)
     if (minimapContent) {
@@ -323,13 +274,10 @@ function openPanorama(position) {
           streetViewControl: false
         });
         
-        console.log('✅ 미니맵 생성 완료:', window.ROADVIEW_MINIMAP);
-        
         // 미니맵 클릭 이벤트 - 로드뷰 위치 변경
         naver.maps.Event.addListener(window.ROADVIEW_MINIMAP, 'click', function(e) {
           if (e.coord && window.ROADVIEW) {
             window.ROADVIEW.setPosition(e.coord);
-            console.log('📍 미니맵 클릭으로 로드뷰 위치 변경:', e.coord);
           }
         });
         
@@ -342,8 +290,6 @@ function openPanorama(position) {
     
     // 로드뷰 위치 정보 업데이트
     updateRoadviewLocationInfo(position);
-    
-    console.log('✅ 로드뷰 열기 완료');
     
   } catch (error) {
     console.error('❌ 파노라마 생성 실패:', error);
@@ -361,7 +307,6 @@ function openPanorama(position) {
 
 // 거리뷰 레이어 닫기
 function closeRoadview() {
-  console.log('🔄 closeRoadview 호출됨');
   
   // MAP 객체 확인 - 네이버 지도 객체인지 정확히 확인
   if (!window.MAP || !window.MAP.getCenter || !window.MAP.setMapTypeId) {
@@ -369,11 +314,8 @@ function closeRoadview() {
     return;
   }
   
-  console.log('✅ MAP 객체 확인됨:', window.MAP);
-  
   // 거리뷰 레이어가 표시되어 있는지 확인
   if (window.MAP._streetLayer) {
-    console.log('🔄 거리뷰 레이어 제거');
     // 레이어 제거
     window.MAP._streetLayer.setMap(null);
     window.MAP._streetLayer = null;
@@ -405,16 +347,11 @@ function updateRoadviewLocationInfo(position) {
 
 // 파노라마 닫기 (지도로 돌아가기)
 function closePanorama() {
-  console.log('🔄 closePanorama 함수 호출됨');
   try {
     const container = document.getElementById('roadviewContainer');
-    console.log('🔍 roadviewContainer 찾음:', !!container);
     
     // ROADVIEW 객체 타입 확인 및 안전한 정리
     if (window.ROADVIEW) {
-      console.log('🔄 ROADVIEW 정리 중...');
-      console.log('🔍 ROADVIEW 타입:', typeof window.ROADVIEW);
-      console.log('🔍 ROADVIEW 객체:', window.ROADVIEW);
       
       try {
         if (typeof window.ROADVIEW.setMap === 'function') {
@@ -432,8 +369,6 @@ function closePanorama() {
     
     // ROADVIEW_MINIMAP 객체 타입 확인 및 안전한 정리
     if (window.ROADVIEW_MINIMAP) {
-      console.log('�� ROADVIEW_MINIMAP 정리 중...');
-      console.log('🔍 ROADVIEW_MINIMAP 타입:', typeof window.ROADVIEW_MINIMAP);
       
       try {
         if (typeof window.ROADVIEW_MINIMAP.setMap === 'function') {
@@ -454,8 +389,6 @@ function closePanorama() {
       container.style.visibility = 'hidden';
       container.style.opacity = '0';
       container.style.pointerEvents = 'none';
-      console.log('✅ roadviewContainer 숨김 처리 완료');
-      console.log('🔍 컨테이너 스타일:', container.style.display, container.style.visibility);
     } else {
       console.error('❌ roadviewContainer를 찾을 수 없습니다.');
     }
@@ -465,7 +398,6 @@ function closePanorama() {
       naver.maps.Event.trigger(window.MAP, 'resize');
     }
     
-    // 불필요한 메시지 제거
   } catch (error) {
     console.error('❌ 파노라마 닫기 중 오류:', error);
     if (typeof window.showToast === 'function') {

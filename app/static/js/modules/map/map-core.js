@@ -84,18 +84,15 @@ function initMap() {
     }
     
     // MAP 객체 생성 완료 후 initMapControls 호출 (함수가 준비될 때까지 기다림)
-    console.log('🔄 MAP 객체 생성 완료, initMapControls 함수 대기 중...');
     
     let retryCount = 0;
     const maxRetries = 30; // 최대 6초 대기 (200ms * 30)
     
     const waitForInitMapControls = () => {
       if (typeof window.initMapControls === 'function') {
-        console.log('✅ initMapControls 함수 준비됨, 초기화 시작');
         window.initMapControls();
       } else if (retryCount < maxRetries) {
         retryCount++;
-        console.log(`🔄 initMapControls 함수 대기 중... (${retryCount}/${maxRetries})`);
         setTimeout(waitForInitMapControls, 200);
       } else {
         console.error('❌ initMapControls 함수를 찾을 수 없습니다. 최대 재시도 횟수 초과');
