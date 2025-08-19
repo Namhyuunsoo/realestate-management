@@ -3196,3 +3196,294 @@ html, body {
   padding-top: 16px;
   border-top: 1px solid #e9ecef;
 }
+
+/* 새로고침 컨트롤 스타일 */
+.refresh-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px;
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 6px;
+  border: 1px solid #e9ecef;
+  margin-left: 12px;
+}
+
+/* 새로고침 버튼 */
+.refresh-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  background: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.refresh-btn:hover {
+  background: #0056b3;
+  transform: scale(1.05);
+}
+
+.refresh-btn:active {
+  transform: scale(0.95);
+}
+
+.refresh-btn.loading {
+  background: #6c757d;
+  cursor: not-allowed;
+  animation: spin 1s linear infinite;
+}
+
+.refresh-btn:disabled {
+  background: #6c757d;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* 로딩 애니메이션 */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* 마지막 업데이트 시간 */
+.last-update {
+  font-size: 10px;
+  color: #6c757d;
+  white-space: nowrap;
+}
+
+/* 반응형 디자인 */
+@media (max-width: 768px) {
+  .refresh-controls {
+    flex-direction: column;
+    gap: 4px;
+    margin-left: 8px;
+  }
+  
+  .refresh-btn {
+    font-size: 10px;
+    padding: 3px 6px;
+    min-width: 60px;
+  }
+  
+  .last-update {
+    font-size: 9px;
+    text-align: center;
+  }
+}
+
+/* 매우 작은 화면에서 숨김 처리 */
+@media (max-width: 480px) {
+  .refresh-controls {
+    display: none;
+  }
+}
+
+/* 사용자 관리 모달 스타일 */
+.user-management-modal {
+  width: 95vw !important;
+  max-width: 2000px !important;
+  min-width: 1800px !important;
+}
+
+.user-management-modal .modal-content {
+  width: 95vw !important;
+  max-width: 2000px !important;
+  min-width: 1800px !important;
+  max-height: none !important;
+}
+
+.user-management-modal .modal-body {
+  padding: 20px !important;
+  width: 100% !important;
+}
+
+.user-management-modal .table-container {
+  max-height: 70vh !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  width: 100% !important;
+}
+
+.user-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.user-table th,
+.user-table td {
+  padding: 12px 8px;
+  text-align: left;
+  border-bottom: 1px solid #e9ecef;
+  white-space: nowrap;
+}
+
+.user-table th {
+  background-color: #f8f9fa;
+  font-weight: 600;
+  color: #495057;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.user-table tbody tr:hover {
+  background-color: #f8f9fa;
+}
+
+/* 컬럼 너비 명시적 설정 */
+.user-table th:nth-child(1), .user-table td:nth-child(1) { width: 120px; } /* ID */
+.user-table th:nth-child(2), .user-table td:nth-child(2) { width: 200px; } /* 이메일 */
+.user-table th:nth-child(3), .user-table td:nth-child(3) { width: 100px; } /* 이름 */
+.user-table th:nth-child(4), .user-table td:nth-child(4) { width: 150px; } /* 직책 */
+.user-table th:nth-child(5), .user-table td:nth-child(5) { width: 80px; }  /* 역할 */
+.user-table th:nth-child(6), .user-table td:nth-child(6) { width: 80px; }  /* 상태 */
+.user-table th:nth-child(7), .user-table td:nth-child(7) { width: 120px; } /* 가입일 */
+.user-table th:nth-child(8), .user-table td:nth-child(8) { width: 200px; } /* 작업 */
+
+/* 직책 수정 관련 스타일 */
+.job-title-edit {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.job-title-input {
+  flex: 1;
+  padding: 6px 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 12px;
+  min-width: 120px;
+}
+
+.job-title-save-btn {
+  padding: 4px 8px;
+  background: #28a745;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 11px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.job-title-save-btn:hover {
+  background: #218838;
+}
+
+.job-title-save-btn:disabled {
+  background: #6c757d;
+  cursor: not-allowed;
+}
+
+.job-title-edit-btn {
+  padding: 4px 8px;
+  background: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 11px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.job-title-edit-btn:hover {
+  background: #0056b3;
+}
+
+.job-title-display {
+  padding: 6px 8px;
+  background: #e9ecef;
+  border-radius: 4px;
+  font-size: 12px;
+  min-width: 120px;
+  display: inline-block;
+}
+
+/* 사용자 작업 버튼 스타일 */
+.user-actions {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.user-action-btn {
+  padding: 4px 8px;
+  border: none;
+  border-radius: 4px;
+  font-size: 11px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.user-action-btn.approve {
+  background: #28a745;
+  color: white;
+}
+
+.user-action-btn.reject {
+  background: #dc3545;
+  color: white;
+}
+
+.user-action-btn.deactivate {
+  background: #6c757d;
+  color: white;
+}
+
+.user-action-btn.reset-password {
+  background: #ffc107;
+  color: #212529;
+}
+
+.user-action-btn.edit-role {
+  background: #17a2b8;
+  color: white;
+}
+
+.user-action-btn:hover {
+  opacity: 0.8;
+}
+
+.user-action-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* 사용자 관리 모달 스타일 - 최고 우선순위로 적용 */
+#userManagementModal.user-management-modal,
+#userManagementModal.user-management-modal .modal-content,
+#userManagementModal .user-management-modal,
+#userManagementModal .user-management-modal .modal-content {
+  width: 95vw !important;
+  max-width: 2000px !important;
+  min-width: 1800px !important;
+}
+
+#userManagementModal.user-management-modal .modal-content,
+#userManagementModal .user-management-modal .modal-content {
+  max-height: none !important;
+}
+
+#userManagementModal.user-management-modal .modal-body,
+#userManagementModal .user-management-modal .modal-body {
+  padding: 20px !important;
+  width: 100% !important;
+}
+
+#userManagementModal.user-management-modal .table-container,
+#userManagementModal .user-management-modal .table-container {
+  max-height: 70vh !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  width: 100% !important;
+}

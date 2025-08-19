@@ -39,6 +39,10 @@ class UserService:
                                 if "status" in user_data and "is_active" not in user_data:
                                     user_data["is_active"] = user_data["status"] == "approved"
                                 
+                                # job_title 필드가 없으면 기본값 설정
+                                if "job_title" not in user_data:
+                                    user_data["job_title"] = ""
+                                
                                 user = User.from_dict(user_data)
                                 self.users[user.id] = user
                                 print(f"사용자 로드됨: {user.email} (상태: {user.status})")
@@ -348,3 +352,43 @@ class UserService:
         
         self._save_users()
         return True 
+    
+    def update_user_role(self, user_id: str, new_role: str, admin_id: str) -> bool:
+        """사용자 역할 변경"""
+        try:
+            if user_id not in self.users:
+                return False
+            
+            user = self.users[user_id]
+            old_role = user.role
+            user.role = new_role
+            
+            # 변경 사항 저장
+            self._save_users()
+            
+            print(f"사용자 역할 변경: {user.email} ({old_role} → {new_role})")
+            return True
+            
+        except Exception as e:
+            print(f"사용자 역할 변경 실패: {e}")
+            return False
+    
+    def update_user_job_title(self, user_id: str, new_job_title: str, admin_id: str) -> bool:
+        """사용자 직책 변경"""
+        try:
+            if user_id not in self.users:
+                return False
+            
+            user = self.users[user_id]
+            old_job_title = user.job_title
+            user.set_job_title(new_job_title)
+            
+            # 변경 사항 저장
+            self._save_users()
+            
+            print(f"사용자 직책 변경: {user.email} ({old_job_title} → {new_job_title})")
+            return True
+            
+        except Exception as e:
+            print(f"사용자 직책 변경 실패: {e}")
+            return False 

@@ -16,6 +16,7 @@ class User:
     name: str
     role: str = "user"  # user, admin
     status: str = "pending"  # pending, approved, rejected, inactive
+    job_title: str = ""  # 직책 (예: 대표공인중개사, 공인중개사, 직원 등)
     created_at: float = field(default_factory=time.time)
     approved_at: Optional[float] = None
     approved_by: Optional[str] = None
@@ -30,6 +31,16 @@ class User:
     def is_admin(self) -> bool:
         """관리자인지 확인"""
         return self.role == "admin"
+    
+    def get_display_name(self) -> str:
+        """직책과 이름을 조합한 표시명 반환"""
+        if self.job_title:
+            return f"{self.job_title} {self.name}"
+        return self.name
+    
+    def set_job_title(self, job_title: str):
+        """직책 설정"""
+        self.job_title = job_title.strip()
     
     def is_locked(self) -> bool:
         """계정이 잠겨있는지 확인"""

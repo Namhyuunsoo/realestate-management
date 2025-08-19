@@ -160,6 +160,28 @@ def update_user_role(user_id):
     log_security_event('USER_ROLE_CHANGED', f'User {user.email} role changed to {role} by {admin_id}')
     return jsonify({"message": "사용자 역할이 변경되었습니다."})
 
+@bp.post("/users/<user_id>/update-job-title")
+@require_admin()
+@validate_json("job_title")
+@handle_errors()
+@log_access()
+def update_user_job_title(user_id):
+    """사용자 직책 변경"""
+    admin_id = get_current_admin_id()
+    data = request.get_json()
+    job_title = data.get("job_title", "").strip()
+    
+    if not job_title:
+        return jsonify({"error": "직책을 입력해주세요."}), 400
+    
+    user_service = get_user_service()
+    if user_service.update_user_job_title(user_id, job_title, admin_id):
+        user = user_service.get_user_by_id(user_id)
+        log_security_event('USER_JOB_TITLE_UPDATED', f'User {user.email} job title updated to "{job_title}" by {admin_id}')
+        return jsonify({"message": "직책이 변경되었습니다.", "job_title": job_title})
+    else:
+        return jsonify({"error": "직책 변경에 실패했습니다."}), 400
+
 @bp.get("/stats")
 @require_admin()
 @handle_errors()

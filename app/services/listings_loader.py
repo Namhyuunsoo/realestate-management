@@ -157,9 +157,18 @@ def normalize_listing(row_idx: int, row: list[str], hdr: Dict[str,int]) -> Listi
     return listing
 
 def load_listings(force_reload=False) -> List[dict]:
-    """매번 엑셀 파일을 새로 읽어서 최신 데이터 반환"""
-    current_app.logger.info("Loading listings from source data...")
-    rows = read_local_listing_sheet()
+    """
+    매물 데이터 로드
+    force_reload=True 시 캐시 무시하고 파일에서 직접 읽기
+    """
+    if force_reload:
+        current_app.logger.info("🔄 강제 새로고침: 캐시 무시하고 파일에서 직접 로드")
+    else:
+        current_app.logger.info("📊 일반 로드: 캐시 우선 사용")
+    
+    # sheet_fetcher에 force_reload 파라미터 전달
+    rows = read_local_listing_sheet(force_reload=force_reload)
+    
     header = rows[0]
     hdr_map = normalize_headers(header)
     missing = [h for h in EXPECTED_HEADERS if h not in hdr_map]
@@ -172,23 +181,24 @@ def load_listings(force_reload=False) -> List[dict]:
         if listing:
             listings.append(listing.to_dict())
 
-    # 지도캐시 매핑 적용 (모든 항목에 대해, "생"인 경우에만 좌표 적용)
+    # 지도캐시 매핑 적용
+    _apply_map_cache(listings)
+    
+    current_app.logger.info(f"✅ Loaded listings: {len(listings)} (force_reload: {force_reload})")
+    return listings
+
+def _apply_map_cache(listings: List[dict]) -> None:
+    """지도 캐시 매핑 적용"""
     try:
         map_cache = read_map_cache()
         for item in listings:
-            # 모든 항목을 로드하되, 지도 좌표는 "생"인 경우에만 적용
-            addr = item.get("address_full","")
+            addr = item.get("address_full", "")
             if addr in map_cache and item.get("status_raw") == "생":
                 lat, lng = map_cache[addr]
                 item["coords"] = {"lat": lat, "lng": lng}
             else:
-                # "생"이 아닌 경우에도 기본 좌표 설정 (null)
                 item["coords"] = {"lat": None, "lng": None}
     except Exception as e:
         current_app.logger.warning(f"지도캐시 매핑 실패, 기본값 사용: {e}")
-        # 지도캐시 실패 시 모든 항목에 null 좌표 설정
         for item in listings:
             item["coords"] = {"lat": None, "lng": None}
-
-    current_app.logger.info(f"Loaded listings: {len(listings)}")
-    return listings

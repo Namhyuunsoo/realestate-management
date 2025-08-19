@@ -143,20 +143,27 @@
       </div>
     </header>
 
-    <!-- 상태 카운트 -->
+    <!-- 상태카운트바 -->
     <div id="statusCounts">
       <div class="count-info">
         총 <span id="countTotal">0</span>건 / 필터 후 <span id="countFiltered">0</span>건
       </div>
-              <div class="sheet-controls">
-          <div class="sheet-buttons">
-            <!-- 매물장 버튼들이 여기에 동적으로 로드됩니다 -->
-          </div>
-          <button id="openGoogleSheetBtn" class="btn-sheet-open">
-            선택된 시트 열기
-          </button>
-
+      <div class="sheet-controls">
+        <div class="sheet-buttons">
+          <!-- 매물장 버튼들이 여기에 동적으로 로드됩니다 -->
         </div>
+        <button id="openGoogleSheetBtn" class="btn-sheet-open">
+          선택된 시트 열기
+        </button>
+        
+        <!-- 새로 추가: 새로고침 버튼 그룹 -->
+        <div class="refresh-controls">
+          <button id="refreshDataBtn" class="refresh-btn" title="매물 데이터 새로고침">
+            🔄 새로고침
+          </button>
+          <span class="last-update">마지막 업데이트: <span id="lastUpdateTime">-</span></span>
+        </div>
+      </div>
     </div>
     
     <!-- 컨텍스트 메뉴 -->
@@ -410,19 +417,20 @@
     <!-- 어드민 모달들 -->
     <!-- 사용자 관리 모달 -->
     <div id="userManagementModal" class="modal hidden">
-      <div class="modal-content">
+      <div class="modal-content user-management-modal">
         <div class="modal-header">
           <h2>사용자 관리</h2>
           <button class="modal-close-btn">&times;</button>
         </div>
         <div class="modal-body">
-          <div class="table-container" style="max-height: 400px; overflow-y: auto;">
+          <div class="table-container">
             <table class="user-table">
               <thead>
                 <tr>
                   <th>ID</th>
                   <th>이메일</th>
                   <th>이름</th>
+                  <th>직책</th>
                   <th>역할</th>
                   <th>상태</th>
                   <th>가입일</th>

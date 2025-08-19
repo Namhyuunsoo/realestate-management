@@ -93,29 +93,29 @@ async function loadModules() {
     await loadModule('/static/js/modules/ui/customer-forms.js');
     console.log('✅ customer-forms.js 로드 완료');
     
-    // 18. 이벤트 핸들러 관련 함수들 관리
-    await loadModule('/static/js/modules/ui/event-handlers.js');
-    console.log('✅ event-handlers.js 로드 완료');
+    // 18. 고객 관리 UI 관리
+    await loadModule('/static/js/modules/ui/customer-management.js');
+    console.log('✅ customer-management.js 로드 완료');
     
     // 19. 고객 목록+상세 관련 함수들 관리
     await loadModule('/static/js/modules/ui/customer-list-detail.js');
     console.log('✅ customer-list-detail.js 로드 완료');
     
-    // 20. 사용자별 개별매물장 관리
+    // 20. 사용자 관리 관련 함수들 관리
+    await loadModule('/static/js/modules/ui/user-management.js');
+    console.log('✅ user-management.js 로드 완료');
+    
+    // 21. 사용자 시트 관련 함수들 관리
     await loadModule('/static/js/modules/ui/user-sheets.js');
     console.log('✅ user-sheets.js 로드 완료');
     
-    // 21. 상태카운트바 매물장 컨트롤
+    // 22. 상태바 시트 관련 함수들 관리
     await loadModule('/static/js/modules/ui/status-bar-sheets.js');
     console.log('✅ status-bar-sheets.js 로드 완료');
     
-    // 22. 고객 관리 UI 관리 (initialization.js보다 먼저 로드)
-    await loadModule('/static/js/modules/ui/customer-management.js');
-    console.log('✅ customer-management.js 로드 완료');
-    
-    // 23. 사용자 관리 UI 관리 (어드민 전용)
-    await loadModule('/static/js/modules/ui/user-management.js');
-    console.log('✅ user-management.js 로드 완료');
+    // 23. 이벤트 핸들러 관련 함수들 관리
+    await loadModule('/static/js/modules/ui/event-handlers.js');
+    console.log('✅ event-handlers.js 로드 완료');
     
     // 24. 초기화 관련 함수들 관리 (마지막에 로드)
     await loadModule('/static/js/modules/ui/initialization.js');

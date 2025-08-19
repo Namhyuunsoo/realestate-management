@@ -74,3 +74,110 @@ window.handleStatusFilterChange = window.handleStatusFilterChange;
 window.handleCustomerFilterChange = window.handleCustomerFilterChange;
 window.editCustomer = window.editCustomer;
 window.deleteCustomer = window.deleteCustomer; 
+
+/**************************************
+ * ===== 새로고침 버튼 이벤트 =====
+ **************************************/
+
+function initRefreshButton() {
+  const refreshBtn = document.getElementById('refreshDataBtn');
+  if (!refreshBtn) {
+    console.warn('⚠️ 새로고침 버튼을 찾을 수 없습니다.');
+    return;
+  }
+  
+  refreshBtn.addEventListener('click', async function() {
+    if (this.classList.contains('loading')) {
+      console.log('🔄 이미 새로고침 중입니다.');
+      return;
+    }
+    
+    try {
+      console.log('🔄 매물 데이터 새로고침 시작...');
+      
+      // 버튼 상태 변경
+      this.classList.add('loading');
+      this.innerHTML = '<span class="control-icon">⏳</span> 새로고침 중...';
+      this.disabled = true;
+      
+      // 토스트 메시지 표시
+      if (typeof showToast === 'function') {
+        showToast('매물 데이터를 새로고침하고 있습니다...', 'info');
+      }
+      
+      // 강제 새로고침으로 데이터 로드
+      const response = await fetch('/api/listings?force=1', {
+        headers: { 'X-User': currentUser }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`새로고침 실패: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log('✅ 새로고침 완료:', data);
+      
+      // 성공 메시지
+      if (typeof showToast === 'function') {
+        showToast(`✅ ${data.total}개 매물 데이터가 새로고침되었습니다.`, 'success');
+      }
+      
+      // 마지막 업데이트 시간 표시
+      updateLastUpdateTime();
+      
+      // 매물 목록 새로고침
+      if (typeof refreshListingList === 'function') {
+        console.log('🔄 매물 목록 새로고침...');
+        await refreshListingList();
+      }
+      
+      // 지도 마커 새로고침
+      if (typeof refreshMapMarkers === 'function') {
+        console.log('🔄 지도 마커 새로고침...');
+        await refreshMapMarkers();
+      }
+      
+      // 상태 카운트 업데이트
+      if (typeof updateStatusCounts === 'function') {
+        console.log('🔄 상태 카운트 업데이트...');
+        updateStatusCounts();
+      }
+      
+      console.log('🎉 모든 새로고침 작업 완료!');
+      
+    } catch (error) {
+      console.error('❌ 새로고침 실패:', error);
+      
+      if (typeof showToast === 'function') {
+        showToast('❌ 데이터 새로고침에 실패했습니다.', 'error');
+      }
+    } finally {
+      // 버튼 상태 복원
+      this.classList.remove('loading');
+      this.innerHTML = '🔄 새로고침';
+      this.disabled = false;
+    }
+  });
+  
+  console.log('✅ 새로고침 버튼 이벤트 등록 완료');
+}
+
+function updateLastUpdateTime() {
+  const lastUpdateElement = document.getElementById('lastUpdateTime');
+  if (lastUpdateElement) {
+    const now = new Date();
+    const timeString = now.toLocaleTimeString('ko-KR', {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit'
+    });
+    lastUpdateElement.textContent = timeString;
+    console.log('🕐 마지막 업데이트 시간 업데이트:', timeString);
+  } else {
+    console.warn('⚠️ 마지막 업데이트 시간 요소를 찾을 수 없습니다.');
+  }
+}
+
+// 전역 함수로 등록
+window.initRefreshButton = initRefreshButton;
+window.updateLastUpdateTime = updateLastUpdateTime; 

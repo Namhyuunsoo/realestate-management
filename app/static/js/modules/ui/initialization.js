@@ -166,7 +166,18 @@ window.initializeApp = async function() {
         });
         console.log('✅ 고객List 버튼 이벤트 리스너 등록 완료');
       } else {
-        console.log('⏳ loadCustomerList 함수 대기 중...');
+        // 최대 5초(50회) 대기 후 에러 처리
+        if (!setupCustomerListButton.attempts) {
+          setupCustomerListButton.attempts = 0;
+        }
+        setupCustomerListButton.attempts++;
+        
+        if (setupCustomerListButton.attempts >= 50) {
+          console.error('❌ loadCustomerList 함수를 찾을 수 없습니다. 최대 대기 시간 초과');
+          return;
+        }
+        
+        console.log(`⏳ loadCustomerList 함수 대기 중... (${setupCustomerListButton.attempts}/50)`);
         setTimeout(setupCustomerListButton, 100);
       }
     };
@@ -192,7 +203,18 @@ window.initializeApp = async function() {
         });
         console.log('✅ 신규등록 버튼 이벤트 리스너 등록 완료');
       } else {
-        console.log('⏳ renderCustomerForm 함수 대기 중...');
+        // 최대 5초(50회) 대기 후 에러 처리
+        if (!setupNewCustomerButton.attempts) {
+          setupNewCustomerButton.attempts = 0;
+        }
+        setupNewCustomerButton.attempts++;
+        
+        if (setupNewCustomerButton.attempts >= 50) {
+          console.error('❌ renderCustomerForm 함수를 찾을 수 없습니다. 최대 대기 시간 초과');
+          return;
+        }
+        
+        console.log(`⏳ renderCustomerForm 함수 대기 중... (${setupNewCustomerButton.attempts}/50)`);
         setTimeout(setupNewCustomerButton, 100);
       }
     };
@@ -325,6 +347,31 @@ window.initializeApp = async function() {
     console.log("✅ 로그인 화면 표시");
   }
 
+  // 상단바 사용자 정보 설정
+  const officeNameEl = document.getElementById('officeName');
+  const userRoleNameEl = document.getElementById('userRoleName');
+  
+  if (officeNameEl) {
+    officeNameEl.textContent = 'SK공인중개사사무소';
+  }
+  
+  if (userRoleNameEl && currentUser) {
+    // 사용자 정보 가져오기
+    fetch('/api/auth/me')
+    .then(response => response.json())
+    .then(user => {
+      if (user.job_title) {
+        userRoleNameEl.textContent = `${user.job_title} ${user.name}`;
+      } else {
+        userRoleNameEl.textContent = user.name;
+      }
+    })
+    .catch(error => {
+      console.error('사용자 정보 로드 실패:', error);
+      userRoleNameEl.textContent = currentUser;
+    });
+  }
+
   // 3) 지도 준비 후 fetchListings
   document.addEventListener('map-ready', () => {
     if (currentUser && !FETCH_CALLED_ONCE) {
@@ -390,8 +437,34 @@ window.initializeApp = async function() {
     }
   }
   
+  // 10) 새로고침 컨트롤 초기화
+  initializeRefreshControls();
   
 };
+
+/**************************************
+ * ===== 새로고침 컨트롤 초기화 =====
+ **************************************/
+
+function initializeRefreshControls() {
+  console.log('🔧 새로고침 컨트롤 초기화 시작...');
+  
+  // 새로고침 버튼 초기화
+  if (typeof initRefreshButton === 'function') {
+    initRefreshButton();
+  } else {
+    console.warn('⚠️ initRefreshButton 함수를 찾을 수 없습니다.');
+  }
+  
+  // 초기 마지막 업데이트 시간 설정
+  if (typeof updateLastUpdateTime === 'function') {
+    updateLastUpdateTime();
+  } else {
+    console.warn('⚠️ updateLastUpdateTime 함수를 찾을 수 없습니다.');
+  }
+  
+  console.log('✅ 새로고침 컨트롤 초기화 완료');
+}
 
 // 초기화 관련 함수들을 전역으로 export
 window.initializeApp = window.initializeApp; 

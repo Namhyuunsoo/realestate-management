@@ -5,6 +5,7 @@ from flask import current_app
 import json
 from flask import Blueprint, request, jsonify, session
 from ..services.listings_loader import load_listings
+from ..services.sheet_fetcher import clear_listing_cache
 
 bp = Blueprint("listings", __name__)
 
@@ -47,6 +48,11 @@ def api_listings():
     limit = int(request.args.get("limit", 100))
     offset = int(request.args.get("offset", 0))
 
+    # 강제 새로고침 요청 시 로그
+    if force:
+        current_app.logger.info(f"🔄 강제 새로고침 요청: {user.email} (IP: {request.remote_addr})")
+
+    # force 파라미터를 제대로 전달
     data = load_listings(force_reload=force)
 
     # 필터
@@ -60,9 +66,34 @@ def api_listings():
         "items": sliced,
         "total": total,
         "limit": limit,
-        "offset": offset
+        "offset": offset,
+        "force_reload": force,
+        "cache_used": not force
     }
     return current_app.response_class(
         json.dumps(resp_dict, ensure_ascii=False),
         mimetype="application/json; charset=utf-8"
     )
+
+@bp.route("/api/listings/clear-cache", methods=["POST"])
+def clear_listings_cache():
+    """매물 캐시 강제 삭제 (관리자용)"""
+    try:
+        if clear_listing_cache():
+            current_app.logger.info("매물 캐시 삭제 완료")
+            return jsonify({
+                "success": True,
+                "message": "매물 캐시가 삭제되었습니다. 다음 요청 시 파일에서 새로 로드됩니다."
+            })
+        else:
+            return jsonify({
+                "success": False,
+                "message": "캐시 파일이 존재하지 않습니다."
+            })
+            
+    except Exception as e:
+        current_app.logger.error(f"캐시 삭제 실패: {e}")
+        return jsonify({
+            "success": False,
+            "message": f"캐시 삭제 실패: {str(e)}"
+        }), 500

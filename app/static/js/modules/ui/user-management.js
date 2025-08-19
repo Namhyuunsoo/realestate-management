@@ -113,33 +113,208 @@ function setupUserManagementEvents() {
 
 // 사용자 관리 모달 열기
 async function openUserManagementModal() {
-  const modal = document.getElementById('userManagementModal');
-  if (!modal) return;
-
-  modal.classList.remove('hidden');
-  await loadUserList();
+  try {
+    console.log('🔍 사용자 관리 모달 열기...');
+    
+    // 모달 표시
+    const modal = document.getElementById('userManagementModal');
+    if (modal) {
+      modal.classList.remove('hidden');
+      
+      // JavaScript로 모달 크기 강제 변경 - 더 강력하게
+      const modalContent = modal.querySelector('.modal-content');
+      if (modalContent) {
+        // 모달 컨텐츠 크기 변경
+        modalContent.style.width = '95vw';
+        modalContent.style.maxWidth = '2000px';
+        modalContent.style.minWidth = '1800px';
+        modalContent.style.maxHeight = 'none';
+        
+        // 모달 자체도 크기 변경
+        modal.style.width = '95vw';
+        modal.style.maxWidth = '2000px';
+        modal.style.minWidth = '1800px';
+        
+        // 테이블 컨테이너도 확장
+        const tableContainer = modal.querySelector('.table-container');
+        if (tableContainer) {
+          tableContainer.style.width = '100%';
+          tableContainer.style.overflowX = 'hidden';
+        }
+        
+        console.log('✅ 모달 크기 강제 변경 완료');
+      }
+      
+      // 사용자 목록 로드
+      await loadUserList();
+    }
+    
+  } catch (error) {
+    console.error('❌ 사용자 관리 모달 열기 실패:', error);
+    showToast('사용자 관리 모달을 열 수 없습니다.', 'error');
+  }
 }
 
 // 사용자 목록 로드
 async function loadUserList() {
   try {
-    const response = await fetch('/api/users', {
-      headers: {
-        'X-User': currentUser
-      }
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-    }
-
-    const data = await response.json();
-    currentUsers = data.users || [];
+    const response = await fetch('/api/admin/users');
     
-    renderUserList(currentUsers);
+    if (!response.ok) {
+      if (response.status === 401) {
+        throw new Error('로그인이 필요합니다. 다시 로그인해주세요.');
+      } else if (response.status === 403) {
+        throw new Error('관리자 권한이 필요합니다.');
+      } else {
+        throw new Error(`API 실패: ${response.status}`);
+      }
+    }
+    
+    const data = await response.json();
+    const users = data.users || [];
+    
+    // 사용자 목록 테이블 업데이트
+    const tbody = document.getElementById('userListTableBody');
+    if (!tbody) return;
+    
+    tbody.innerHTML = '';
+    
+    users.forEach(user => {
+      const row = document.createElement('tr');
+      
+      // 직책 수정 기능이 포함된 행 생성
+      row.innerHTML = `
+        <td>${user.id}</td>
+        <td>${user.email}</td>
+        <td>${user.name}</td>
+        <td>
+          <div class="job-title-edit" data-user-id="${user.id}">
+            <div class="job-title-display" style="display: ${user.job_title ? 'inline-block' : 'none'}">
+              ${user.job_title || ''}
+            </div>
+            <input type="text" class="job-title-input" value="${user.job_title || ''}" 
+                   placeholder="직책 입력" style="display: ${user.job_title ? 'none' : 'inline-block'}">
+            <button class="job-title-edit-btn" onclick="editJobTitle('${user.id}')" 
+                    style="display: ${user.job_title ? 'inline-block' : 'none'}">수정</button>
+            <button class="job-title-save-btn" onclick="saveJobTitle('${user.id}')" 
+                    style="display: ${user.job_title ? 'none' : 'inline-block'}">저장</button>
+          </div>
+        </td>
+        <td>${user.role}</td>
+        <td>
+          <span class="status-badge ${user.status}">${getStatusText(user.status)}</span>
+        </td>
+        <td>${formatDate(user.created_at)}</td>
+        <td>
+          <div class="user-actions">
+            ${getUserActionButtons(user)}
+          </div>
+        </td>
+      `;
+      
+      tbody.appendChild(row);
+    });
+    
+    console.log(`✅ 사용자 목록 로드 완료: ${users.length}명`);
+    
   } catch (error) {
-    console.error('사용자 목록 로드 실패:', error);
-    showToast('사용자 목록을 불러오는데 실패했습니다.', 'error');
+    console.error('❌ 사용자 목록 로드 실패:', error);
+    showToast(error.message || '사용자 목록을 불러올 수 없습니다.', 'error');
+    
+    // 에러 발생 시 모달 닫기
+    const modal = document.getElementById('userManagementModal');
+    if (modal) {
+      modal.classList.add('hidden');
+    }
+  }
+}
+
+// 직책 수정 모드로 전환
+function editJobTitle(userId) {
+  const container = document.querySelector(`[data-user-id="${userId}"]`);
+  if (!container) return;
+  
+  const display = container.querySelector('.job-title-display');
+  const input = container.querySelector('.job-title-input');
+  const editBtn = container.querySelector('.job-title-edit-btn');
+  const saveBtn = container.querySelector('.job-title-save-btn');
+  
+  if (display && input && editBtn && saveBtn) {
+    display.style.display = 'none';
+    input.style.display = 'inline-block';
+    editBtn.style.display = 'none';
+    saveBtn.style.display = 'inline-block';
+    
+    // 입력 필드에 포커스
+    input.focus();
+    input.select();
+  }
+}
+
+// 직책 저장
+async function saveJobTitle(userId) {
+  const container = document.querySelector(`[data-user-id="${userId}"]`);
+  if (!container) return;
+  
+  const input = container.querySelector('.job-title-input');
+  const jobTitle = input.value.trim();
+  
+  try {
+    const response = await fetch(`/api/admin/users/${userId}/update-job-title`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ job_title: jobTitle })
+    });
+    
+    if (!response.ok) {
+      throw new Error(`API 실패: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    
+    // 성공 시 UI 업데이트
+    const display = container.querySelector('.job-title-display');
+    const editBtn = container.querySelector('.job-title-edit-btn');
+    const saveBtn = container.querySelector('.job-title-save-btn');
+    
+    if (display && editBtn && saveBtn) {
+      display.textContent = jobTitle;
+      display.style.display = 'inline-block';
+      input.style.display = 'none';
+      editBtn.style.display = 'inline-block';
+      saveBtn.style.display = 'none';
+    }
+    
+    showToast('직책이 변경되었습니다.', 'success');
+    
+    // 상단바 사용자 정보 업데이트 (현재 사용자인 경우)
+    updateTopBarUserInfo();
+    
+  } catch (error) {
+    console.error('❌ 직책 변경 실패:', error);
+    showToast('직책 변경에 실패했습니다.', 'error');
+  }
+}
+
+// 상단바 사용자 정보 업데이트
+function updateTopBarUserInfo() {
+  const userRoleNameEl = document.getElementById('userRoleName');
+  if (userRoleNameEl) {
+    // 세션 기반으로 현재 사용자 정보 가져오기
+    fetch('/api/auth/me')
+    .then(response => response.json())
+    .then(user => {
+      if (user.job_title) {
+        userRoleNameEl.textContent = `${user.job_title} ${user.name}`;
+      } else {
+        userRoleNameEl.textContent = user.name;
+      }
+    })
+    .catch(error => {
+      console.error('사용자 정보 업데이트 실패:', error);
+    });
   }
 }
 
@@ -188,11 +363,39 @@ function getRoleDisplayName(role) {
   return roleMap[role] || role;
 }
 
+// 상태 텍스트 변환
+function getStatusText(status) {
+  const statusMap = {
+    'pending': '승인대기',
+    'approved': '승인됨',
+    'rejected': '거부됨',
+    'inactive': '비활성'
+  };
+  return statusMap[status] || status;
+}
+
 // 날짜 포맷팅
 function formatDate(timestamp) {
   if (!timestamp) return '-';
   const date = new Date(timestamp * 1000);
   return date.toLocaleDateString('ko-KR');
+}
+
+// 사용자 작업 버튼 생성
+function getUserActionButtons(user) {
+  const buttons = [];
+  
+  if (user.status === 'pending') {
+    buttons.push(`<button class="user-action-btn approve" onclick="approveUser('${user.id}')">승인</button>`);
+    buttons.push(`<button class="user-action-btn reject" onclick="rejectUser('${user.id}')">거부</button>`);
+  } else if (user.status === 'approved') {
+    buttons.push(`<button class="user-action-btn deactivate" onclick="deactivateUser('${user.id}')">비활성화</button>`);
+  }
+  
+  buttons.push(`<button class="user-action-btn reset-password" onclick="resetUserPassword('${user.id}')">비밀번호 재설정</button>`);
+  buttons.push(`<button class="user-action-btn edit-role" onclick="editUserRole('${user.id}')">역할 변경</button>`);
+  
+  return buttons.join('');
 }
 
 // 사용자 수정 모달 열기
@@ -465,5 +668,136 @@ function showToast(message, type = 'info') {
     window.showToast(message, type);
   } else {
     alert(message);
+  }
+} 
+
+// 전역 함수로 등록
+window.openUserManagementModal = openUserManagementModal;
+window.loadUserList = loadUserList;
+window.editJobTitle = editJobTitle;
+window.saveJobTitle = saveJobTitle;
+window.updateTopBarUserInfo = updateTopBarUserInfo;
+window.approveUser = approveUser;
+window.rejectUser = rejectUser;
+window.deactivateUser = deactivateUser;
+window.resetUserPassword = resetUserPassword;
+window.editUserRole = editUserRole;
+
+// 사용자 승인
+async function approveUser(userId) {
+  try {
+    const response = await fetch(`/api/admin/users/${userId}/approve`, {
+      method: 'POST'
+    });
+    
+    if (!response.ok) {
+      throw new Error(`API 실패: ${response.status}`);
+    }
+    
+    showToast('사용자가 승인되었습니다.', 'success');
+    await loadUserList(); // 목록 새로고침
+    
+  } catch (error) {
+    console.error('❌ 사용자 승인 실패:', error);
+    showToast('사용자 승인에 실패했습니다.', 'error');
+  }
+}
+
+// 사용자 거부
+async function rejectUser(userId) {
+  try {
+    const response = await fetch(`/api/admin/users/${userId}/reject`, {
+      method: 'POST'
+    });
+    
+    if (!response.ok) {
+      throw new Error(`API 실패: ${response.status}`);
+    }
+    
+    showToast('사용자가 거부되었습니다.', 'success');
+    await loadUserList(); // 목록 새로고침
+    
+  } catch (error) {
+    console.error('❌ 사용자 거부 실패:', error);
+    showToast('사용자 거부에 실패했습니다.', 'error');
+  }
+}
+
+// 사용자 비활성화
+async function deactivateUser(userId) {
+  try {
+    const response = await fetch(`/api/admin/users/${userId}/deactivate`, {
+      method: 'POST'
+    });
+    
+    if (!response.ok) {
+      throw new Error(`API 실패: ${response.status}`);
+    }
+    
+    showToast('사용자가 비활성화되었습니다.', 'success');
+    await loadUserList(); // 목록 새로고침
+    
+  } catch (error) {
+    console.error('❌ 사용자 비활성화 실패:', error);
+    showToast('사용자 비활성화에 실패했습니다.', 'error');
+  }
+}
+
+// 비밀번호 재설정
+async function resetUserPassword(userId) {
+  const newPassword = prompt('새 비밀번호를 입력하세요 (6자 이상):');
+  if (!newPassword || newPassword.length < 6) {
+    showToast('비밀번호는 6자 이상이어야 합니다.', 'error');
+    return;
+  }
+  
+  try {
+    const response = await fetch(`/api/admin/users/${userId}/reset-password`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ new_password: newPassword })
+    });
+    
+    if (!response.ok) {
+      throw new Error(`API 실패: ${response.status}`);
+    }
+    
+    showToast('비밀번호가 재설정되었습니다.', 'success');
+    
+  } catch (error) {
+    console.error('❌ 비밀번호 재설정 실패:', error);
+    showToast('비밀번호 재설정에 실패했습니다.', 'error');
+  }
+}
+
+// 사용자 역할 변경
+async function editUserRole(userId) {
+  const newRole = prompt('새 역할을 선택하세요 (user/admin):');
+  if (!newRole || !['user', 'admin'].includes(newRole)) {
+    showToast('유효한 역할을 입력해주세요.', 'error');
+    return;
+  }
+  
+  try {
+    const response = await fetch(`/api/admin/users/${userId}/role`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ role: newRole })
+    });
+    
+    if (!response.ok) {
+      throw new Error(`API 실패: ${response.status}`);
+    }
+    
+    showToast('사용자 역할이 변경되었습니다.', 'success');
+    await loadUserList(); // 목록 새로고침
+    
+  } catch (error) {
+    console.error('❌ 사용자 역할 변경 실패:', error);
+    showToast('사용자 역할 변경에 실패했습니다.', 'error');
   }
 } 
