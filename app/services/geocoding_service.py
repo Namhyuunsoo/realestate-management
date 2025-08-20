@@ -37,6 +37,11 @@ class GeocodingService:
         except RuntimeError:
             self.logger.info("✅ 환경변수에서 기본 설정 사용")
         
+        # data_dir이 None이거나 빈 문자열인 경우 기본값 사용
+        if not self.data_dir or self.data_dir.strip() == "":
+            self.data_dir = "./data"
+            self.logger.info(f"data_dir이 설정되지 않아 기본값 사용: {self.data_dir}")
+        
         # API 키 상태 즉시 확인 및 로깅 (logger 초기화 후)
         print(f"=== API 키 상태 확인 (__init__) ===")
         print(f"Client ID: {'*' * len(self.naver_client_id) if self.naver_client_id else 'None'}")
@@ -86,11 +91,40 @@ class GeocodingService:
             self.data_dir = "./data"
             self.logger.info("✅ 설정이 환경변수에서 업데이트되었습니다.")
             self._log_api_key_status("update_config (환경변수)")
+        
+        # data_dir이 None이거나 빈 문자열인 경우 기본값 사용
+        if not self.data_dir or self.data_dir.strip() == "":
+            self.data_dir = "./data"
+            self.logger.info(f"data_dir이 설정되지 않아 기본값 사용: {self.data_dir}")
     
     def extract_addresses_from_listings(self) -> List[str]:
         """상가임대차.xlsx에서 현황이 '생'인 매물의 주소만 추출"""
         try:
-            rows = read_local_listing_sheet()
+            # 파일 경로 직접 확인
+            filename = os.getenv("LISTING_SHEET_FILENAME", "상가임대차.xlsx")
+            data_dir = os.getenv("DATA_DIR", "./data")
+            source_path = os.path.join(data_dir, "raw", filename)
+            
+            self.logger.info(f"상가임대차 파일 경로: {source_path}")
+            
+            if not os.path.exists(source_path):
+                self.logger.error(f"상가임대차 파일이 존재하지 않습니다: {source_path}")
+                return []
+            
+            try:
+                rows = read_local_listing_sheet()
+            except Exception as e:
+                self.logger.error(f"상가임대차 파일 읽기 실패: {e}")
+                # 직접 파일 읽기 시도
+                try:
+                    self.logger.info("직접 파일 읽기 시도...")
+                    df = pd.read_excel(source_path, dtype=str, engine='openpyxl').fillna("")
+                    rows = [df.columns.tolist()] + df.values.tolist()
+                    self.logger.info(f"직접 파일 읽기 성공: {len(rows)}행")
+                except Exception as e2:
+                    self.logger.error(f"직접 파일 읽기도 실패: {e2}")
+                    return []
+                
             if not rows or len(rows) < 2:
                 self.logger.warning("상가임대차 데이터가 없습니다.")
                 return []
@@ -142,28 +176,38 @@ class GeocodingService:
     def get_existing_coordinates(self) -> Dict[str, Tuple[float, float]]:
         """지도캐시에서 기존 좌표 가져오기"""
         try:
+            # data_dir과 map_cache_file이 유효한지 확인
+            if not self.data_dir or not self.map_cache_file:
+                self.logger.warning("data_dir 또는 map_cache_file이 설정되지 않았습니다.")
+                return {}
+            
             map_cache_path = os.path.join(self.data_dir, "raw", self.map_cache_file)
+            self.logger.info(f"지도캐시 파일 경로: {map_cache_path}")
+            
             if not os.path.exists(map_cache_path):
                 self.logger.warning(f"지도캐시 파일이 없습니다: {map_cache_path}")
                 return {}
             
-            # Excel 파일 읽기 (xlrd 엔진만 사용)
+            # Excel 파일 읽기 (여러 엔진 시도)
             df = None
             try:
-                df = pd.read_excel(map_cache_path, dtype=str, engine='xlrd').fillna("")
-            except Exception as e:
-                # xlrd 실패 시 기본 엔진 시도
-                df = pd.read_excel(map_cache_path, dtype=str).fillna("")
-            
-            if df is None:
-                # 모든 엔진이 실패한 경우 기본 엔진으로 시도
+                # 1. openpyxl 엔진 시도
+                df = pd.read_excel(map_cache_path, dtype=str, engine='openpyxl').fillna("")
+            except Exception as e1:
                 try:
-                    xls = pd.ExcelFile(map_cache_path)
-                    sheet = "지도캐시" if "지도캐시" in xls.sheet_names else xls.sheet_names[0]
-                    df = pd.read_excel(map_cache_path, sheet_name=sheet, dtype=str).fillna("")
-                except Exception as e:
-                    self.logger.error(f"지도캐시 Excel 읽기 실패: {e}")
-                    return {}
+                    # 2. xlrd 엔진 시도
+                    df = pd.read_excel(map_cache_path, dtype=str, engine='xlrd').fillna("")
+                except Exception as e2:
+                    try:
+                        # 3. 기본 엔진 시도
+                        df = pd.read_excel(map_cache_path, dtype=str).fillna("")
+                    except Exception as e3:
+                        try:
+                            # 4. odf 엔진 시도
+                            df = pd.read_excel(map_cache_path, dtype=str, engine='odf').fillna("")
+                        except Exception as e4:
+                            self.logger.error(f"지도캐시 Excel 읽기 실패: 모든 엔진 실패")
+                            return {}
             
             coordinates = {}
             for _, row in df.iterrows():

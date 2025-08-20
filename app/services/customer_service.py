@@ -12,7 +12,7 @@ class CustomerService:
     def __init__(self, data_manager):
         self.data_manager = data_manager
         self.base_dir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
-        self.data_dir = os.path.join(self.base_dir, "data")
+        self.data_dir = "./data"
     
     def _excel_data_dir(self) -> str:
         """Excel 데이터 디렉토리 경로"""

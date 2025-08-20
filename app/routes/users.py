@@ -13,7 +13,7 @@ bp = Blueprint("users", __name__, url_prefix="/api")
 def _get_users_file() -> str:
     """사용자 데이터 파일 경로 반환"""
     base_dir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
-    data_dir = os.path.join(base_dir, "data")
+    data_dir = "./data"
     os.makedirs(data_dir, exist_ok=True)
     return os.path.join(data_dir, "users.json")
 

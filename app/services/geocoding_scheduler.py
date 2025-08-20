@@ -76,6 +76,11 @@ class GeocodingScheduler:
             self.logger.info(f"지오코딩 업데이트 시작 (실행 횟수: {self.run_count + 1})")
             self.logger.info(f"Flask 앱 상태: {self.app is not None}")
             
+            # 첫 실행 시에는 건너뛰기 (Flask 앱 완전 초기화 후 실행)
+            if self.run_count == 0:
+                self.logger.info("첫 실행이므로 지오코딩 건너뛰기 (Flask 앱 초기화 대기)")
+                return
+            
             # Flask 앱 컨텍스트가 있으면 사용
             if self.app:
                 self.logger.info("Flask 앱 컨텍스트 사용")

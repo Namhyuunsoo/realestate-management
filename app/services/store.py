@@ -30,7 +30,7 @@ def clean_nan_values(obj):
 
 # 애플리케이션 컨텍스트 없이도 사용 가능한 BASE_DIR 설정
 BASE_DIR   = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
-DATA_DIR   = os.path.join(BASE_DIR, "data")
+DATA_DIR   = "./data"
 STORE_FILE = os.path.join(DATA_DIR, "store.json")
 
 _lock         = threading.Lock()
