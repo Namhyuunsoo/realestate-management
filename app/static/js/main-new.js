@@ -29,7 +29,11 @@ async function loadModules() {
     await loadModule('/static/js/modules/core/globals.js');
     console.log('✅ globals.js 로드 완료');
     
-    // 2. 유틸리티 함수들
+    // 2. 모드 전환 관리자
+    await loadModule('/static/js/modules/core/mode-switcher.js');
+    console.log('✅ mode-switcher.js 로드 완료');
+    
+    // 3. 유틸리티 함수들
     await loadModule('/static/js/modules/core/utils.js');
     console.log('✅ utils.js 로드 완료');
     

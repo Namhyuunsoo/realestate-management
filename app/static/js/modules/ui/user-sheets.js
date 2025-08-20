@@ -306,32 +306,7 @@ function createUserSheetModal(title, sheet) {
             <input type="url" id="sheetUrl" name="sheet_url" required 
                    value="${sheet ? escapeHtml(sheet.sheet_url) : ''}" 
                    placeholder="https://docs.google.com/spreadsheets/d/...">
-            <small>구글 시트의 공유 링크를 입력하세요</small>
-          </div>
-          
-
-          
-          <div class="form-group">
-            <label for="googleApiKey">구글 API 키 *</label>
-            <input type="password" id="googleApiKey" name="google_api_key" 
-                   value="${sheet ? escapeHtml(sheet.google_api_key || '') : ''}" 
-                   placeholder="개인 API 키를 입력하세요" required>
-            <small>구글 스프레드시트에 접근하기 위한 API 키입니다</small>
-          </div>
-          
-          <div class="form-group">
-            <label for="serviceAccount">서비스어카운트 JSON *</label>
-            <textarea id="serviceAccount" name="service_account_json" 
-                      placeholder='{"type": "service_account", "project_id": "...", ...}'
-                      rows="4" required>${sheet ? escapeHtml(sheet.service_account_json || '') : ''}</textarea>
-            <small>개인 서비스어카운트 정보를 입력하세요</small>
-          </div>
-          
-          <div class="form-group">
-            <button type="button" id="testApiBtn" class="btn-secondary">
-              🔍 API 연결 테스트
-            </button>
-            <small>API 키가 올바르게 설정되었는지 테스트합니다</small>
+            <small>구글 시트의 공유 링크를 입력하세요. URL 열기 기능만 사용합니다.</small>
           </div>
 
           
@@ -376,9 +351,7 @@ async function handleUserSheetSubmit(sheetId = null) {
   
   const data = {
     sheet_name: formData.get("sheet_name"),
-    sheet_url: formData.get("sheet_url"),
-    google_api_key: formData.get("google_api_key"),
-    service_account_json: formData.get("service_account_json")
+    sheet_url: formData.get("sheet_url")
   };
   
   try {
@@ -418,47 +391,7 @@ async function handleUserSheetSubmit(sheetId = null) {
   }
 }
 
-async function testApiConnection(sheetId) {
-  if (!sheetId) {
-    showError("먼저 시트를 저장한 후 API 테스트를 진행하세요.");
-    return;
-  }
-  
-  try {
-    const testBtn = document.getElementById("testApiBtn");
-    if (testBtn) {
-      testBtn.disabled = true;
-      testBtn.textContent = "🔍 테스트 중...";
-    }
-    
-    const response = await fetch(`/api/user-sheets/${sheetId}/test-api`, {
-      method: "POST",
-      headers: { "X-User": currentUser }
-    });
-    
-    if (!response.ok) {
-      throw new Error(`API 실패: ${response.status}`);
-    }
-    
-    const result = await response.json();
-    
-    if (result.success) {
-      showSuccess(`${result.message} - ${result.sheet_title} (${result.api_type})`);
-    } else {
-      showError(result.error);
-    }
-    
-  } catch (error) {
-    console.error("❌ API 테스트 실패:", error);
-    showError("API 테스트에 실패했습니다.");
-  } finally {
-    const testBtn = document.getElementById("testApiBtn");
-    if (testBtn) {
-      testBtn.disabled = false;
-      testBtn.textContent = "🔍 API 연결 테스트";
-    }
-  }
-}
+// API 테스트 기능은 제거됨 (URL 열기 기능만 사용)
 
 async function confirmDeleteUserSheet(sheetId) {
   const sheet = USER_SHEETS.find(s => s.id === sheetId);

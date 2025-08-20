@@ -1049,6 +1049,46 @@ html, body {
   display:flex;
   flex-direction:column;
   gap:2px;
+  position: relative;
+}
+
+/* 모드 전환 버튼 스타일 */
+.mode-switch {
+  position: absolute;
+  top: 0;
+  right: -80px; /* 상호 텍스트와 겹치지 않도록 오른쪽으로 이동 */
+}
+
+.mode-toggle-btn {
+  background: #007bff;
+  color: white;
+  border: 1px solid #007bff;
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 60px;
+  justify-content: center;
+}
+
+.mode-toggle-btn:hover {
+  background: #0056b3;
+  border-color: #0056b3;
+  transform: translateY(-1px);
+}
+
+.mode-toggle-btn.briefing-mode {
+  background: #28a745;
+  border-color: #28a745;
+}
+
+.mode-toggle-btn.briefing-mode:hover {
+  background: #218838;
+  border-color: #218838;
 }
 #officeName{
   font-size:16px;
@@ -3486,4 +3526,30 @@ html, body {
   overflow-y: auto !important;
   overflow-x: hidden !important;
   width: 100% !important;
+}
+
+/* 민감한 정보 필드 접기/펼치기 스타일 */
+.sensitive-field {
+  transition: all 0.3s ease;
+}
+
+.sensitive-value {
+  transition: opacity 0.3s ease;
+}
+
+.sensitive-field.collapsed .sensitive-value {
+  opacity: 0;
+}
+
+.field-toggle {
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.field-toggle:hover {
+  transform: scale(1.1);
+}
+
+.sensitive-field .field-toggle {
+  margin-right: 4px;
 }
