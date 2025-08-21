@@ -104,10 +104,10 @@ class ListingAddService:
     def _prepare_row_data(self, listing_data: Dict[str, Any]) -> list:
         """매물 데이터를 헤더 순서에 맞게 배열로 변환"""
         # A열은 비우고 B열부터 데이터 시작
-        # 헤더 순서 (정확히 맞춤)
+        # 헤더 순서 (정확히 맞춤) - 지역2 제외
         header_order = [
             '접수날짜', '지역', '지번', '건물명', '층수', '가게명', '분양', '실평수',
-            '보증금', '월세', '권리금', '비고', '담당자', '현황', '지역2', '연락처',
+            '보증금', '월세', '권리금', '비고', '담당자', '현황', '연락처',
             '의뢰인', '비고3', '위반여부', '현수막번호', '간략한위치'
         ]
         
@@ -119,9 +119,6 @@ class ListingAddService:
             if field == '현황':
                 # 현황은 자동으로 "생" 입력
                 row_data.append("생")
-            elif field == '지역2':
-                # 지역2는 빈 값 (스프레드시트 함수가 자동 처리)
-                row_data.append("")
             elif field == '간략한위치':
                 # 간략한위치는 빈 값
                 row_data.append("")
@@ -129,5 +126,10 @@ class ListingAddService:
                 # 일반 필드는 입력값 사용
                 value = listing_data.get(field, "")
                 row_data.append(str(value) if value is not None else "")
+        
+        # 지역2는 스프레드시트 함수가 자동 처리하므로 빈 값 추가
+        # (B열부터 20개 필드 + A열 빈값 = 총 21개)
+        # 지역2는 15번째 위치에 빈 값으로 추가
+        row_data.insert(15, "")  # 지역2 위치에 빈 값 삽입
         
         return row_data
