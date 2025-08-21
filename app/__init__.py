@@ -156,6 +156,7 @@ def register_blueprints(app):
     from .routes.security import bp as security_bp
     from .routes.user_sheets import bp as user_sheets_bp
     from .routes.geocoding import bp as geocoding_bp
+    from .routes.listing_add import bp as listing_add_bp
 
     app.register_blueprint(health_bp)
     app.register_blueprint(listings_bp)
@@ -168,3 +169,4 @@ def register_blueprints(app):
     app.register_blueprint(security_bp)
     app.register_blueprint(user_sheets_bp)
     app.register_blueprint(geocoding_bp)
+    app.register_blueprint(listing_add_bp)

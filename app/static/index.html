@@ -7,6 +7,7 @@
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="/static/css/style.css?v=20250803">
   <script src="/static/js/main-new.js"></script>
+  <script src="/static/js/listing-add.js"></script>
   <script>
     async function loadNaverMapsAPI() {
       return new Promise(async (resolve, reject) => {
@@ -154,6 +155,7 @@
     <div id="statusCounts">
       <div class="count-info">
         총 <span id="countTotal">0</span>건 / 필터 후 <span id="countFiltered">0</span>건
+        <button id="addListingBtn" class="btn-add-listing">📝 매물등록</button>
       </div>
       <div class="sheet-controls">
         <div class="sheet-buttons">
@@ -173,6 +175,130 @@
       </div>
     </div>
     
+    <!-- 매물등록 모달 -->
+    <div id="listingAddModal" class="modal hidden">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>매물등록</h2>
+          <button class="modal-close" id="closeListingModal">&times;</button>
+        </div>
+        <div class="modal-body">
+          <form id="listingAddForm">
+            <div class="form-row">
+              <div class="form-group">
+                <label for="접수날짜">접수날짜</label>
+                <input type="text" id="접수날짜" name="접수날짜" placeholder="자동입력" readonly>
+              </div>
+              <div class="form-group">
+                <label for="지역">지역</label>
+                <input type="text" id="지역" name="지역" placeholder="예: 부평동">
+              </div>
+            </div>
+            
+            <div class="form-row">
+              <div class="form-group">
+                <label for="지번">지번</label>
+                <input type="text" id="지번" name="지번" placeholder="예: 123-45">
+              </div>
+              <div class="form-group">
+                <label for="건물명">건물명</label>
+                <input type="text" id="건물명" name="건물명" placeholder="건물명">
+              </div>
+            </div>
+            
+            <div class="form-row">
+              <div class="form-group">
+                <label for="층수">층수</label>
+                <input type="text" id="층수" name="층수" placeholder="예: 3층">
+              </div>
+              <div class="form-group">
+                <label for="가게명">가게명</label>
+                <input type="text" id="가게명" name="가게명" placeholder="가게명">
+              </div>
+            </div>
+            
+            <div class="form-row">
+              <div class="form-group">
+                <label for="분양">분양</label>
+                <input type="text" id="분양" name="분양" placeholder="예: 임대">
+              </div>
+              <div class="form-group">
+                <label for="실평수">실평수</label>
+                <input type="text" id="실평수" name="실평수" placeholder="예: 15평">
+              </div>
+            </div>
+            
+            <div class="form-row">
+              <div class="form-group">
+                <label for="보증금">보증금</label>
+                <input type="text" id="보증금" name="보증금" placeholder="숫자만 입력">
+              </div>
+              <div class="form-group">
+                <label for="월세">월세</label>
+                <input type="text" id="월세" name="월세" placeholder="숫자만 입력">
+              </div>
+            </div>
+            
+            <div class="form-row">
+              <div class="form-group">
+                <label for="권리금">권리금</label>
+                <input type="text" id="권리금" name="권리금" placeholder="숫자만 입력">
+              </div>
+            </div>
+            
+            <div class="form-row">
+              <div class="form-group full-width">
+                <label for="비고">비고</label>
+                <textarea id="비고" name="비고" placeholder="비고사항" rows="3"></textarea>
+              </div>
+            </div>
+            
+            <div class="form-row">
+              <div class="form-group">
+                <label for="담당자">담당자</label>
+                <input type="text" id="담당자" name="담당자" placeholder="담당자명">
+              </div>
+              <div class="form-group">
+                <label for="연락처">연락처</label>
+                <input type="text" id="연락처" name="연락처" placeholder="010-1234-5678" required>
+              </div>
+            </div>
+            
+            <div class="form-row">
+              <div class="form-group">
+                <label for="의뢰인">의뢰인</label>
+                <input type="text" id="의뢰인" name="의뢰인" placeholder="의뢰인명">
+              </div>
+              <div class="form-group">
+                <label for="비고3">비고3</label>
+                <input type="text" id="비고3" name="비고3" placeholder="비고3">
+              </div>
+            </div>
+            
+            <div class="form-row">
+              <div class="form-group">
+                <label for="위반여부">위반여부</label>
+                <input type="text" id="위반여부" name="위반여부" placeholder="예: 없음">
+              </div>
+              <div class="form-group">
+                <label for="현수막번호">현수막번호</label>
+                <input type="text" id="현수막번호" name="현수막번호" placeholder="예: A-001">
+              </div>
+            </div>
+            
+            <!-- 숨김 필드들 -->
+            <input type="hidden" id="현황" name="현황" value="생">
+            <input type="hidden" id="지역2" name="지역2" value="">
+            <input type="hidden" id="간략한위치" name="간략한위치" value="">
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" id="submitListing" class="btn-primary">등록</button>
+          <button type="button" id="cancelListing" class="btn-secondary">취소</button>
+        </div>
+      </div>
+    </div>
+
     <!-- 컨텍스트 메뉴 -->
     <div id="contextMenu" class="context-menu">
       <div class="context-menu-item" data-action="edit">
@@ -441,6 +567,7 @@
                   <th>역할</th>
                   <th>상태</th>
                   <th>가입일</th>
+                  <th>시트지정</th>
                   <th>작업</th>
                 </tr>
               </thead>
@@ -513,6 +640,32 @@
           <div id="statsContent">
             <!-- 통계 내용이 여기에 동적으로 로드됩니다 -->
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 시트지정 모달 -->
+    <div id="sheetUrlModal" class="modal hidden">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>시트지정</h3>
+          <button class="modal-close-btn" id="closeSheetUrlModal">&times;</button>
+        </div>
+        <div class="modal-body">
+          <form id="sheetUrlForm">
+            <div class="form-group">
+              <label for="sheetUrl">Google Sheets URL</label>
+              <input type="url" id="sheetUrl" name="sheet_url" 
+                     placeholder="https://docs.google.com/spreadsheets/d/..." required>
+              <small style="color: #666; font-size: 12px;">
+                사용자의 개인 매물장 시트 URL을 입력하세요.
+              </small>
+            </div>
+            <div class="form-actions">
+              <button type="submit" class="admin-btn">확인</button>
+              <button type="button" id="sheetUrlCancelBtn" class="btn-secondary">취소</button>
+            </div>
+          </form>
         </div>
       </div>
     </div>

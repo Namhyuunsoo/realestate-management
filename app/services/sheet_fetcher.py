@@ -31,9 +31,11 @@ def read_local_listing_sheet(force_reload: bool = False) -> list[list[str]]:
     if not force_reload and os.path.exists(cache_file):
         cache_valid, cache_data = _check_cache_validity(cache_file, source_path)
         if cache_valid:
+            print("✅ 캐시된 데이터 사용 (성능 최적화)")
             return cache_data
     
     # 캐시가 없거나 무효하거나 강제 새로고침인 경우 파일에서 읽기
+    print("📖 Excel 파일에서 직접 데이터 읽기...")
     rows = _read_excel_file(source_path)
     
     # 캐시에 저장
@@ -52,8 +54,9 @@ def _check_cache_validity(cache_file: str, source_file: str) -> Tuple[bool, Opti
         # 소스 파일 수정 시간
         source_time = os.path.getmtime(source_file)
         
-        # 소스 파일이 더 최신이면 캐시 무효 (하지만 로그는 간소화)
+        # 소스 파일이 더 최신이면 캐시 무효
         if source_time > cache_time:
+            print(f"⚠️ 소스 파일이 더 최신입니다. 캐시 무효화: {source_time} > {cache_time}")
             return False, None
         
         # 캐시 파일 읽기 시도
@@ -76,29 +79,44 @@ def _check_cache_validity(cache_file: str, source_file: str) -> Tuple[bool, Opti
 def _read_excel_file(file_path: str) -> list[list[str]]:
     """Excel 파일을 읽어서 2차원 배열로 변환"""
     try:
+        print(f"Excel 파일 읽기 시작: {file_path}")
+        
         # 여러 엔진을 시도하여 Excel 파일 읽기
         df = None
         
         # 1. openpyxl 엔진 시도 (최신 .xlsx 파일)
         try:
             df = pd.read_excel(file_path, dtype=str, engine='openpyxl').fillna("")
+            print("✅ openpyxl 엔진으로 Excel 파일 읽기 성공!")
         except Exception as e1:
+            print(f"⚠️ openpyxl 엔진 실패: {e1}")
+            
             # 2. xlrd 엔진 시도 (.xls 파일)
             try:
                 df = pd.read_excel(file_path, dtype=str, engine='xlrd').fillna("")
+                print("✅ xlrd 엔진으로 Excel 파일 읽기 성공!")
             except Exception as e2:
+                print(f"⚠️ xlrd 엔진 실패: {e2}")
+                
                 # 3. 기본 엔진 시도 (pandas가 자동 선택)
                 try:
                     df = pd.read_excel(file_path, dtype=str).fillna("")
+                    print("✅ 기본 엔진으로 Excel 파일 읽기 성공!")
                 except Exception as e3:
+                    print(f"⚠️ 기본 엔진 실패: {e3}")
+                    
                     # 4. odf 엔진 시도 (.ods 파일)
                     try:
                         df = pd.read_excel(file_path, dtype=str, engine='odf').fillna("")
+                        print("✅ odf 엔진으로 Excel 파일 읽기 성공!")
                     except Exception as e4:
+                        print(f"❌ 모든 엔진 실패: {e4}")
                         raise Exception(f"모든 Excel 엔진 시도 실패: openpyxl({e1}), xlrd({e2}), 기본({e3}), odf({e4})")
         
         if df is None:
             raise Exception("Excel 파일을 읽을 수 없습니다.")
+        
+        print(f"✅ Excel 파일 읽기 성공! 행 수: {len(df)}")
         
         # 결과를 2차원 배열로 변환
         rows = [df.columns.tolist()] + df.values.tolist()
@@ -117,6 +135,7 @@ def _save_to_cache(cache_file: str, data: list) -> None:
     try:
         with open(cache_file, 'wb') as f:
             pickle.dump(data, f)
+        print(f"💾 캐시 파일에 저장 완료: {cache_file}")
     except Exception as e:
         print(f"⚠️ 캐시 저장 실패: {e}")
 
@@ -126,6 +145,7 @@ def clear_listing_cache() -> bool:
     try:
         if os.path.exists(cache_file):
             os.remove(cache_file)
+            print("🗑️ 매물 캐시 파일 삭제 완료")
             return True
         return False
     except Exception as e:

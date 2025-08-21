@@ -17,6 +17,7 @@ class User:
     role: str = "user"  # user, admin
     status: str = "pending"  # pending, approved, rejected, inactive
     job_title: str = ""  # 직책 (예: 대표공인중개사, 공인중개사, 직원 등)
+    sheet_url: str = ""  # 개인 시트 URL
     created_at: float = field(default_factory=time.time)
     approved_at: Optional[float] = None
     approved_by: Optional[str] = None
@@ -136,6 +137,8 @@ class User:
             "name": self.name,
             "role": self.role,
             "status": self.status,
+            "job_title": self.job_title,
+            "sheet_url": self.sheet_url,
             "created_at": self.created_at,
             "approved_at": self.approved_at,
             "approved_by": self.approved_by,
@@ -159,6 +162,8 @@ class User:
             name=data["name"],
             role=data.get("role", "user"),
             status=status,
+            job_title=data.get("job_title", ""),
+            sheet_url=data.get("sheet_url", ""),
             created_at=data.get("created_at", time.time()),
             approved_at=data.get("approved_at"),
             approved_by=data.get("approved_by"),

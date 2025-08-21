@@ -99,22 +99,39 @@ def deactivate_user(user_id):
 @handle_errors()
 @log_access()
 def reset_user_password(user_id):
-    """사용자 비밀번호 초기화"""
+    """사용자 비밀번호 재설정"""
     admin_id = get_current_admin_id()
+    user_service = get_user_service()
+    
     data = request.get_json()
     new_password = data["new_password"]
     
-    # 비밀번호 강도 검증
-    if len(new_password) < 6:
-        return jsonify({"error": "비밀번호는 최소 6자 이상이어야 합니다."}), 400
-    
-    user_service = get_user_service()
-    if user_service.reset_password(user_id, new_password, admin_id):
+    if user_service.reset_user_password(user_id, new_password, admin_id):
         user = user_service.get_user_by_id(user_id)
-        log_security_event('PASSWORD_RESET', f'Password reset for user {user.email} by {admin_id}')
-        return jsonify({"message": "비밀번호가 초기화되었습니다."})
+        log_security_event('USER_PASSWORD_RESET', f'Password reset for user {user.email} by {admin_id}')
+        return jsonify({"message": "비밀번호가 재설정되었습니다."})
     else:
-        return jsonify({"error": "비밀번호 초기화에 실패했습니다."}), 400
+        return jsonify({"error": "비밀번호 재설정에 실패했습니다."}), 400
+
+@bp.post("/users/<user_id>/set-sheet-url")
+@require_admin()
+@validate_json("sheet_url")
+@handle_errors()
+@log_access()
+def set_user_sheet_url(user_id):
+    """사용자 시트 URL 설정"""
+    admin_id = get_current_admin_id()
+    user_service = get_user_service()
+    
+    data = request.get_json()
+    sheet_url = data["sheet_url"]
+    
+    if user_service.set_user_sheet_url(user_id, sheet_url, admin_id):
+        user = user_service.get_user_by_id(user_id)
+        log_security_event('USER_SHEET_URL_SET', f'Sheet URL set for user {user.email} by {admin_id}')
+        return jsonify({"message": "시트 URL이 설정되었습니다."})
+    else:
+        return jsonify({"error": "시트 URL 설정에 실패했습니다."}), 400
 
 @bp.get("/users/<user_id>")
 @require_admin()

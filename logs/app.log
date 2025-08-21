@@ -8732,3 +8732,50 @@ AttributeError: 'str' object has no attribute 'get'
 [2025-08-08 17:41:28,289] INFO in listings_loader: Loaded listings from cache: 5579
 [2025-08-08 19:39:05,859] INFO in extensions: 애플리케이션 시작
 [2025-08-08 19:39:21,330] INFO in listings_loader: Loaded listings from cache: 5579
+[2025-08-20 13:19:02,926] INFO in extensions: 애플리케이션 시작
+[2025-08-20 13:19:08,563] INFO in sheet_scheduler: 시트 다운로드 시작 (실행 횟수: 1)
+[2025-08-20 13:19:08,563] INFO in sheet_scheduler: 시트 다운로드 스케줄러 시작 (간격: 5분)
+[2025-08-20 13:19:08,700] INFO in geocoding_scheduler: 지오코딩 업데이트 시작 (실행 횟수: 1)
+[2025-08-20 13:19:08,714] INFO in geocoding_scheduler: 지오코딩 스케줄러 시작 (간격: 30분)
+[2025-08-20 13:19:08,820] INFO in geocoding_scheduler: Flask 앱 상태: True
+[2025-08-20 13:19:09,011] INFO in geocoding_scheduler: Flask 앱 컨텍스트 사용
+[2025-08-20 13:19:09,013] INFO in geocoding_scheduler: GeocodingService 생성 중...
+[2025-08-20 13:19:09,085] INFO in geocoding_service: === API 키 상태 확인 (__init__) ===
+[2025-08-20 13:19:09,086] INFO in geocoding_service: Client ID: None
+[2025-08-20 13:19:09,088] INFO in geocoding_service: Client Secret: None
+[2025-08-20 13:19:09,098] ERROR in geocoding_service:    NAVER_MAPS_NCP_CLIENT_ID와 NAVER_MAPS_NCP_CLIENT_SECRET 환경변수를 확인해주세요.
+[2025-08-20 13:19:09,099] INFO in geocoding_service: ==================================================
+[2025-08-20 13:19:09,100] INFO in geocoding_scheduler: update_config 호출 중...
+[2025-08-20 13:19:09,101] INFO in geocoding_service: update_config 메서드 호출됨
+[2025-08-20 13:19:09,116] INFO in geocoding_service: === API 키 상태 확인 (update_config (Flask 컨텍스트)) ===
+[2025-08-20 13:19:09,117] INFO in geocoding_service: Client ID: None
+[2025-08-20 13:19:09,120] INFO in geocoding_service: Client Secret: None
+[2025-08-20 13:19:09,135] ERROR in geocoding_service:    NAVER_MAPS_NCP_CLIENT_ID와 NAVER_MAPS_NCP_CLIENT_SECRET 환경변수를 확인해주세요.
+[2025-08-20 13:19:09,139] INFO in geocoding_service: ==================================================
+[2025-08-20 13:19:09,142] INFO in geocoding_scheduler: update_config 완료
+[2025-08-20 13:19:11,067] INFO in extensions: 애플리케이션 시작
+[2025-08-20 13:19:13,680] INFO in sheet_scheduler: 시트 다운로드 시작 (실행 횟수: 1)
+[2025-08-20 13:19:13,680] INFO in sheet_scheduler: 시트 다운로드 스케줄러 시작 (간격: 5분)
+[2025-08-20 13:19:13,817] INFO in geocoding_scheduler: 지오코딩 업데이트 시작 (실행 횟수: 1)
+[2025-08-20 13:19:13,832] INFO in geocoding_scheduler: 지오코딩 스케줄러 시작 (간격: 30분)
+[2025-08-20 13:19:13,910] INFO in geocoding_scheduler: Flask 앱 상태: True
+[2025-08-20 13:19:14,079] INFO in geocoding_scheduler: Flask 앱 컨텍스트 사용
+[2025-08-20 13:19:14,141] INFO in geocoding_scheduler: GeocodingService 생성 중...
+[2025-08-20 13:19:14,297] INFO in geocoding_service: === API 키 상태 확인 (__init__) ===
+[2025-08-20 13:19:14,299] INFO in geocoding_service: Client ID: None
+[2025-08-20 13:19:14,301] INFO in geocoding_service: Client Secret: None
+[2025-08-20 13:19:14,315] ERROR in geocoding_service:    NAVER_MAPS_NCP_CLIENT_ID와 NAVER_MAPS_NCP_CLIENT_SECRET 환경변수를 확인해주세요.
+[2025-08-20 13:19:14,316] INFO in geocoding_service: ==================================================
+[2025-08-20 13:19:14,318] INFO in geocoding_scheduler: update_config 호출 중...
+[2025-08-20 13:19:14,330] INFO in geocoding_service: update_config 메서드 호출됨
+[2025-08-20 13:19:14,338] INFO in geocoding_service: === API 키 상태 확인 (update_config (Flask 컨텍스트)) ===
+[2025-08-20 13:19:14,346] INFO in geocoding_service: Client ID: None
+[2025-08-20 13:19:14,348] INFO in geocoding_service: Client Secret: None
+[2025-08-20 13:19:14,364] ERROR in geocoding_service:    NAVER_MAPS_NCP_CLIENT_ID와 NAVER_MAPS_NCP_CLIENT_SECRET 환경변수를 확인해주세요.
+[2025-08-20 13:19:14,366] INFO in geocoding_service: ==================================================
+[2025-08-20 13:19:14,368] INFO in geocoding_scheduler: update_config 완료
+[2025-08-20 13:19:14,702] INFO in geocoding_service: 상가임대차에서 현황이 '생'인 매물 1857개 주소 추출 완료
+[2025-08-20 13:19:15,709] ERROR in geocoding_service: 주소 추출 실패: Excel 파일 읽기 실패: 모든 Excel 엔진 시도 실패: openpyxl(File is not a zip file), xlrd(expected str, bytes or os.PathLike object, not NoneType), 기본(Excel file format cannot be determined, you must specify an engine manually.), odf(File is not a zip file)
+[2025-08-20 13:19:17,249] INFO in geocoding_service: 지도캐시에서 3130개 좌표 로드 완료
+[2025-08-20 13:19:17,267] INFO in geocoding_service: 총 주소: 1857, 기존 좌표: 3130, 새 주소: 0
+[2025-08-20 13:19:17,280] INFO in geocoding_service: 새로 지오코딩이 필요한 주소가 없습니다. 기존 지도캐시 유지.

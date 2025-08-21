@@ -173,6 +173,9 @@ async function loadUserList() {
     const data = await response.json();
     const users = data.users || [];
     
+    // 전역 변수 업데이트
+    currentUsers = users;
+    
     // 사용자 목록 테이블 업데이트
     const tbody = document.getElementById('userListTableBody');
     if (!tbody) return;
@@ -205,6 +208,11 @@ async function loadUserList() {
           <span class="status-badge ${user.status}">${getStatusText(user.status)}</span>
         </td>
         <td>${formatDate(user.created_at)}</td>
+        <td>
+          <button class="btn-sheet-url" onclick="openSheetUrlModal('${user.id}', '${user.email}')">
+            ${user.sheet_url ? '📝 수정' : '➕ 지정'}
+          </button>
+        </td>
         <td>
           <div class="user-actions">
             ${getUserActionButtons(user)}
@@ -799,5 +807,116 @@ async function editUserRole(userId) {
   } catch (error) {
     console.error('❌ 사용자 역할 변경 실패:', error);
     showToast('사용자 역할 변경에 실패했습니다.', 'error');
+  }
+}
+
+// 시트지정 모달 열기
+function openSheetUrlModal(userId, userEmail) {
+  const modal = document.getElementById('sheetUrlModal');
+  const form = document.getElementById('sheetUrlForm');
+  const urlInput = document.getElementById('sheetUrl');
+  
+  if (!modal || !form || !urlInput) {
+    showToast('시트지정 모달을 열 수 없습니다.', 'error');
+    return;
+  }
+  
+  // 현재 시트 URL 설정 (있는 경우)
+  const currentUser = currentUsers.find(u => u.id === userId);
+  if (currentUser && currentUser.sheet_url) {
+    urlInput.value = currentUser.sheet_url;
+  } else {
+    urlInput.value = '';
+  }
+  
+  // 폼에 사용자 ID 저장
+  form.dataset.userId = userId;
+  
+  // 모달 표시
+  modal.classList.remove('hidden');
+  
+  // 이벤트 리스너 설정
+  setupSheetUrlModalEvents();
+}
+
+// 시트지정 모달 이벤트 설정
+function setupSheetUrlModalEvents() {
+  const modal = document.getElementById('sheetUrlModal');
+  const form = document.getElementById('sheetUrlForm');
+  const closeBtn = document.getElementById('closeSheetUrlModal');
+  const cancelBtn = document.getElementById('sheetUrlCancelBtn');
+  
+  // 닫기 버튼
+  if (closeBtn) {
+    closeBtn.onclick = () => closeSheetUrlModal();
+  }
+  
+  // 취소 버튼
+  if (cancelBtn) {
+    cancelBtn.onclick = () => closeSheetUrlModal();
+  }
+  
+  // 폼 제출
+  if (form) {
+    form.onsubmit = (e) => {
+      e.preventDefault();
+      handleSheetUrlSubmit();
+    };
+  }
+  
+  // 모달 외부 클릭 시 닫기
+  if (modal) {
+    modal.onclick = (e) => {
+      if (e.target === modal) {
+        closeSheetUrlModal();
+      }
+    };
+  }
+}
+
+// 시트지정 모달 닫기
+function closeSheetUrlModal() {
+  const modal = document.getElementById('sheetUrlModal');
+  if (modal) {
+    modal.classList.add('hidden');
+  }
+}
+
+// 시트 URL 제출 처리
+async function handleSheetUrlSubmit() {
+  const form = document.getElementById('sheetUrlForm');
+  const urlInput = document.getElementById('sheetUrl');
+  const userId = form.dataset.userId;
+  
+  if (!userId || !urlInput.value.trim()) {
+    showToast('시트 URL을 입력해주세요.', 'error');
+    return;
+  }
+  
+  try {
+    const response = await fetch(`/api/admin/users/${userId}/set-sheet-url`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ sheet_url: urlInput.value.trim() })
+    });
+    
+    if (!response.ok) {
+      throw new Error(`API 실패: ${response.status}`);
+    }
+    
+    const result = await response.json();
+    showToast(result.message || '시트 URL이 설정되었습니다.', 'success');
+    
+    // 모달 닫기
+    closeSheetUrlModal();
+    
+    // 사용자 목록 새로고침
+    await loadUserList();
+    
+  } catch (error) {
+    console.error('❌ 시트 URL 설정 실패:', error);
+    showToast('시트 URL 설정에 실패했습니다.', 'error');
   }
 } 

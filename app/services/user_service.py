@@ -391,4 +391,24 @@ class UserService:
             
         except Exception as e:
             print(f"사용자 직책 변경 실패: {e}")
+            return False
+    
+    def set_user_sheet_url(self, user_id: str, sheet_url: str, admin_id: str) -> bool:
+        """사용자 시트 URL 설정"""
+        try:
+            if user_id not in self.users:
+                return False
+            
+            user = self.users[user_id]
+            old_sheet_url = user.sheet_url
+            user.sheet_url = sheet_url.strip()
+            
+            # 변경 사항 저장
+            self._save_users()
+            
+            print(f"사용자 시트 URL 설정: {user.email} ({old_sheet_url} → {user.sheet_url})")
+            return True
+            
+        except Exception as e:
+            print(f"사용자 시트 URL 설정 실패: {e}")
             return False 
