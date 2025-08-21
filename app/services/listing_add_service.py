@@ -73,10 +73,15 @@ class ListingAddService:
     def _add_row_to_sheet(self, sheet_id: str, sheet_name: str, listing_data: Dict[str, Any]) -> bool:
         """시트에 새 행 추가"""
         try:
-            # 매물 데이터를 헤더 순서에 맞게 배열로 변환
-            row_data = self._prepare_row_data(listing_data)
+            # 현재 시트의 마지막 행 번호 조회
+            last_row = self._get_last_row_number(sheet_id, sheet_name)
+            if last_row is None:
+                raise Exception("시트의 마지막 행 번호를 조회할 수 없습니다.")
             
-            # 시트에 새 행 추가
+            # 매물 데이터를 헤더 순서에 맞게 배열로 변환 (행 번호 전달)
+            row_data = self._prepare_row_data(listing_data, last_row + 1)
+            
+            # 시트에 새 행 추가 (마지막 행 다음에 추가)
             range_name = f"{sheet_name}!A:A"  # A열의 마지막 행 다음에 추가
             
             body = {
@@ -86,12 +91,12 @@ class ListingAddService:
             result = self.sheets_service.spreadsheets().values().append(
                 spreadsheetId=sheet_id,
                 range=range_name,
-                valueInputOption='RAW',
-                insertDataOption='INSERT_ROWS',
+                valueInputOption='USER_ENTERED',  # 함수가 제대로 작동하도록 변경
+                insertDataOption='OVERWRITE',     # INSERT_ROWS 대신 OVERWRITE 사용
                 body=body
             ).execute()
             
-            current_app.logger.info(f"매물 추가 성공: {sheet_id}/{sheet_name}")
+            current_app.logger.info(f"매물 추가 성공: {sheet_id}/{sheet_name}, 행 {last_row + 1}")
             return True
             
         except HttpError as e:
@@ -101,7 +106,28 @@ class ListingAddService:
             current_app.logger.error(f"행 추가 실패: {str(e)}")
             return False
     
-    def _prepare_row_data(self, listing_data: Dict[str, Any]) -> list:
+    def _get_last_row_number(self, sheet_id: str, sheet_name: str) -> Optional[int]:
+        """시트의 마지막 행 번호 조회"""
+        try:
+            # A열의 모든 값 조회
+            range_name = f"{sheet_name}!A:A"
+            result = self.sheets_service.spreadsheets().values().get(
+                spreadsheetId=sheet_id,
+                range=range_name
+            ).execute()
+            
+            values = result.get('values', [])
+            if not values:
+                return 1  # 헤더만 있는 경우
+            
+            # 마지막 행 번호 반환 (1부터 시작)
+            return len(values)
+            
+        except Exception as e:
+            current_app.logger.error(f"마지막 행 번호 조회 실패: {str(e)}")
+            return None
+    
+    def _prepare_row_data(self, listing_data: Dict[str, Any], row_number: int) -> list:
         """매물 데이터를 헤더 순서에 맞게 배열로 변환"""
         # A열은 비우고 B열부터 데이터 시작
         # 헤더 순서 (정확히 맞춤) - 지역2 제외
@@ -127,9 +153,11 @@ class ListingAddService:
                 value = listing_data.get(field, "")
                 row_data.append(str(value) if value is not None else "")
         
-        # 지역2는 스프레드시트 함수가 자동 처리하므로 빈 값 추가
+        # 지역2는 VLOOKUP 함수를 직접 전송하여 스프레드시트 함수 유지
         # (B열부터 20개 필드 + A열 빈값 = 총 21개)
-        # 지역2는 15번째 위치에 빈 값으로 추가
-        row_data.insert(15, "")  # 지역2 위치에 빈 값 삽입
+        # 지역2는 15번째 위치에 함수 삽입
+        # 전달받은 실제 행 번호 사용
+        vlookup_function = f"=VLOOKUP(C{row_number},'데이터베이스'!A:B,2,0)"
+        row_data.insert(15, vlookup_function)  # 지역2 위치에 함수 삽입
         
         return row_data
