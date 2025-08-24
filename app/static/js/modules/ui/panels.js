@@ -66,35 +66,35 @@ function renderCustomerDetail(c) {
         <div style="padding: 4px 6px; background: #f8f9fa; border: 1px solid #ddd; border-radius: 4px; font-size: 12px; color: #333;">${escapeHtml(c.regions || '희망지역 없음')}</div>
       </div>
       
-      <div class="detail-row" style="margin-bottom: 6px;">
-        <label style="display: block; font-weight: 600; color: #333; margin-bottom: 2px; font-size: 12px;">희망층수</label>
-        <div style="padding: 4px 6px; background: #f8f9fa; border: 1px solid #ddd; border-radius: 4px; font-size: 12px; color: #333;">${escapeHtml(c.floor || '희망층수 없음')}</div>
-      </div>
-      
-      <div class="detail-row" style="margin-bottom: 6px;">
-        <label style="display: block; font-weight: 600; color: #333; margin-bottom: 2px; font-size: 12px;">희망면적</label>
-        <div style="padding: 4px 6px; background: #f8f9fa; border: 1px solid #ddd; border-radius: 4px; font-size: 12px; color: #333;">${escapeHtml(c.area || '희망면적 없음')}</div>
-      </div>
-      
-      <div class="detail-row" style="margin-bottom: 6px;">
-        <label style="display: block; font-weight: 600; color: #333; margin-bottom: 2px; font-size: 12px;">희망보증금</label>
-        <div style="padding: 4px 6px; background: #f8f9fa; border: 1px solid #ddd; border-radius: 4px; font-size: 12px; color: #333;">${escapeHtml(c.deposit || '희망보증금 없음')}</div>
-      </div>
-      
-      <div class="detail-row" style="margin-bottom: 6px;">
-        <label style="display: block; font-weight: 600; color: #333; margin-bottom: 2px; font-size: 12px;">희망월세</label>
-        <div style="padding: 4px 6px; background: #f8f9fa; border: 1px solid #ddd; border-radius: 4px; font-size: 12px; color: #333;">${escapeHtml(c.rent || '희망월세 없음')}</div>
-      </div>
-      
-      <div class="detail-row" style="margin-bottom: 6px;">
-        <label style="display: block; font-weight: 600; color: #333; margin-bottom: 2px; font-size: 12px;">희망권리금</label>
-        <div style="padding: 4px 6px; background: #f8f9fa; border: 1px solid #ddd; border-radius: 4px; font-size: 12px; color: #333;">${escapeHtml(c.premium || '희망권리금 없음')}</div>
-      </div>
-      
-      <div class="detail-row" style="margin-bottom: 6px;">
-        <label style="display: block; font-weight: 600; color: #333; margin-bottom: 2px; font-size: 12px;">참고사항</label>
-        <div style="padding: 6px; background: #f8f9fa; border: 1px solid #ddd; border-radius: 4px; font-size: 12px; color: #333; min-height: 60px; white-space: pre-wrap; line-height: 1.4;">${escapeHtml(c.notes || '참고사항 없음')}</div>
-      </div>
+             <div class="detail-row" style="margin-bottom: 6px;">
+         <label style="display: block; font-weight: 600; color: #333; margin-bottom: 2px; font-size: 12px;">희망층수</label>
+         <div style="padding: 4px 6px; background: #f8f9fa; border: 1px solid #ddd; border-radius: 4px; font-size: 12px; color: #333;">${escapeHtml(c.floor_pref || c.floor || '희망층수 없음')}</div>
+       </div>
+       
+       <div class="detail-row" style="margin-bottom: 6px;">
+         <label style="display: block; font-weight: 600; color: #333; margin-bottom: 2px; font-size: 12px;">희망면적</label>
+         <div style="padding: 4px 6px; background: #f8f9fa; border: 1px solid #ddd; border-radius: 4px; font-size: 12px; color: #333;">${escapeHtml(c.area_pref || c.area || '희망면적 없음')}</div>
+       </div>
+       
+       <div class="detail-row" style="margin-bottom: 6px;">
+         <label style="display: block; font-weight: 600; color: #333; margin-bottom: 2px; font-size: 12px;">희망보증금</label>
+         <div style="padding: 4px 6px; background: #f8f9fa; border: 1px solid #ddd; border-radius: 4px; font-size: 12px; color: #333;">${escapeHtml(c.deposit_pref || c.deposit || '희망보증금 없음')}</div>
+       </div>
+       
+       <div class="detail-row" style="margin-bottom: 6px;">
+         <label style="display: block; font-weight: 600; color: #333; margin-bottom: 2px; font-size: 12px;">희망월세</label>
+         <div style="padding: 4px 6px; background: #f8f9fa; border: 1px solid #ddd; border-radius: 4px; font-size: 12px; color: #333;">${escapeHtml(c.rent_pref || c.rent || '희망월세 없음')}</div>
+       </div>
+       
+       <div class="detail-row" style="margin-bottom: 6px;">
+         <label style="display: block; font-weight: 600; color: #333; margin-bottom: 2px; font-size: 12px;">희망권리금</label>
+         <div style="padding: 4px 6px; background: #f8f9fa; border: 1px solid #ddd; border-radius: 4px; font-size: 12px; color: #333;">${escapeHtml(c.premium_pref || c.premium || '희망권리금 없음')}</div>
+       </div>
+       
+       <div class="detail-row" style="margin-bottom: 6px;">
+         <label style="display: block; font-weight: 600; color: #333; margin-bottom: 2px; font-size: 12px;">참고사항</label>
+         <div style="padding: 6px; background: #f8f9fa; border: 1px solid #ddd; border-radius: 4px; font-size: 12px; color: #333; min-height: 60px; white-space: pre-wrap; line-height: 1.4;">${escapeHtml(c.notes || c.note || '참고사항 없음')}</div>
+       </div>
       
       <div class="detail-row" style="margin-bottom: 6px;">
         <label style="display: block; font-weight: 600; color: #333; margin-bottom: 2px; font-size: 12px;">상태</label>
@@ -147,18 +147,18 @@ function renderCustomerDetail(c) {
             <div style="color: #666; font-size: 11px;">👤 ${escapeHtml(c.manager || '담당자 없음')}</div>
           </div>
           <div style="color: #666; font-size: 12px; margin-bottom: 3px;">📞 ${escapeHtml(c.phone || '연락처 없음')}</div>
-          <div style="color: #666; font-size: 11px; line-height: 1.2; margin-bottom: 3px;">
-            ${(() => {
-              const summary = [];
-              if (c.regions) summary.push(`📍 ${c.regions}`);
-              if (c.floor || c.floor_pref) summary.push(`🏢 ${c.floor || c.floor_pref}층`);
-              if (c.area || c.area_pref) summary.push(`📐 ${c.area || c.area_pref}평`);
-              if (c.deposit || c.deposit_pref) summary.push(`💰 보:${c.deposit || c.deposit_pref}`);
-              if (c.rent || c.rent_pref) summary.push(`💵 월:${c.rent || c.rent_pref}`);
-              if (c.premium || c.premium_pref) summary.push(`🔑 권:${c.premium || c.premium_pref}`);
-              return summary.length > 0 ? summary.join(' | ') : '희망 조건 없음';
-            })()}
-          </div>
+                     <div style="color: #666; font-size: 11px; line-height: 1.2; margin-bottom: 3px;">
+             ${(() => {
+               const summary = [];
+               if (c.regions) summary.push(`📍 ${c.regions}`);
+               if (c.floor_pref || c.floor) summary.push(`🏢 ${c.floor_pref || c.floor}층`);
+               if (c.area_pref || c.area) summary.push(`📐 ${c.area_pref || c.area}평`);
+               if (c.deposit_pref || c.deposit) summary.push(`💰 보:${c.deposit_pref || c.deposit}`);
+               if (c.rent_pref || c.rent) summary.push(`💵 월:${c.rent_pref || c.rent}`);
+               if (c.premium_pref || c.premium) summary.push(`🔑 권:${c.premium_pref || c.premium}`);
+               return summary.length > 0 ? summary.join(' | ') : '희망 조건 없음';
+             })()}
+           </div>
           ${c.notes && c.notes.trim() ? `<div style="color: #888; font-size: 10px; line-height: 1.1; font-style: italic;">📝 ${escapeHtml(c.notes.trim())}</div>` : ''}
         </div>
         
@@ -377,6 +377,15 @@ function renderCustomerEditForm(c = {}) {
   if (!detailTitleEl || !viewCustomerEdit) return;
 
   detailTitleEl.textContent = "고객 정보 수정";
+  
+  // 디버깅: 고객 데이터 확인
+  console.log('🔍 renderCustomerEditForm - 고객 데이터:', c);
+  console.log('🔍 floor 관련:', c.floor, c.floor_pref);
+  console.log('🔍 area 관련:', c.area, c.area_pref);
+  console.log('🔍 deposit 관련:', c.deposit, c.deposit_pref);
+  console.log('🔍 rent 관련:', c.rent, c.rent_pref);
+  console.log('🔍 premium 관련:', c.premium, c.premium_pref);
+  console.log('🔍 note 관련:', c.note, c.notes);
 
   viewCustomerEdit.innerHTML = `
     <div style="background: #f8f9fa; padding: 8px; border-radius: 8px; margin-bottom: 10px;">
@@ -387,7 +396,7 @@ function renderCustomerEditForm(c = {}) {
     <div style="background: white; border: 1px solid #e0e0e0; border-radius: 8px; padding: 8px;">
       <div class="detail-row" style="margin-bottom: 8px;">
         <label style="display: block; font-weight: 600; color: #333; margin-bottom: 3px; font-size: 12px;">담당자 *</label>
-        <input class="form-control" id="frmManager" 
+        <input class="form-control" id="editManager" 
                value="${escapeHtml(c.manager || '')}" 
                placeholder="담당자명을 입력하세요"
                style="width: 100%; padding: 6px; border: 1px solid #ddd; border-radius: 4px; font-size: 12px; margin-left: -8px;">
@@ -395,7 +404,7 @@ function renderCustomerEditForm(c = {}) {
       
       <div class="detail-row" style="margin-bottom: 8px;">
         <label style="display: block; font-weight: 600; color: #333; margin-bottom: 3px; font-size: 12px;">고객명 *</label>
-        <input class="form-control" id="frmName" 
+        <input class="form-control" id="editName" 
                value="${escapeHtml(c.name || '')}"
                placeholder="고객명을 입력하세요"
                style="width: 100%; padding: 6px; border: 1px solid #ddd; border-radius: 4px; font-size: 12px; margin-left: -8px;">
@@ -403,7 +412,7 @@ function renderCustomerEditForm(c = {}) {
       
       <div class="detail-row" style="margin-bottom: 8px;">
         <label style="display: block; font-weight: 600; color: #333; margin-bottom: 3px; font-size: 12px;">연락처 *</label>
-        <input class="form-control" id="frmPhone" 
+        <input class="form-control" id="editPhone" 
                value="${escapeHtml(c.phone || '')}" 
                placeholder="연락처를 입력하세요"
                style="width: 100%; padding: 6px; border: 1px solid #ddd; border-radius: 4px; font-size: 12px; margin-left: -8px;">
@@ -411,7 +420,7 @@ function renderCustomerEditForm(c = {}) {
       
       <div class="detail-row" style="margin-bottom: 8px;">
         <label style="display: block; font-weight: 600; color: #333; margin-bottom: 3px; font-size: 12px;">희망지역</label>
-        <input class="form-control" id="frmRegions" 
+        <input class="form-control" id="editRegions" 
                value="${escapeHtml(c.regions || '')}" 
                placeholder="희망지역을 입력하세요"
                style="width: 100%; padding: 6px; border: 1px solid #ddd; border-radius: 4px; font-size: 12px; margin-left: -8px;">
@@ -419,54 +428,54 @@ function renderCustomerEditForm(c = {}) {
       
       <div class="detail-row" style="margin-bottom: 8px;">
         <label style="display: block; font-weight: 600; color: #333; margin-bottom: 3px; font-size: 12px;">희망층수</label>
-        <input class="form-control" id="frmFloor" 
-               value="${escapeHtml(c.floor_pref || '')}" 
+        <input class="form-control" id="editFloor" 
+               value="${escapeHtml(c.floor_pref || c.floor || '')}" 
                placeholder="희망층수를 입력하세요"
                style="width: 100%; padding: 6px; border: 1px solid #ddd; border-radius: 4px; font-size: 12px; margin-left: -8px;">
       </div>
       
       <div class="detail-row" style="margin-bottom: 8px;">
         <label style="display: block; font-weight: 600; color: #333; margin-bottom: 3px; font-size: 12px;">희망면적</label>
-        <input class="form-control" id="frmArea" 
-               value="${escapeHtml(c.area_pref || '')}" 
+        <input class="form-control" id="editArea" 
+               value="${escapeHtml(c.area_pref || c.area || '')}" 
                placeholder="예: 20 (20평 이상) 또는 10-20 (10~20평 범위)"
                style="width: 100%; padding: 6px; border: 1px solid #ddd; border-radius: 4px; font-size: 12px; margin-left: -8px;">
       </div>
       
       <div class="detail-row" style="margin-bottom: 8px;">
         <label style="display: block; font-weight: 600; color: #333; margin-bottom: 3px; font-size: 12px;">희망보증금</label>
-        <input class="form-control" id="frmDeposit" 
-               value="${escapeHtml(c.deposit_pref || '')}"
+        <input class="form-control" id="editDeposit" 
+               value="${escapeHtml(c.deposit_pref || c.deposit || '')}"
                placeholder="희망보증금을 입력하세요"
                style="width: 100%; padding: 6px; border: 1px solid #ddd; border-radius: 4px; font-size: 12px; margin-left: -8px;">
       </div>
       
       <div class="detail-row" style="margin-bottom: 8px;">
         <label style="display: block; font-weight: 600; color: #333; margin-bottom: 3px; font-size: 12px;">희망월세</label>
-        <input class="form-control" id="frmRent" 
-               value="${escapeHtml(c.rent_pref || '')}"
+        <input class="form-control" id="editRent" 
+               value="${escapeHtml(c.rent_pref || c.rent || '')}"
                placeholder="희망월세를 입력하세요"
                style="width: 100%; padding: 6px; border: 1px solid #ddd; border-radius: 4px; font-size: 12px; margin-left: -8px;">
       </div>
       
       <div class="detail-row" style="margin-bottom: 8px;">
         <label style="display: block; font-weight: 600; color: #333; margin-bottom: 3px; font-size: 12px;">희망권리금</label>
-        <input class="form-control" id="frmPremium" 
-               value="${escapeHtml(c.premium_pref || '')}"
+        <input class="form-control" id="editPremium" 
+               value="${escapeHtml(c.premium_pref || c.premium || '')}"
                placeholder="희망권리금을 입력하세요"
                style="width: 100%; padding: 6px; border: 1px solid #ddd; border-radius: 4px; font-size: 12px; margin-left: -8px;">
       </div>
       
       <div class="detail-row" style="margin-bottom: 8px;">
         <label style="display: block; font-weight: 600; color: #333; margin-bottom: 3px; font-size: 12px;">참고사항</label>
-        <textarea class="form-control" id="frmNotes" 
+        <textarea class="form-control" id="editNotes" 
                   placeholder="참고사항을 입력하세요"
-                  style="width: 100%; padding: 6px; border: 1px solid #ddd; border-radius: 4px; font-size: 12px; margin-left: -8px; min-height: 80px; resize: vertical;">${escapeHtml(c.notes || '')}</textarea>
+                  style="width: 100%; padding: 6px; border: 1px solid #ddd; border-radius: 4px; font-size: 12px; margin-left: -8px; min-height: 80px; resize: vertical;">${escapeHtml(c.notes || c.note || '')}</textarea>
       </div>
       
       <div class="detail-row" style="margin-bottom: 8px;">
         <label style="display: block; font-weight: 600; color: #333; margin-bottom: 3px; font-size: 12px;">상태</label>
-        <select class="form-control" id="frmStatus" 
+        <select class="form-control" id="editStatus" 
                 style="width: 100%; padding: 6px; border: 1px solid #ddd; border-radius: 4px; font-size: 12px; margin-left: -8px;">
           <option value="생" ${c.status === '생' ? 'selected' : ''}>생성</option>
           <option value="완" ${c.status === '완' ? 'selected' : ''}>완료</option>

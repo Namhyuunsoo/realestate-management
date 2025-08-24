@@ -221,14 +221,14 @@ function renderCustomerListItems(list) {
     // 더블클릭 안내 툴팁 추가
     customerCard.title = "클릭: 상세보기 | 더블클릭: 필터적용 | 우클릭: 메뉴 (수정/상태변경/삭제)";
     
-    // 고객 정보 요약
+    // 고객 정보 요약 (_pref 필드 우선, 기존 필드 fallback)
     const summary = [];
     if (c.regions) summary.push(`📍 ${c.regions}`);
-    if (c.floor) summary.push(`🏢 ${c.floor}층`);
-    if (c.area) summary.push(`📐 ${c.area}평`);
-    if (c.deposit) summary.push(`💰 보:${c.deposit}`);
-    if (c.rent) summary.push(`💵 월:${c.rent}`);
-    if (c.premium) summary.push(`🔑 권:${c.premium}`);
+    if (c.floor_pref || c.floor) summary.push(`🏢 ${c.floor_pref || c.floor}층`);
+    if (c.area_pref || c.area) summary.push(`📐 ${c.area_pref || c.area}평`);
+    if (c.deposit_pref || c.deposit) summary.push(`💰 보:${c.deposit_pref || c.deposit}`);
+    if (c.rent_pref || c.rent) summary.push(`💵 월:${c.rent_pref || c.rent}`);
+    if (c.premium_pref || c.premium) summary.push(`🔑 권:${c.premium_pref || c.premium}`);
     
     // 참고사항 처리 (긴 경우 줄임)
     let notesDisplay = '';

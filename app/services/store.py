@@ -24,6 +24,35 @@ def clean_nan_values(obj):
     else:
         return obj
 
+def _clean_numeric_value(value):
+    """숫자 값에서 불필요한 소수점 제거 (강화된 버전)"""
+    if value is None or value == '':
+        return value
+    
+    # 문자열로 변환
+    str_value = str(value)
+    
+    # pandas NaN 값 처리
+    if str_value.lower() in ['nan', 'none', 'null']:
+        return ''
+    
+    # .0으로 끝나는 경우 제거 (여러 번 반복하여 .0.0 같은 경우도 처리)
+    while str_value.endswith('.0'):
+        str_value = str_value.replace('.0', '')
+        print(f"🔧 store.py .0 제거: '{value}' → '{str_value}'")
+    
+    # float이고 정수인 경우 정수로 변환
+    try:
+        float_val = float(str_value)
+        if float_val.is_integer():
+            cleaned = str(int(float_val))
+            print(f"🔧 store.py float→int 변환: '{value}' → '{cleaned}'")
+            return cleaned
+    except (ValueError, TypeError):
+        pass
+    
+    return str_value
+
 # ======================================
 # 1) JSON 기반 저장소: 브리핑 & get_customer
 # ======================================
@@ -371,6 +400,47 @@ def list_customers(user_email: str, filter_type: str = 'own', manager: str = '')
     # NaN 값 정리
     result = clean_nan_values(result)
     
+    # 소수점 제거 및 필드명 매핑
+    for customer in result:
+        # floor → floor_pref (항상 복사하고 소수점 제거)
+        if 'floor' in customer:
+            original_val = customer['floor']
+            cleaned_val = _clean_numeric_value(original_val)
+            customer['floor_pref'] = cleaned_val
+            print(f"🔧 store.py floor 정리: '{original_val}' → '{cleaned_val}'")
+        
+        # area → area_pref (항상 복사하고 소수점 제거)
+        if 'area' in customer:
+            original_val = customer['area']
+            cleaned_val = _clean_numeric_value(original_val)
+            customer['area_pref'] = cleaned_val
+            print(f"🔧 store.py area 정리: '{original_val}' → '{cleaned_val}'")
+        
+        # deposit → deposit_pref (항상 복사하고 소수점 제거)
+        if 'deposit' in customer:
+            original_val = customer['deposit']
+            cleaned_val = _clean_numeric_value(original_val)
+            customer['deposit_pref'] = cleaned_val
+            print(f"🔧 store.py deposit 정리: '{original_val}' → '{cleaned_val}'")
+        
+        # rent → rent_pref (항상 복사하고 소수점 제거)
+        if 'rent' in customer:
+            original_val = customer['rent']
+            cleaned_val = _clean_numeric_value(original_val)
+            customer['rent_pref'] = cleaned_val
+            print(f"🔧 store.py rent 정리: '{original_val}' → '{cleaned_val}'")
+        
+        # premium → premium_pref (항상 복사하고 소수점 제거)
+        if 'premium' in customer:
+            original_val = customer['premium']
+            cleaned_val = _clean_numeric_value(original_val)
+            customer['premium_pref'] = cleaned_val
+            print(f"🔧 store.py premium 정리: '{original_val}' → '{cleaned_val}'")
+        
+        # note → notes
+        if 'note' in customer and not customer.get('notes'):
+            customer['notes'] = customer['note']
+    
     return result
 
 def create_customer(user_email: str, payload: dict) -> dict:
@@ -580,12 +650,15 @@ def update_customer(cid: str, updates: dict, user_email: str) -> dict:
         print(f"❌ 고객을 찾을 수 없음: ID={cid}")
         return None
     
-    # 업데이트 적용
+    # 업데이트 적용 (빈 값이나 None인 경우 기존 값 유지)
     for key, value in updates.items():
         if key in ['id', 'created_by', 'created_at']:
             continue
-        df.at[customer_idx[0], key] = value
-        print(f"📝 업데이트: {key} = {value}")
+        if value is not None and value != '' and value != 'undefined':
+            df.at[customer_idx[0], key] = value
+            print(f"📝 업데이트: {key} = {value}")
+        else:
+            print(f"⏭️ 빈 값 건너뛰기: {key} = {value}")
     
     # 파일 저장
     df.to_excel(target_path, index=False)
@@ -622,6 +695,20 @@ def update_customer(cid: str, updates: dict, user_email: str) -> dict:
     
     # NaN 값 정리
     updated_customer = clean_nan_values(updated_customer)
+    
+    # 필드명 매핑 (Excel 컬럼명과 모델 필드명 통일)
+    if 'floor' in updated_customer and not updated_customer.get('floor_pref'):
+        updated_customer['floor_pref'] = updated_customer['floor']
+    if 'area' in updated_customer and not updated_customer.get('area_pref'):
+        updated_customer['area_pref'] = updated_customer['area']
+    if 'deposit' in updated_customer and not updated_customer.get('deposit_pref'):
+        updated_customer['deposit_pref'] = updated_customer['deposit']
+    if 'rent' in updated_customer and not updated_customer.get('rent_pref'):
+        updated_customer['rent_pref'] = updated_customer['rent']
+    if 'premium' in updated_customer and not updated_customer.get('premium_pref'):
+        updated_customer['premium_pref'] = updated_customer['premium']
+    if 'note' in updated_customer and not updated_customer.get('notes'):
+        updated_customer['notes'] = updated_customer['note']
     
     print(f"✅ 고객 업데이트 완료: ID={cid}")
     return updated_customer

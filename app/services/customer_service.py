@@ -50,6 +50,48 @@ class CustomerService:
             # 원래 store.py 로직 사용: NaN 값을 빈 문자열로 처리
             customer_dict = customer_dict.fillna("")
             cleaned_dict = customer_dict.to_dict()
+            
+            print(f"🔍 원본 고객 데이터 키들: {list(cleaned_dict.keys())}")
+            print(f"🔍 floor 관련 데이터: floor={cleaned_dict.get('floor')}, floor_pref={cleaned_dict.get('floor_pref')}")
+            print(f"🔍 area 관련 데이터: area={cleaned_dict.get('area')}, area_pref={cleaned_dict.get('area_pref')}")
+            print(f"🔍 deposit 관련 데이터: deposit={cleaned_dict.get('deposit')}, deposit_pref={cleaned_dict.get('deposit_pref')}")
+            print(f"🔍 rent 관련 데이터: rent={cleaned_dict.get('rent')}, rent_pref={cleaned_dict.get('rent_pref')}")
+            print(f"🔍 premium 관련 데이터: premium={cleaned_dict.get('premium')}, premium_pref={cleaned_dict.get('premium_pref')}")
+            print(f"🔍 note 관련 데이터: note={cleaned_dict.get('note')}, notes={cleaned_dict.get('notes')}")
+            
+            # 필드명 매핑 (Excel 컬럼명과 모델 필드명 통일) + 소수점 제거
+            # floor → floor_pref (항상 복사하고 소수점 제거)
+            if 'floor' in cleaned_dict:
+                floor_val = cleaned_dict['floor']
+                cleaned_dict['floor_pref'] = self._clean_numeric_value(floor_val)
+                print(f"🔧 get_customer floor 정리: '{floor_val}' → '{cleaned_dict['floor_pref']}'")
+            
+            # area → area_pref (항상 복사하고 소수점 제거)
+            if 'area' in cleaned_dict:
+                area_val = cleaned_dict['area']
+                cleaned_dict['area_pref'] = self._clean_numeric_value(area_val)
+                print(f"🔧 get_customer area 정리: '{area_val}' → '{cleaned_dict['area_pref']}'")
+            
+            # deposit → deposit_pref (항상 복사하고 소수점 제거)
+            if 'deposit' in cleaned_dict:
+                deposit_val = cleaned_dict['deposit']
+                cleaned_dict['deposit_pref'] = self._clean_numeric_value(deposit_val)
+                print(f"🔧 get_customer deposit 정리: '{deposit_val}' → '{cleaned_dict['deposit_pref']}'")
+            
+            # rent → rent_pref (항상 복사하고 소수점 제거)
+            if 'rent' in cleaned_dict:
+                rent_val = cleaned_dict['rent']
+                cleaned_dict['rent_pref'] = self._clean_numeric_value(rent_val)
+                print(f"🔧 get_customer rent 정리: '{rent_val}' → '{cleaned_dict['rent_pref']}'")
+            
+            # premium → premium_pref (항상 복사하고 소수점 제거)
+            if 'premium' in cleaned_dict:
+                premium_val = cleaned_dict['premium']
+                cleaned_dict['premium_pref'] = self._clean_numeric_value(premium_val)
+                print(f"🔧 get_customer premium 정리: '{premium_val}' → '{cleaned_dict['premium_pref']}'")
+            if 'note' in cleaned_dict and not cleaned_dict.get('notes'):
+                cleaned_dict['notes'] = cleaned_dict['note']
+            
             print(f"✅ 고객 찾음: {cleaned_dict.get('name')}, {cleaned_dict.get('phone')}")
             return cleaned_dict
             
@@ -72,8 +114,12 @@ class CustomerService:
                 print(f"❌ 파일이 존재하지 않음: {file_path}")
                 return []
             
+            # 파일 수정 시간 확인하여 캐시 무효화
+            current_time = os.path.getmtime(file_path)
+            cache_key = f"{file_path}_{current_time}"
+            
             df = pd.read_excel(file_path)
-            print(f"📊 Excel 파일에서 {len(df)}개 고객 로드")
+            print(f"📊 Excel 파일에서 {len(df)}개 고객 로드 (수정시간: {current_time})")
             
             # 필터링 적용
             filtered_df = self._apply_customer_filters(df, filter_type, manager, user_email)
@@ -81,6 +127,47 @@ class CustomerService:
             # 원래 store.py 로직 사용: NaN 값을 빈 문자열로 처리
             filtered_df = filtered_df.fillna("")
             customers = filtered_df.to_dict(orient="records")
+            
+            # 필드명 매핑 적용 (Excel 컬럼명과 모델 필드명 통일) + 소수점 제거
+            for customer in customers:
+                # floor → floor_pref (항상 복사하고 소수점 제거)
+                if 'floor' in customer:
+                    original_val = customer['floor']
+                    cleaned_val = self._clean_numeric_value(original_val)
+                    customer['floor_pref'] = cleaned_val
+                    print(f"🔧 floor 정리: '{original_val}' → '{cleaned_val}'")
+                
+                # area → area_pref (항상 복사하고 소수점 제거)
+                if 'area' in customer:
+                    original_val = customer['area']
+                    cleaned_val = self._clean_numeric_value(original_val)
+                    customer['area_pref'] = cleaned_val
+                    print(f"🔧 area 정리: '{original_val}' → '{cleaned_val}'")
+                
+                # deposit → deposit_pref (항상 복사하고 소수점 제거)
+                if 'deposit' in customer:
+                    original_val = customer['deposit']
+                    cleaned_val = self._clean_numeric_value(original_val)
+                    customer['deposit_pref'] = cleaned_val
+                    print(f"🔧 deposit 정리: '{original_val}' → '{cleaned_val}'")
+                
+                # rent → rent_pref (항상 복사하고 소수점 제거)
+                if 'rent' in customer:
+                    original_val = customer['rent']
+                    cleaned_val = self._clean_numeric_value(original_val)
+                    customer['rent_pref'] = cleaned_val
+                    print(f"🔧 rent 정리: '{original_val}' → '{cleaned_val}'")
+                
+                # premium → premium_pref (항상 복사하고 소수점 제거)
+                if 'premium' in customer:
+                    original_val = customer['premium']
+                    cleaned_val = self._clean_numeric_value(original_val)
+                    customer['premium_pref'] = cleaned_val
+                    print(f"🔧 premium 정리: '{original_val}' → '{cleaned_val}'")
+                
+                # note → notes
+                if 'note' in customer and not customer.get('notes'):
+                    customer['notes'] = customer['note']
             
             print(f"✅ 필터링 후 {len(customers)}개 고객 반환")
             return customers
@@ -152,15 +239,23 @@ class CustomerService:
             if not existing_customer:
                 raise ValueError("고객을 찾을 수 없습니다.")
             
+            # 빈 값이나 None인 업데이트는 제거 (기존 값 유지)
+            cleaned_updates = {}
+            for key, value in updates.items():
+                if value is not None and value != '' and value != 'undefined':
+                    cleaned_updates[key] = value
+            
+            print(f"🧹 정리된 업데이트 데이터: {cleaned_updates}")
+            
             # 지역명 정규화
-            if 'region' in updates:
-                updates['region'] = self.normalize_region(updates['region'])
-            if 'region2' in updates:
-                updates['region2'] = self.normalize_region(updates['region2'])
+            if 'region' in cleaned_updates:
+                cleaned_updates['region'] = self.normalize_region(cleaned_updates['region'])
+            if 'region2' in cleaned_updates:
+                cleaned_updates['region2'] = self.normalize_region(cleaned_updates['region2'])
             
             # Customer 모델 생성 및 업데이트
             customer = Customer.from_dict(existing_customer)
-            customer.update_from_dict(updates)
+            customer.update_from_dict(cleaned_updates)
             
             # 검증
             errors = customer.validate()
@@ -269,15 +364,38 @@ class CustomerService:
         if len(customer_idx) == 0:
             raise ValueError(f"업데이트할 고객을 찾을 수 없습니다: {customer.id}")
         
-        # 고객 정보 업데이트
+        # 고객 정보 업데이트 (빈 값이나 None인 경우 기존 값 유지)
         customer_dict = customer.to_dict()
         for key, value in customer_dict.items():
-            if key in df.columns:
+            if key in df.columns and value is not None and value != '' and value != 'undefined':
                 df.loc[customer_idx[0], key] = value
+                print(f"📝 업데이트: {key} = {value}")
+            elif key in df.columns:
+                print(f"⏭️ 빈 값 유지: {key} = {value}")
         
         # 파일 저장
         df.to_excel(file_path, index=False)
         print(f"✅ Excel 파일에서 고객 업데이트: {file_path}")
+        
+        # 관리자 파일도 동시에 업데이트 (데이터 일관성 유지)
+        admin_path = self._admin_file()
+        if os.path.exists(admin_path):
+            try:
+                df_admin = pd.read_excel(admin_path)
+                admin_customer_idx = df_admin[df_admin['id'] == customer.id].index
+                
+                if len(admin_customer_idx) > 0:
+                    for key, value in customer_dict.items():
+                        if key in df_admin.columns and value is not None and value != '' and value != 'undefined':
+                            df_admin.loc[admin_customer_idx[0], key] = value
+                            print(f"📝 관리자 파일 업데이트: {key} = {value}")
+                    
+                    df_admin.to_excel(admin_path, index=False)
+                    print(f"✅ 관리자 파일도 업데이트 완료: {admin_path}")
+                else:
+                    print(f"⚠️ 관리자 파일에서 고객을 찾을 수 없음: {customer.id}")
+            except Exception as e:
+                print(f"⚠️ 관리자 파일 업데이트 실패: {e}")
     
     def _delete_customer_from_excel(self, customer_id: str, user_email: str):
         """Excel 파일에서 고객 삭제"""
@@ -336,4 +454,34 @@ class CustomerService:
         if "시전체" in region or "시전부" in region:
             return region.split("시전체")[0] + "시"
         
-        return region_mapping.get(normalized, region) 
+        return region_mapping.get(normalized, region)
+    
+    def _clean_numeric_value(self, value):
+        """숫자 값에서 불필요한 소수점 제거"""
+        if value is None or value == '':
+            return value
+        
+        # 문자열로 변환
+        str_value = str(value)
+        
+        # .0으로 끝나는 경우 제거
+        if str_value.endswith('.0'):
+            cleaned = str_value.replace('.0', '')
+            print(f"🔧 .0 제거: '{str_value}' → '{cleaned}'")
+            return cleaned
+        
+        # float이고 정수인 경우 정수로 변환
+        try:
+            float_val = float(str_value)
+            if float_val.is_integer():
+                cleaned = str(int(float_val))
+                print(f"🔧 float→int 변환: '{str_value}' → '{cleaned}'")
+                return cleaned
+        except (ValueError, TypeError):
+            pass
+        
+        # pandas NaN 값 처리
+        if str_value.lower() in ['nan', 'none', 'null']:
+            return ''
+        
+        return str_value 

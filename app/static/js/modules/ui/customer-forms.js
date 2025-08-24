@@ -204,17 +204,18 @@ async function submitCustomerEditForm(customerId) {
     name: cleanValue(document.getElementById('editName')?.value) || '',
     phone: cleanValue(document.getElementById('editPhone')?.value) || '',
     regions: cleanValue(document.getElementById('editRegions')?.value) || '',
-    floor: cleanValue(document.getElementById('editFloor')?.value) || '',
-    area: areaVal,
-    deposit: depositVal,
-    rent: rentVal,
-    premium: premiumVal,
+    floor_pref: cleanValue(document.getElementById('editFloor')?.value) || '',
+    area_pref: areaVal,
+    deposit_pref: depositVal,
+    rent_pref: rentVal,
+    premium_pref: premiumVal,
     notes: cleanValue(document.getElementById('editNotes')?.value) || '',
+    status: cleanValue(document.getElementById('editStatus')?.value) || '',
     // 상단필터 방식의 필터데이터 저장
     filter_data: JSON.stringify(filterData)
   };
 
-  // 필수 필드 검증
+  // 필수 필드 검증 (기존 값이 있으면 통과)
   if (!formData.name.trim()) {
     alert('고객명을 입력해주세요.');
     return;
@@ -257,17 +258,34 @@ async function submitCustomerEditForm(customerId) {
         secondaryPanel.classList.remove('visible');
       }
       
-      // 고객 목록 새로고침
-      if (currentUser === 'admin') {
-        loadCustomerList('all');
-      } else {
-        loadCustomerList('own');
-      }
-      
-      // 고객 저장 후 목록 갱신
-      if (window.afterCustomerSaved) {
-        window.afterCustomerSaved();
-      }
+      // 고객 목록 새로고침 (강제 새로고침)
+      setTimeout(() => {
+        // 현재 고객 목록 캐시 무효화
+        if (window.currentCustomerList) {
+          window.currentCustomerList = null;
+        }
+        
+        // 페이지 새로고침 없이 강제로 고객 목록 새로고침
+        if (currentUser === 'admin') {
+          loadCustomerList('all');
+        } else {
+          loadCustomerList('own');
+        }
+        
+        // 고객 저장 후 목록 갱신
+        if (window.afterCustomerSaved) {
+          window.afterCustomerSaved();
+        }
+        
+        // 추가로 1초 후 한 번 더 새로고침 (서버 동기화 지연 고려)
+        setTimeout(() => {
+          if (currentUser === 'admin') {
+            loadCustomerList('all');
+          } else {
+            loadCustomerList('own');
+          }
+        }, 1000);
+      }, 100);
     } else {
       const error = await response.text();
       console.error('고객 수정 실패:', error);

@@ -62,17 +62,17 @@ async function renderCustomerListAndDetail(selectedIdx = null) {
     dbg('고객 데이터:', c);
     const li = document.createElement('li');
     
-    // 고객 정보를 구조화된 형식으로 표시 (실제 저장 데이터 필드명 사용)
+    // 고객 정보를 구조화된 형식으로 표시 (_pref 필드 우선, 기존 필드 fallback)
     const displayName = c.name || '';
     const displayManager = c.manager || '';
     const displayPhone = c.phone || '';
     const displayRegions = c.regions || '';
-    const displayFloor = c.floor || '';
-    const displayArea = c.area || '';
-    const displayDeposit = c.deposit || '';
-    const displayRent = c.rent || '';
-    const displayPremium = c.premium || '';
-    const displayNote = c.notes || '';
+    const displayFloor = c.floor_pref || c.floor || '';
+    const displayArea = c.area_pref || c.area || '';
+    const displayDeposit = c.deposit_pref || c.deposit || '';
+    const displayRent = c.rent_pref || c.rent || '';
+    const displayPremium = c.premium_pref || c.premium || '';
+    const displayNote = c.notes || c.note || '';
     
     // 구조화된 HTML 형식으로 고객 정보 표시
     li.innerHTML = `
