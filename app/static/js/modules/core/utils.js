@@ -334,6 +334,198 @@ window.addEventListener('resize', () => {
   calculateSecondaryPanelPosition();
 });
 
+/**
+ * 모바일 앱 전체 높이를 조정하는 함수
+ */
+function adjustMobileAppHeight() {
+  if (window.innerWidth <= 768) {
+    // 모바일 앱 전체 높이를 화면 높이에 맞춤
+    const screenHeight = window.innerHeight;
+    const visualViewportHeight = window.visualViewport ? window.visualViewport.height : screenHeight;
+    
+    // 실제 사용 가능한 높이 계산 (브라우저 UI 제외)
+    const availableHeight = Math.min(screenHeight, visualViewportHeight);
+    
+    console.log(`📱 화면 정보: innerHeight=${screenHeight}, visualViewport=${visualViewportHeight}, available=${availableHeight}`);
+    
+    // body와 layout에 화면 높이 적용
+    document.body.style.height = `${availableHeight}px`;
+    document.body.style.maxHeight = `${availableHeight}px`;
+    document.body.style.overflow = 'hidden';
+    document.body.style.position = 'fixed';
+    document.body.style.top = '0';
+    document.body.style.left = '0';
+    document.body.style.right = '0';
+    document.body.style.bottom = '0';
+    document.body.style.width = '100%';
+    document.body.style.margin = '0';
+    document.body.style.padding = '0';
+    
+    const layout = document.getElementById('layout');
+    if (layout) {
+      layout.style.height = `${availableHeight}px`;
+      layout.style.maxHeight = `${availableHeight}px`;
+      layout.style.position = 'relative';
+      layout.style.overflow = 'hidden';
+      layout.style.width = '100%';
+      layout.style.margin = '0';
+      layout.style.padding = '0';
+    }
+    
+    // 메인 콘텐츠에 화면 높이 적용
+    const mainContent = document.getElementById('mainContent');
+    if (mainContent) {
+      mainContent.style.height = `${availableHeight}px`;
+      mainContent.style.maxHeight = `${availableHeight}px`;
+      mainContent.style.position = 'relative';
+      mainContent.style.overflow = 'hidden';
+      mainContent.style.margin = '0';
+      mainContent.style.padding = '0';
+    }
+    
+    // 지도에 화면 높이 적용
+    const map = document.getElementById('map');
+    if (map) {
+      map.style.height = `${availableHeight}px`;
+      map.style.maxHeight = `${availableHeight}px`;
+      map.style.position = 'relative';
+      map.style.margin = '0';
+      map.style.padding = '0';
+    }
+    
+    // 사이드바에 화면 높이 적용
+    const sidebar = document.getElementById('sidebar');
+    if (sidebar) {
+      sidebar.style.bottom = '0';
+      sidebar.style.height = `${availableHeight * 0.5}px`;
+      sidebar.style.maxHeight = `${availableHeight * 0.5}px`;
+      sidebar.style.transform = 'translateY(calc(100% - 40px))';
+    }
+    
+    // 모바일 노치에 화면 높이 적용
+    const mobileNotch = document.querySelector('.mobile-notch');
+    if (mobileNotch) {
+      mobileNotch.style.bottom = '0';
+    }
+    
+    // 2차 사이드바에 화면 높이 적용 - 정확한 버전
+    const secondaryPanel = document.getElementById('secondaryPanel');
+    if (secondaryPanel) {
+      secondaryPanel.style.height = `${availableHeight}px`;
+      secondaryPanel.style.maxHeight = `${availableHeight}px`;
+      secondaryPanel.style.minHeight = `${availableHeight}px`;
+      secondaryPanel.style.bottom = '0';
+      secondaryPanel.style.top = '0';
+      secondaryPanel.style.overflow = 'hidden';
+      secondaryPanel.style.position = 'fixed';
+      secondaryPanel.style.margin = '0';
+      secondaryPanel.style.padding = '0';
+      
+      // 2차 사이드바 내부 컨테이너들도 높이 조정 - 정확한 버전
+             const panelBody = secondaryPanel.querySelector('.panel-body');
+       if (panelBody) {
+         panelBody.style.height = `${availableHeight}px`;
+         panelBody.style.maxHeight = `${availableHeight}px`;
+         panelBody.style.overflow = 'auto';
+         panelBody.style.padding = '15px';
+         panelBody.style.paddingBottom = '10px'; // 최소한의 하단 여백만
+         panelBody.style.margin = '0';
+         panelBody.style.position = 'relative';
+       }
+      
+      const panelView = secondaryPanel.querySelector('.panel-view');
+      if (panelView) {
+        panelView.style.height = `${availableHeight}px`;
+        panelView.style.maxHeight = `${availableHeight}px`;
+        panelView.style.overflow = 'auto';
+        panelView.style.margin = '0';
+        panelView.style.padding = '0';
+      }
+      
+      // 폼 액션 버튼들을 하단에 고정 - 정확한 버전
+      const formActions = secondaryPanel.querySelector('.form-actions');
+      if (formActions) {
+        formActions.style.position = 'sticky';
+        formActions.style.bottom = '0';
+        formActions.style.background = 'white';
+        formActions.style.padding = '10px 0';
+        formActions.style.borderTop = '1px solid #eee';
+        formActions.style.marginTop = '10px';
+        formActions.style.zIndex = '10';
+        formActions.style.width = '100%';
+        formActions.style.left = '0';
+        formActions.style.right = '0';
+      }
+      
+      const detailActions = secondaryPanel.querySelector('.detail-actions');
+      if (detailActions) {
+        detailActions.style.position = 'sticky';
+        detailActions.style.bottom = '0';
+        detailActions.style.background = 'white';
+        detailActions.style.padding = '10px 0';
+        detailActions.style.borderTop = '1px solid #eee';
+        detailActions.style.zIndex = '10';
+        detailActions.style.marginTop = '10px';
+        detailActions.style.width = '100%';
+        detailActions.style.left = '0';
+        detailActions.style.right = '0';
+      }
+      
+      // 클러스터 리스트 정확한 높이 조정
+      const clusterList = secondaryPanel.querySelector('.cluster-list');
+      if (clusterList) {
+        clusterList.style.height = `${availableHeight - 100}px`; // 헤더와 버튼 영역 제외
+        clusterList.style.maxHeight = `${availableHeight - 100}px`;
+        clusterList.style.overflow = 'auto';
+        clusterList.style.margin = '0';
+        clusterList.style.padding = '0';
+      }
+      
+             const clusterItemList = secondaryPanel.querySelector('#clusterItemList');
+       if (clusterItemList) {
+         clusterItemList.style.height = `${availableHeight - 120}px`; // 헤더와 버튼 영역 제외
+         clusterItemList.style.maxHeight = `${availableHeight - 120}px`;
+         clusterItemList.style.overflow = 'auto';
+         clusterItemList.style.margin = '0';
+         clusterItemList.style.padding = '0';
+       }
+    }
+    
+    // CSS 변수로 설정하여 CSS에서도 사용할 수 있도록 함
+    document.documentElement.style.setProperty('--mobile-screen-height', `${availableHeight}px`);
+    
+    console.log(`📱 모바일 앱 높이 조정 완료: ${availableHeight}px`);
+  }
+}
+
+/**
+ * visualViewport 변경 감지 및 대응
+ */
+function handleVisualViewportChange() {
+  if (window.innerWidth <= 768 && window.visualViewport) {
+    adjustMobileAppHeight();
+  }
+}
+
+/**
+ * 윈도우 리사이즈 시 앱 높이 재조정
+ */
+function handleMobileAppResize() {
+  adjustMobileAppHeight();
+}
+
+// 페이지 로드 시 앱 높이 조정
+document.addEventListener('DOMContentLoaded', adjustMobileAppHeight);
+
+// 윈도우 리사이즈 시 앱 높이 재조정
+window.addEventListener('resize', handleMobileAppResize);
+
+// visualViewport 변경 시 앱 높이 재조정
+if (window.visualViewport) {
+  window.visualViewport.addEventListener('resize', handleVisualViewportChange);
+  window.visualViewport.addEventListener('scroll', handleVisualViewportChange);
+}
+
 // 유틸리티 함수들을 전역으로 export
 window.runAfterMapReady = runAfterMapReady;
 window.clearSelection = clearSelection;
@@ -354,4 +546,8 @@ window.parseTextTokens = parseTextTokens;
 window.matchesTextTokens = matchesTextTokens;
 window.escapeHtml = escapeHtml;
 window.cleanValue = cleanValue;
-window.cleanObject = cleanObject; 
+window.cleanObject = cleanObject;
+window.calculateSecondaryPanelPosition = calculateSecondaryPanelPosition;
+window.adjustMobileAppHeight = adjustMobileAppHeight;
+window.handleMobileAppResize = handleMobileAppResize;
+window.handleVisualViewportChange = handleVisualViewportChange; 

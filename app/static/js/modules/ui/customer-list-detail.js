@@ -6,6 +6,11 @@
  * ===== 고객 목록+상세 관련 함수들 =====
  **************************************/
 
+// 권한 확인 헬퍼 함수
+function isUserAdmin() {
+  return localStorage.getItem("X-USER-ADMIN") === "true";
+}
+
 // 고객 목록+상세 렌더링
 async function renderCustomerListAndDetail(selectedIdx = null) {
   dbg('renderCustomerListAndDetail 호출됨, currentUser:', currentUser);
@@ -111,7 +116,7 @@ async function renderCustomerListAndDetail(selectedIdx = null) {
         }
         renderCustomerListAndDetail(idx);
       }
-    });
+    }, { passive: true });
     ul.appendChild(li);
   });
   
@@ -133,7 +138,7 @@ window.afterCustomerSaved = function() {
   showSecondaryPanel('viewCustomerList');
   const detailTitleEl = document.getElementById('secondaryPanelTitle');
   if (detailTitleEl) detailTitleEl.textContent = '내 고객 목록';
-  loadCustomerList(currentUser === 'admin' ? 'all' : 'own');
+        loadCustomerList(isUserAdmin() ? 'all' : 'own');
 };
 
 // 고객 목록+상세 관련 함수들을 전역으로 export

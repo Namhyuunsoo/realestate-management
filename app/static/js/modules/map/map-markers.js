@@ -19,7 +19,73 @@ function placeMarkers(arr) {
     return;
   }
 
+  // 모바일 환경에서는 기존 마커 제거만 차단 (새 마커 생성은 허용)
+  // 단, 사이드바 토글 후 리사이즈 시에는 기존 마커 제거 허용
+  const isMobileResize = window.innerWidth <= 768 && window.MARKERS && window.MARKERS.length > 0 && window.isMobileResizeFlag;
+  
+  if (window.isMobileView && window.MARKERS && window.MARKERS.length > 0 && !isMobileResize) {
+    console.log('📱 모바일 환경: 기존 마커 제거 차단됨 - 새 마커 생성 허용');
+    
+    // 기존 마커는 제거하지 않고, 새 마커만 추가
+    if (arr && arr.length > 0) {
+      console.log('📱 모바일 환경: 새 마커 생성 시작');
+      
+      // 기존 마커와 새 데이터 비교하여 추가할 마커만 생성
+      const existingIds = new Set(window.MARKERS.map(m => m._listingId));
+      const newItems = arr.filter(item => !existingIds.has(item.id));
+      
+      if (newItems.length > 0) {
+        console.log(`📱 모바일 환경: ${newItems.length}개 새 마커 생성`);
+        
+        newItems.forEach(item => {
+          const { lat, lng } = item.coords || {};
+          if (lat == null || lng == null) return;
+          
+          try {
+            const latNum = parseFloat(lat);
+            const lngNum = parseFloat(lng);
+            
+            if (isNaN(latNum) || isNaN(lngNum)) return;
+            if (latNum < 33 || latNum > 39 || lngNum < 124 || lngNum > 132) return;
+            
+            const pos = new naver.maps.LatLng(latNum, lngNum);
+            const color = STATUS_COLORS[item.status_raw] || "#007AFF";
+            
+            const marker = new naver.maps.Marker({
+              position: pos,
+              map: MAP,
+              icon: { content: createMarkerIcon(color, item.id === SELECTED_MARKER_ID, getBriefingStatus(item.id)) }
+            });
+            marker._listingId = item.id;
+            
+            naver.maps.Event.addListener(marker, "click", () => {
+              setActiveMarker(item.id);
+              scrollToListing(item.id);
+              renderDetailPanel(item);
+            });
+            
+            window.MARKERS.push(marker);
+          } catch (error) {
+            console.error(`📱 마커 생성 실패:`, error);
+          }
+        });
+        
+        console.log(`📱 모바일 환경: 총 ${window.MARKERS.length}개 마커 유지`);
+        return; // 새 마커 생성 완료 후 함수 종료
+      } else {
+        console.log('📱 모바일 환경: 새 마커 없음 - 기존 마커 유지');
+        return; // 새 마커가 없으면 함수 종료
+      }
+    }
+    
+    return; // 기존 마커가 있으면 함수 종료
+  }
+
+  // 모바일 환경에서 마커가 없을 때만 기존 마커 제거 허용
   if (MARKERS && MARKERS.length) {
+    if (window.isMobileView) {
+      console.log('📱 모바일 환경: 기존 마커 제거 허용 (마커가 없음)');
+    }
     MARKERS.forEach(m => m.setMap && m.setMap(null));
     MARKERS = [];
   }

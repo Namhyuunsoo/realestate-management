@@ -663,6 +663,13 @@ function applyCustomerFilter(customer) {
         premium: customer.premium || ''
       };
     }
+    
+    // 공란으로 입력된 필드는 필터에서 제외 (빈 문자열, null, undefined 처리)
+    Object.keys(filterData).forEach(key => {
+      if (filterData[key] === '' || filterData[key] === null || filterData[key] === undefined) {
+        delete filterData[key];
+      }
+    });
 
     // CUSTOMER_FILTERS 초기화
     Object.keys(CUSTOMER_FILTERS).forEach(k => delete CUSTOMER_FILTERS[k]);

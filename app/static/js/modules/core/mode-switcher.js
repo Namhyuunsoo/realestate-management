@@ -18,6 +18,7 @@ class ModeSwitcher {
     this.modeToggleBtn = null;
     this.modeText = null;
     this.modeIcon = null;
+    this._isInitialized = false; // 중복 초기화 방지
     this.init();
   }
 
@@ -36,6 +37,11 @@ class ModeSwitcher {
   
   // DOM 로드 완료 후 초기화
   initializeAfterDOMReady() {
+    // 중복 초기화 방지
+    if (this._isInitialized) {
+      return;
+    }
+    
     // DOM 요소 참조
     this.modeToggleBtn = document.getElementById('modeToggleBtn');
     this.modeText = document.getElementById('modeText');
@@ -56,23 +62,26 @@ class ModeSwitcher {
     // 모드 전환 버튼 이벤트 리스너 등록
     this.modeToggleBtn.addEventListener('click', () => {
       this.toggleMode();
-    });
+    }, { passive: true });
     
-    // Z키 단축키 이벤트 리스너 등록
+    // Z키 단축키 이벤트 리스너 등록 (passive: true로 변경하여 성능 개선)
     document.addEventListener('keydown', (e) => {
       // Z키 (대소문자 구분 없음)를 누르면 모드 전환
       if (e.key.toLowerCase() === 'z') {
         // Ctrl, Alt, Shift 등과 함께 누르지 않았을 때만 동작
         if (!e.ctrlKey && !e.altKey && !e.shiftKey && !e.metaKey) {
-          e.preventDefault(); // 기본 동작 방지
+          // passive: true에서는 preventDefault()를 사용할 수 없으므로
+          // 이벤트 핸들러 내에서만 처리
           this.toggleMode();
         }
       }
-    });
+    }, { passive: true });
     
     // 현재 모드에 따라 UI 초기화
     this.updateUI();
     
+    // 초기화 완료 표시
+    this._isInitialized = true;
     console.log('ModeSwitcher 초기화 완료');
   }
 

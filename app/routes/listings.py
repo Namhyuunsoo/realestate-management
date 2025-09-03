@@ -53,7 +53,14 @@ def api_listings():
         current_app.logger.info(f"🔄 강제 새로고침 요청: {user.email} (IP: {request.remote_addr})")
 
     # force 파라미터를 제대로 전달
-    data = load_listings(force_reload=force)
+    try:
+        data = load_listings(force_reload=force)
+    except Exception as e:
+        current_app.logger.error(f"❌ load_listings 실패: {str(e)}")
+        current_app.logger.error(f"❌ 에러 타입: {type(e).__name__}")
+        import traceback
+        current_app.logger.error(f"❌ 스택 트레이스: {traceback.format_exc()}")
+        return jsonify({"error": f"데이터 로드 실패: {str(e)}"}), 500
 
     # 필터
     if status_raw:

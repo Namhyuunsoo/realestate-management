@@ -10,6 +10,25 @@ bp = Blueprint("auth", __name__, url_prefix="/api/auth")
 
 def get_user_service() -> UserService:
     """사용자 서비스 인스턴스 반환"""
+    current_app.logger.info("get_user_service() 호출됨")
+    
+    if not hasattr(current_app, 'data_manager'):
+        current_app.logger.error("DataManager 속성이 존재하지 않습니다.")
+        return None
+        
+    if not current_app.data_manager:
+        current_app.logger.error("DataManager가 None입니다.")
+        return None
+        
+    if not hasattr(current_app.data_manager, 'user_service'):
+        current_app.logger.error("DataManager에 user_service 속성이 없습니다.")
+        return None
+        
+    if not current_app.data_manager.user_service:
+        current_app.logger.error("DataManager.user_service가 None입니다.")
+        return None
+        
+    current_app.logger.info("UserService 인스턴스 반환 성공")
     return current_app.data_manager.user_service
 
 @bp.post("/register")
@@ -68,10 +87,14 @@ def login():
         current_app.logger.info(f"로그인 시도: {email}")
         current_app.logger.info(f"비밀번호 길이: {len(password) if password else 0}")
         
-        # 입력 검증
-        if not email or not password:
-            current_app.logger.warning(f"로그인 실패 - 빈 입력: {email}")
-            return jsonify({"error": "이메일과 비밀번호를 모두 입력해주세요."}), 400
+        # 강화된 입력 검증
+        if not email or not email.strip():
+            current_app.logger.warning(f"로그인 실패 - 빈 이메일")
+            return jsonify({"error": "이메일을 입력해주세요."}), 400
+            
+        if not password or len(password.strip()) == 0:
+            current_app.logger.warning(f"로그인 실패 - 빈 비밀번호: {email}")
+            return jsonify({"error": "비밀번호를 입력해주세요."}), 400
         
         # 이메일 형식 검증
         email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
@@ -157,7 +180,11 @@ def login():
         
     except Exception as e:
         current_app.logger.error(f"로그인 처리 중 오류 발생: {str(e)}")
-        return jsonify({"error": "로그인 처리 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요."}), 500
+        current_app.logger.error(f"오류 타입: {type(e).__name__}")
+        current_app.logger.error(f"오류 상세: {str(e)}")
+        import traceback
+        current_app.logger.error(f"스택 트레이스: {traceback.format_exc()}")
+        return jsonify({"error": f"로그인 처리 중 오류가 발생했습니다: {str(e)}"}), 500
 
 @bp.post("/logout")
 @handle_errors()

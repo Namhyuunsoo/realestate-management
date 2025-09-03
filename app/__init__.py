@@ -4,6 +4,7 @@ from flask import Flask, jsonify, request, make_response
 from dotenv import load_dotenv
 import os
 from datetime import timedelta
+from flask_compress import Compress
 
 # 환경변수 로드 (반드시 Flask 앱 생성 전에)
 print("🔍 환경변수 로딩 시작...")
@@ -48,6 +49,23 @@ def create_app(config_object=None):
     app.config['SESSION_COOKIE_HTTPONLY'] = True
     app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 
+    # Gzip 압축 활성화
+    Compress(app)
+    print("✅ Gzip 압축 활성화 완료")
+    
+    # 압축 설정 최적화
+    app.config['COMPRESS_MIMETYPES'] = [
+        'text/html',
+        'text/css',
+        'text/xml',
+        'application/json',
+        'application/javascript',
+        'text/javascript'
+    ]
+    app.config['COMPRESS_LEVEL'] = 6  # 압축 레벨 (1-9)
+    app.config['COMPRESS_MIN_SIZE'] = 500  # 최소 압축 크기
+    print("✅ 압축 설정 최적화 완료")
+
     # 확장 기능 초기화
     from .extensions import init_extensions
     init_extensions(app)
@@ -85,6 +103,22 @@ def create_app(config_object=None):
 
     # Blueprint 등록
     register_blueprints(app)
+
+    # 모바일 디바이스 감지 및 최적화
+    @app.before_request
+    def detect_mobile_and_optimize():
+        """모바일 디바이스 감지 및 압축 최적화"""
+        user_agent = request.headers.get('User-Agent', '').lower()
+        
+        # 모바일 디바이스 감지
+        mobile_keywords = ['mobile', 'android', 'iphone', 'ipad', 'windows phone']
+        is_mobile = any(keyword in user_agent for keyword in mobile_keywords)
+        
+        # 모바일인 경우 더 적극적인 압축 설정
+        if is_mobile:
+            app.config['COMPRESS_LEVEL'] = 8  # 최대 압축
+            app.config['COMPRESS_MIN_SIZE'] = 100  # 더 작은 파일도 압축
+            print(f"📱 모바일 디바이스 감지: {user_agent[:50]}...")
 
     # CORS 헤더 추가 (다른 컴퓨터에서 접속 가능하도록)
     @app.after_request
@@ -129,20 +163,23 @@ def create_app(config_object=None):
         ncp_client_id = app.config.get("NAVER_MAPS_NCP_CLIENT_ID", "")
         ncp_client_secret = app.config.get("NAVER_MAPS_NCP_CLIENT_SECRET", "")
         
-        # API 키가 설정되지 않은 경우 기본값 사용
-        if not ncp_client_id:
-            ncp_client_id = "bc4a6fsf2a"  # 기본값
-            print("⚠️ NAVER_MAPS_NCP_CLIENT_ID가 설정되지 않아 기본값을 사용합니다.")
-            print("⚠️ 실제 사용을 위해서는 네이버 클라우드 플랫폼에서 유효한 API 키를 발급받아야 합니다.")
-        
-        if not ncp_client_secret:
-            print("⚠️ NAVER_MAPS_NCP_CLIENT_SECRET이 설정되지 않았습니다.")
-            print("⚠️ 지오코딩 기능을 사용하려면 이 값도 설정해야 합니다.")
-        
+        # 환경변수가 이미 설정되어 있으므로 그대로 반환
         return jsonify({
-            "ncpKeyId": ncp_client_id,  # CLIENT_ID와 동일한 값 사용
+            "ncpKeyId": ncp_client_id,
             "ncpClientId": ncp_client_id,
             "ncpClientSecret": ncp_client_secret
+        })
+
+    # 압축 상태 확인 API
+    @app.route("/api/compression/status")
+    def get_compression_status():
+        """압축 설정 상태 확인"""
+        return jsonify({
+            "compression_enabled": True,
+            "compress_level": app.config.get('COMPRESS_LEVEL', 6),
+            "compress_min_size": app.config.get('COMPRESS_MIN_SIZE', 500),
+            "compress_mimetypes": app.config.get('COMPRESS_MIMETYPES', []),
+            "message": "Gzip 압축이 활성화되어 있습니다."
         })
 
     return app

@@ -243,11 +243,6 @@ function renderCustomerForm(c = {}) {
   detailTitleEl.textContent = c.id ? "고객 정보 수정" : "고객 신규등록";
 
   viewCustomerForm.innerHTML = `
-    <div style="background: #f8f9fa; padding: 8px; border-radius: 8px; margin-bottom: 10px;">
-      <div style="font-size: 14px; font-weight: bold; color: #333;">${c.id ? '고객 정보 수정' : '새 고객 등록'}</div>
-      <div style="color: #666; font-size: 12px; margin-top: 2px;">고객 정보를 입력해주세요</div>
-    </div>
-    
     <div style="background: white; border: 1px solid #e0e0e0; border-radius: 8px; padding: 8px;">
       <div class="detail-row" style="margin-bottom: 8px;">
         <label style="display: block; font-weight: 600; color: #333; margin-bottom: 3px; font-size: 12px;">담당자 *</label>

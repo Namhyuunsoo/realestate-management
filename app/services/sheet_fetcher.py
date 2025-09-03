@@ -5,43 +5,48 @@ import os
 import pandas as pd
 import pickle
 import time
+import threading
 from typing import Optional, Tuple
+
+# 전역 락 - 동시 파일 접근 방지
+_file_lock = threading.Lock()
 
 def read_local_listing_sheet(force_reload: bool = False) -> list[list[str]]:
     """
     상가임대차.xlsx를 읽어 2차원 배열 반환
     force_reload=True 시 캐시 무시하고 파일에서 직접 읽기
     """
-    cache_file = "./data/cache/listing_sheet_cache.pkl"
-    cache_dir = os.path.dirname(cache_file)
-    
-    # 캐시 디렉토리 생성
-    if not os.path.exists(cache_dir):
-        os.makedirs(cache_dir)
-    
-    # 소스 파일 경로
-    filename = os.getenv("LISTING_SHEET_FILENAME", "상가임대차.xlsx")
-    data_dir = os.getenv("DATA_DIR", "./data")
-    source_path = os.path.join(data_dir, "raw", filename)
-    
-    if not os.path.exists(source_path):
-        raise FileNotFoundError(f"Listing sheet not found: {source_path}")
-    
-    # 강제 새로고침이 아닌 경우 캐시 확인
-    if not force_reload and os.path.exists(cache_file):
-        cache_valid, cache_data = _check_cache_validity(cache_file, source_path)
-        if cache_valid:
-            print("✅ 캐시된 데이터 사용 (성능 최적화)")
-            return cache_data
-    
-    # 캐시가 없거나 무효하거나 강제 새로고침인 경우 파일에서 읽기
-    print("📖 Excel 파일에서 직접 데이터 읽기...")
-    rows = _read_excel_file(source_path)
-    
-    # 캐시에 저장
-    _save_to_cache(cache_file, rows)
-    
-    return rows
+    with _file_lock:  # 동시 접근 방지
+        cache_file = "./data/cache/listing_sheet_cache.pkl"
+        cache_dir = os.path.dirname(cache_file)
+        
+        # 캐시 디렉토리 생성
+        if not os.path.exists(cache_dir):
+            os.makedirs(cache_dir)
+        
+        # 소스 파일 경로
+        filename = os.getenv("LISTING_SHEET_FILENAME", "상가임대차.xlsx")
+        data_dir = os.getenv("DATA_DIR", "./data")
+        source_path = os.path.join(data_dir, "raw", filename)
+        
+        if not os.path.exists(source_path):
+            raise FileNotFoundError(f"Listing sheet not found: {source_path}")
+        
+        # 강제 새로고침이 아닌 경우 캐시 확인
+        if not force_reload and os.path.exists(cache_file):
+            cache_valid, cache_data = _check_cache_validity(cache_file, source_path)
+            if cache_valid:
+                print("✅ 캐시된 데이터 사용 (성능 최적화)")
+                return cache_data
+        
+        # 캐시가 없거나 무효하거나 강제 새로고침인 경우 파일에서 읽기
+        print("📖 Excel 파일에서 직접 데이터 읽기...")
+        rows = _read_excel_file(source_path)
+        
+        # 캐시에 저장
+        _save_to_cache(cache_file, rows)
+        
+        return rows
 
 def _check_cache_validity(cache_file: str, source_file: str) -> Tuple[bool, Optional[list]]:
     """

@@ -6,6 +6,11 @@
  * ===== 초기화 관련 함수들 =====
  **************************************/
 
+// 권한 확인 헬퍼 함수
+function isUserAdmin() {
+  return localStorage.getItem("X-USER-ADMIN") === "true";
+}
+
 // DOMContentLoaded 초기화 함수
 window.initializeApp = async function() {
   dbg("DOMContentLoaded");
@@ -162,7 +167,7 @@ window.initializeApp = async function() {
           if (detailTitleEl) detailTitleEl.textContent = '내 고객 목록';
           
           console.log('✅ loadCustomerList 함수 호출 시작');
-          window.loadCustomerList(currentUser === 'admin' ? 'all' : 'own');
+          window.loadCustomerList(isUserAdmin() ? 'all' : 'own');
         });
         console.log('✅ 고객List 버튼 이벤트 리스너 등록 완료');
       } else {
@@ -226,12 +231,12 @@ window.initializeApp = async function() {
   if (btnApplyUser) btnApplyUser.addEventListener("click", applyUser);
 
   const userEmailInp = document.getElementById("userEmail");
-  if (userEmailInp) userEmailInp.addEventListener("keydown", e => { if (e.key === "Enter") applyUser(); });
+  if (userEmailInp) userEmailInp.addEventListener("keydown", e => { if (e.key === "Enter") applyUser(); }, { passive: false });
 
   const loginEmailBtn = document.getElementById("loginEmailApply");
   if (loginEmailBtn) loginEmailBtn.addEventListener("click", applyUser);
   const loginEmailInp = document.getElementById("loginEmail");
-  if (loginEmailInp) loginEmailInp.addEventListener("keydown", e => { if (e.key === "Enter") applyUser(); });
+  if (loginEmailInp) loginEmailInp.addEventListener("keydown", e => { if (e.key === "Enter") applyUser(); }, { passive: false });
 
   const logoutBtn = document.getElementById("logoutBtn");
   if (logoutBtn) logoutBtn.addEventListener("click", handleLogoutClick);
@@ -258,7 +263,7 @@ window.initializeApp = async function() {
   
   // 상단 필터 Enter 키
   document.querySelectorAll("#topFilterBar input").forEach(inp => {
-    inp.addEventListener("keydown", e => { if (e.key === "Enter") applyAllFilters(); });
+    inp.addEventListener("keydown", e => { if (e.key === "Enter") applyAllFilters(); }, { passive: false });
   });
 
   // 2차 패널/전체보기 버튼 바인딩
@@ -338,13 +343,15 @@ window.initializeApp = async function() {
   const clusterListClose = document.getElementById("clusterListClose");
   if (clusterListClose) clusterListClose.addEventListener("click", hideClusterList);
 
-  // 3) 화면 상태 설정
-  if (currentUser) {
-    hideLoginScreen();
-    console.log("✅ 사용자 로그인됨:", currentUser);
-  } else {
-    showLoginScreen("");
-    console.log("✅ 로그인 화면 표시");
+  // 3) 화면 상태 설정 (모바일에서는 실행하지 않음)
+  if (!window.MOBILE_APP) {
+    if (currentUser) {
+      hideLoginScreen();
+      console.log("✅ 사용자 로그인됨:", currentUser);
+    } else {
+      showLoginScreen("");
+      console.log("✅ 로그인 화면 표시");
+    }
   }
 
   // 상단바 사용자 정보 설정

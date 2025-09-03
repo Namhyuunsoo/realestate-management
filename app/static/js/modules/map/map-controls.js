@@ -274,10 +274,89 @@ function openPanorama(position) {
           streetViewControl: false
         });
         
+        // 현재 로드뷰 위치 및 방향 마커 (두꺼운 빨간 화살표)
+        const currentLocationMarker = new naver.maps.Marker({
+          position: position,
+          map: window.ROADVIEW_MINIMAP,
+          icon: {
+            content: `<div style="color: #FF3B30; font-size: 20px; font-weight: bold; text-shadow: 2px 2px 4px rgba(0,0,0,0.7);">↑</div>`,
+            anchor: new naver.maps.Point(10, 10)
+          }
+        });
+        
+        // 파노라마 방향 변경 이벤트 리스너 추가
+        naver.maps.Event.addListener(window.ROADVIEW, 'view_changed', function() {
+          console.log('🔄 파노라마 방향 변경 이벤트 발생!');
+          const pov = window.ROADVIEW.getPov();
+          const rotation = pov.pan; // 파노라마 회전각
+          console.log('📐 현재 회전각:', rotation);
+          
+          // 방향 화살표 회전
+          if (window.ROADVIEW_CURRENT_MARKER) {
+            currentLocationMarker.setIcon({
+              content: `<div style="color: #FF3B30; font-size: 20px; font-weight: bold; text-shadow: 2px 2px 4px rgba(0,0,0,0.7); transform: rotate(${rotation}deg);">↑</div>`,
+              anchor: new naver.maps.Point(10, 10)
+            });
+            console.log('✅ 화살표 회전 완료:', rotation + '도');
+          }
+          
+          // 미니맵 중심도 파노라마 방향에 따라 이동
+          const currentPos = window.ROADVIEW.getPosition();
+          if (currentPos) {
+            window.ROADVIEW_MINIMAP.setCenter(currentPos);
+          }
+        });
+        
+        // 추가 이벤트 리스너들 (더 확실하게)
+        naver.maps.Event.addListener(window.ROADVIEW, 'pov_changed', function() {
+          console.log('🔄 POV 변경 이벤트 발생!');
+          const pov = window.ROADVIEW.getPov();
+          const rotation = pov.pan;
+          
+                                if (window.ROADVIEW_CURRENT_MARKER) {
+             currentLocationMarker.setIcon({
+               content: `<div style="color: #FF3B30; font-size: 20px; font-weight: bold; text-shadow: 2px 2px 4px rgba(0,0,0,0.7); transform: rotate(${rotation}deg);">↑</div>`,
+               anchor: new naver.maps.Point(10, 10)
+             });
+           }
+        });
+        
+        naver.maps.Event.addListener(window.ROADVIEW, 'position_changed', function() {
+          console.log('🔄 위치 변경 이벤트 발생!');
+          const currentPos = window.ROADVIEW.getPosition();
+          if (currentPos && window.ROADVIEW_CURRENT_MARKER) {
+            window.ROADVIEW_CURRENT_MARKER.setPosition(currentPos);
+            window.ROADVIEW_MINIMAP.setCenter(currentPos);
+          }
+        });
+        
+        // 파노라마 로드 완료 이벤트 - 초기 방향 설정
+        naver.maps.Event.addListener(window.ROADVIEW, 'load', function() {
+          console.log('✅ 파노라마 로드 완료!');
+          const pov = window.ROADVIEW.getPov();
+          const rotation = pov.pan;
+          console.log('📐 초기 회전각:', rotation);
+          
+                                if (window.ROADVIEW_CURRENT_MARKER) {
+             currentLocationMarker.setIcon({
+               content: `<div style="color: #FF3B30; font-size: 20px; font-weight: bold; text-shadow: 2px 2px 4px rgba(0,0,0,0.7); transform: rotate(${rotation}deg);">↑</div>`,
+               anchor: new naver.maps.Point(10, 10)
+             });
+             console.log('✅ 초기 화살표 방향 설정 완료:', rotation + '도');
+           }
+        });
+        
+        window.ROADVIEW_CURRENT_MARKER = currentLocationMarker;
+        
         // 미니맵 클릭 이벤트 - 로드뷰 위치 변경
         naver.maps.Event.addListener(window.ROADVIEW_MINIMAP, 'click', function(e) {
           if (e.coord && window.ROADVIEW) {
             window.ROADVIEW.setPosition(e.coord);
+            
+            // 마커도 새 위치로 이동
+            if (window.ROADVIEW_CURRENT_MARKER) {
+              window.ROADVIEW_CURRENT_MARKER.setPosition(e.coord);
+            }
           }
         });
         
@@ -380,6 +459,16 @@ function closePanorama() {
         console.warn('⚠️ ROADVIEW_MINIMAP 정리 중 오류:', e);
       }
       window.ROADVIEW_MINIMAP = null;
+    }
+    
+    // 미니맵 마커 정리
+    if (window.ROADVIEW_CURRENT_MARKER) {
+      try {
+        window.ROADVIEW_CURRENT_MARKER.setMap(null);
+      } catch (e) {
+        console.warn('⚠️ ROADVIEW_CURRENT_MARKER 정리 중 오류:', e);
+      }
+      window.ROADVIEW_CURRENT_MARKER = null;
     }
     
     // 컨테이너 숨기기 - 여러 방법으로 강제 숨김

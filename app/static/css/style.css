@@ -485,8 +485,8 @@ html, body {
   padding:10px 12px 12px;
   border-bottom:1px solid #ececec;
   cursor:pointer;
-  font-size:12.8px;
-  line-height:1.35;
+  font-size:14px; /* 글씨 크기 통일 */
+  line-height:1.4; /* 줄 간격 통일 */
   position:relative;
   background:#fff;
   transition:background .18s, box-shadow .18s;
@@ -528,24 +528,24 @@ html, body {
 .card-line1 {
   font-weight:600;
   margin-bottom:2px;
-  font-size:13px;
+  font-size:14px; /* 글씨 크기 통일 */
 }
 .card-line2 {
   color:#333;
   margin-bottom:2px;
-  font-size:12px;
+  font-size:14px; /* 글씨 크기 통일 */
 }
 .card-line3 {
   color:#555;
   margin-bottom:1px;
-  font-size:12px;
+  font-size:14px; /* 글씨 크기 통일 */
   display:flex;
   flex-wrap:wrap;
   gap:8px;
 }
 .card-line4 {
   color:#666;
-  font-size:12px;
+  font-size:14px; /* 글씨 크기 통일 */
   max-height:34px;
   overflow:hidden;
   text-overflow:ellipsis;
@@ -554,7 +554,7 @@ html, body {
   display:flex;
   justify-content:space-between;
   margin-top:4px;
-  font-size:11px;
+  font-size:13px; /* 약간 작게 */
   color:#555;
 }
 .card-line5 .agent { font-weight:600; }
@@ -802,10 +802,10 @@ html, body {
   flex-direction: column;
   min-width: 0;          /* 중요: 없어야 width:0 방지 */
   overflow: hidden;
-  /* 고정 크기 설정 - 절대 변경 불가 */
-  width: calc(100% - 280px) !important; /* 1차 사이드바 너비만큼 제외 */
-  min-width: calc(100% - 280px) !important;
-  max-width: calc(100% - 280px) !important;
+  /* 지도 영역은 항상 남은 공간을 모두 차지 */
+  width: auto !important;
+  min-width: 0 !important;
+  max-width: none !important;
   margin-left: 0 !important;
   transition: none !important; /* 애니메이션 제거 */
 }
@@ -1667,6 +1667,124 @@ div:has(> .cluster-bubble) {
   margin-left: auto; /* 우측 정렬 */
 }
 
+/* 모바일 환경 전체 앱 높이 조정 */
+@media (max-width: 768px) {
+  /* 전체 앱 컨테이너 높이 조정 */
+  body {
+    height: 100% !important;
+    max-height: 100% !important;
+    overflow: hidden !important;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 100% !important;
+  }
+  
+  /* 메인 레이아웃 높이 조정 */
+  #layout {
+    height: 100% !important;
+    max-height: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    position: relative !important;
+    overflow: hidden !important;
+    width: 100% !important;
+  }
+  
+  /* 메인 콘텐츠 높이 조정 */
+  #mainContent {
+    flex: 1 !important;
+    width: 100% !important;
+    height: 100% !important;
+    position: relative !important;
+    order: 1 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    top: 0 !important;
+    bottom: 0 !important;
+    overflow: hidden !important;
+  }
+  
+  /* 지도 컨테이너 높이 조정 */
+  #map {
+    height: 100% !important;
+    max-height: 100% !important;
+    width: 100% !important;
+    position: relative !important;
+  }
+  
+  /* 헤더 높이 조정 */
+  header {
+    padding: 8px 12px !important;
+    min-height: 40px !important;
+    max-height: 40px !important;
+    background: white !important;
+    border-bottom: 1px solid #ddd !important;
+    z-index: 100 !important;
+    position: relative !important;
+  }
+  
+  /* 상태 카운트 높이 조정 */
+  #statusCounts {
+    padding: 4px 12px !important;
+    min-height: 30px !important;
+    max-height: 30px !important;
+    background: #f8f9fa !important;
+    border-bottom: 1px solid #ddd !important;
+    z-index: 99 !important;
+    position: relative !important;
+  }
+  
+  /* 모바일에서 글씨 크기 통일 */
+  #listingList li {
+    font-size: 14px !important; /* 글씨 크기 통일 */
+    line-height: 1.4 !important; /* 줄 간격 통일 */
+  }
+  
+  #listingList .card-line1,
+  #listingList .card-line2,
+  #listingList .card-line3,
+  #listingList .card-line4 {
+    font-size: 14px !important; /* 글씨 크기 통일 */
+  }
+  
+  #listingList .card-line5 {
+    font-size: 13px !important; /* 약간 작게 */
+  }
+  
+  .cluster-list li,
+  .cluster-list .card-line1,
+  .cluster-list .card-line2,
+  .cluster-list .card-line3,
+  .cluster-list .card-line4 {
+    font-size: 14px !important; /* 글씨 크기 통일 */
+    line-height: 1.4 !important; /* 줄 간격 통일 */
+  }
+  
+  .cluster-list .card-line5 {
+    font-size: 13px !important; /* 약간 작게 */
+  }
+}
+
+/* 모바일에서 시트 컨트롤 완전 숨기기 */
+@media (max-width: 768px) {
+  .sheet-controls {
+    display: none !important;
+    height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    position: absolute !important;
+    left: -9999px !important;
+  }
+}
+
 .sheet-buttons {
   display: flex;
   align-items: center;
@@ -1986,7 +2104,7 @@ html, body {
   height: 100% !important;          /* 부모 높이 전체 차지 */
   min-height: 0 !important;         /* flex 아이템이 부모 높이를 초과하지 않도록 */
   overflow: hidden;                  /* 스크롤 방지 */
-  position: static;                  /* 절대 위치 기준점 제거 - 2차 사이드바가 #layout을 기준으로 위치하도록 */
+  position: relative;                /* 사이드바 토글 버튼의 기준점 */
   /* 레이아웃 안정성을 위한 추가 설정 */
   max-height: 100%;
   width: 280px !important;          /* 강제 고정 너비 */
@@ -1996,6 +2114,1468 @@ html, body {
   box-sizing: border-box !important;
   flex-shrink: 0 !important;
   flex-grow: 0 !important;
+  /* 사이드바 접기/펼치기 애니메이션 */
+  transition: width 0.3s ease, min-width 0.3s ease, max-width 0.3s ease;
+}
+
+/* 사이드바 접힌 상태 */
+#sidebar.collapsed {
+  width: 20px !important;
+  min-width: 20px !important;
+  max-width: 20px !important;
+}
+
+/* 사이드바 토글 버튼 */
+.sidebar-toggle {
+  position: absolute;
+  top: 10px;
+  right: -12px;
+  z-index: 1000;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  transition: all 0.3s ease;
+  /* 강제 표시 */
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+}
+
+.sidebar-toggle:hover {
+  background: #f8f9fa;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+.toggle-btn {
+  background: none;
+  border: none;
+  font-size: 10px;
+  color: #666;
+  cursor: pointer;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.3s ease;
+}
+
+.toggle-btn:hover {
+  color: #333;
+}
+
+/* 사이드바 접힌 상태에서 토글 버튼 회전 */
+#sidebar.collapsed .toggle-btn {
+  transform: rotate(180deg);
+}
+
+/* 사이드바 접힌 상태에서 내부 요소 숨기기 */
+#sidebar.collapsed #customerControls,
+#sidebar.collapsed #listingControls,
+#sidebar.collapsed #listingSidebarWrap {
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+/* 2차 사이드바 위치 조정 */
+#secondaryPanel {
+  position: absolute !important;
+  top: 0 !important;
+  height: 100% !important;
+  z-index: 1000 !important;
+  transition: left 0.3s ease !important;
+  left: 280px !important; /* 기본 위치: 1차 사이드바 바로 옆 */
+}
+
+/* 1차 사이드바 접힘 시 2차 사이드바 위치 조정 */
+#sidebar.collapsed ~ #secondaryPanel {
+  left: 20px !important; /* 1차 사이드바 접힌 너비만큼 */
+}
+
+/* 1차 사이드바 펼침 시 2차 사이드바 위치 조정 */
+#sidebar:not(.collapsed) ~ #secondaryPanel {
+  left: 280px !important; /* 1차 사이드바 펼친 너비만큼 */
+}
+
+/* 메인 콘텐츠(지도)는 오른쪽 고정 */
+#mainContent {
+  position: relative !important;
+  flex: 1 !important;
+  transition: width 0.3s ease !important;
+  margin-left: 0 !important;
+  width: auto !important;
+  left: auto !important;
+  transform: none !important;
+  /* 지도를 오른쪽에 고정 */
+  margin-right: 0 !important;
+  right: 0 !important;
+}
+
+/* 1차 사이드바 접힘 시 지도 영역 확장 */
+#sidebar.collapsed ~ #mainContent {
+  width: calc(100% + 260px) !important; /* 280px - 20px = 260px만큼 확장 */
+}
+
+/* 1차 사이드바 펼침 시 지도 영역 조정 */
+#sidebar:not(.collapsed) ~ #mainContent {
+  width: auto !important;
+}
+
+/* 1차 사이드바 접힘 시 지도 영역 확장 */
+#sidebar.collapsed ~ #mainContent {
+  margin-left: 0;
+}
+
+/* 1차 사이드바 펼침 시 지도 영역 조정 */
+#sidebar:not(.collapsed) ~ #mainContent {
+  margin-left: 0;
+}
+
+  /* 모바일 환경에서 사이드바 높이 조정 */
+  @media (max-width: 768px) {
+    /* 사이드바를 하단 슬라이드 패널로 변경 */
+    #sidebar {
+      position: fixed !important;
+      bottom: 0 !important;
+      left: 0 !important;
+      right: 0 !important;
+      width: 100% !important;
+      height: 50vh !important;
+      max-height: 50vh !important;
+      min-height: 40px !important;
+      transform: translateY(calc(100% - 40px)) !important;
+      transition: transform 0.3s ease !important;
+      z-index: 1000 !important;
+      border-radius: 20px 20px 0 0 !important;
+      box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15) !important;
+      background: white !important;
+      overflow: hidden !important;
+      top: auto !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      flex: none !important;
+      order: unset !important;
+      min-width: unset !important;
+      max-width: unset !important;
+      flex-basis: unset !important;
+      flex-grow: unset !important;
+      flex-shrink: unset !important;
+      float: none !important;
+      display: block !important;
+    }
+    
+    /* 사이드바가 열린 상태 (위로 올라간 상태) */
+    #sidebar.collapsed {
+      transform: translateY(0) !important;
+      height: 50vh !important;
+      max-height: 50vh !important;
+      min-height: 50vh !important;
+    }
+    
+    /* 사이드바가 닫힌 상태 (기본) - 노치만 보임 */
+    #sidebar:not(.collapsed) {
+      transform: translateY(calc(100% - 40px)) !important;
+    }
+    
+    /* 모든 사이드바 관련 스타일을 강제로 덮어쓰기 */
+    #layout > #sidebar,
+    #sidebar[style*="height"],
+    #sidebar[style*="width"],
+    #sidebar[style*="max-height"],
+    #sidebar[style*="min-height"] {
+      height: 50vh !important;
+      max-height: 50vh !important;
+      min-height: 40px !important;
+      width: 100% !important;
+      position: fixed !important;
+      bottom: 0 !important;
+      left: 0 !important;
+      right: 0 !important;
+      top: auto !important;
+    }
+    
+    /* 모바일 노치 높이 조정 */
+    .mobile-notch {
+      position: fixed !important;
+      bottom: 0 !important;
+      left: 50% !important;
+      transform: translateX(-50%) !important;
+      width: 240px !important;
+      height: 40px !important;
+      background: white !important;
+      border-radius: 20px 20px 0 0 !important;
+      box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15) !important;
+      z-index: 999 !important;
+      display: flex !important;
+      flex-direction: column !important;
+      align-items: center !important;
+      justify-content: center !important;
+      pointer-events: auto !important;
+      cursor: pointer !important;
+      transition: all 0.2s ease !important;
+    }
+    
+    /* 2차 사이드바 높이 조정 - 강화 버전 */
+    #secondaryPanel {
+      position: fixed !important;
+      top: 0 !important;
+      right: 0 !important;
+      width: 100% !important;
+      height: 100% !important;
+      max-height: 100% !important;
+      min-height: 100% !important;
+      transform: translateX(100%) !important;
+      transition: transform 0.3s ease !important;
+      z-index: 999 !important;
+      overflow: hidden !important;
+      bottom: 0 !important;
+      margin: 0 !important;
+      padding: 0 !important;
+    }
+    
+    /* 1차 사이드바가 열려있을 때 2차 사이드바 높이 조정 */
+    #sidebar.collapsed ~ #secondaryPanel,
+    #sidebar.collapsed + #secondaryPanel,
+    #sidebar:not(.collapsed) ~ #secondaryPanel,
+    #sidebar:not(.collapsed) + #secondaryPanel {
+      height: 100% !important;
+      max-height: 100% !important;
+      min-height: 100% !important;
+      top: 0 !important;
+      bottom: 0 !important;
+    }
+    
+    /* 2차 사이드바 내부 컨테이너 높이 조정 - 강화 버전 */
+    #secondaryPanel .panel-body {
+      height: 100% !important;
+      max-height: 100% !important;
+      overflow-y: auto !important;
+      padding: 15px !important;
+      padding-bottom: 10px !important; /* 최소한의 하단 여백만 */
+      margin: 0 !important;
+      position: relative !important;
+    }
+    
+    /* 2차 사이드바 내부 뷰 높이 조정 - 강화 버전 */
+    #secondaryPanel .panel-view {
+      height: 100% !important;
+      max-height: 100% !important;
+      overflow-y: auto !important;
+      margin: 0 !important;
+      padding: 0 !important;
+    }
+    
+    /* 고객 목록 컨테이너 높이 조정 - 강화 버전 */
+    #secondaryPanel .customer-list-container {
+      height: 100% !important;
+      max-height: 100% !important;
+      overflow-y: auto !important;
+      margin: 0 !important;
+      padding: 0 !important;
+    }
+    
+    /* 고객 상세 정보 컨테이너 높이 조정 - 강화 버전 */
+    #secondaryPanel .customer-detail-container {
+      height: 100% !important;
+      max-height: 100% !important;
+      overflow-y: auto !important;
+      margin: 0 !important;
+      padding: 0 !important;
+    }
+    
+    /* 폼 컨테이너 높이 조정 - 강화 버전 */
+    #secondaryPanel form {
+      height: 100% !important;
+      max-height: 100% !important;
+      overflow-y: auto !important;
+      margin: 0 !important;
+      padding: 0 !important;
+    }
+    
+    /* 매물 상세 정보 높이 조정 - 강화 버전 */
+    #secondaryPanel #viewListingDetail {
+      height: 100% !important;
+      max-height: 100% !important;
+      overflow-y: auto !important;
+      padding: 15px !important;
+      padding-bottom: 10px !important; /* 최소한의 하단 여백만 */
+      margin: 0 !important;
+    }
+    
+    /* 고객 목록 내용 높이 조정 - 강화 버전 */
+    #secondaryPanel #customerListContent2 {
+      height: 100% !important;
+      max-height: 100% !important;
+      overflow-y: auto !important;
+      margin: 0 !important;
+      padding: 0 !important;
+    }
+    
+    /* 고객 상세 정보 내용 높이 조정 - 강화 버전 */
+    #secondaryPanel #customerDetailContent {
+      height: 100% !important;
+      max-height: 100% !important;
+      overflow-y: auto !important;
+      margin: 0 !important;
+      padding: 0 !important;
+    }
+    
+    /* 버튼 그룹 위치 조정 - 강화 버전 */
+    #secondaryPanel .form-actions {
+      position: sticky !important;
+      bottom: 0 !important;
+      background: white !important;
+      padding: 10px 0 !important;
+      border-top: 1px solid #eee !important;
+      margin-top: 10px !important;
+      z-index: 10 !important;
+      width: 100% !important;
+      left: 0 !important;
+      right: 0 !important;
+    }
+    
+    /* 고객 폼 액션 버튼 스티키 포지션 조정 - 강화 버전 */
+    #secondaryPanel .detail-actions {
+      position: sticky !important;
+      bottom: 0 !important;
+      background: white !important;
+      padding: 10px 0 !important;
+      border-top: 1px solid #eee !important;
+      z-index: 10 !important;
+      margin-top: 10px !important;
+      width: 100% !important;
+      left: 0 !important;
+      right: 0 !important;
+    }
+    
+    /* 폼 내부 요소들 간격 조정 */
+    #secondaryPanel .form-group {
+      margin-bottom: 15px !important;
+    }
+    
+    /* 클러스터 리스트 스크롤 강화 - 1차 사이드바 */
+    #sidebar .cluster-list {
+      height: calc(50vh - 160px) !important;
+      max-height: calc(50vh - 160px) !important;
+      min-height: 120px !important;
+      overflow-y: auto !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      position: relative !important;
+      display: flex !important;
+      flex-direction: column !important;
+      font-size: 14px !important; /* 글씨 크기 통일 */
+      line-height: 1.4 !important; /* 줄 간격 통일 */
+    }
+    
+    #sidebar #clusterItemList {
+      height: 100% !important;
+      max-height: 100% !important;
+      overflow-y: auto !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      flex: 1 !important;
+      font-size: 14px !important; /* 글씨 크기 통일 */
+      line-height: 1.4 !important; /* 줄 간격 통일 */
+    }
+    
+    /* 클러스터 리스트 헤더 고정 */
+    #sidebar .cluster-list-header {
+      position: sticky !important;
+      top: 0 !important;
+      z-index: 5 !important;
+      background: white !important;
+      flex-shrink: 0 !important;
+      border-bottom: 1px solid #eee !important;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
+      backdrop-filter: blur(10px) !important;
+      font-size: 14px !important; /* 글씨 크기 통일 */
+      font-weight: bold !important;
+    }
+    
+    /* 사이드바 내부 컨테이너 조정 */
+    #sidebar #listingSidebarWrap {
+      display: flex !important;
+      flex-direction: column !important;
+      height: calc(100% - 120px) !important;
+      overflow: hidden !important;
+    }
+    
+    #sidebar #listingList {
+      display: flex !important;
+      flex-direction: column !important;
+      overflow: hidden !important;
+    }
+    
+    /* 클러스터 리스트가 보일 때 사이드바 콘텐츠 조정 */
+    #sidebar:has(.cluster-list:not(.hidden)) .sidebar-content {
+      pointer-events: none !important;
+    }
+    
+    #sidebar:has(.cluster-list:not(.hidden)) .cluster-list {
+      pointer-events: auto !important;
+    }
+    
+    /* 클러스터 리스트 스크롤 강화 - 2차 사이드바 */
+    #secondaryPanel .cluster-list {
+      height: calc(100% - 80px) !important; /* 헤더와 버튼 영역 제외 */
+      max-height: calc(100% - 80px) !important;
+      overflow-y: auto !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      font-size: 14px !important; /* 글씨 크기 통일 */
+      line-height: 1.4 !important; /* 줄 간격 통일 */
+    }
+    
+    #secondaryPanel #clusterItemList {
+      height: calc(100% - 100px) !important; /* 헤더와 버튼 영역 제외 */
+      max-height: calc(100% - 100px) !important;
+      overflow-y: auto !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      font-size: 14px !important; /* 글씨 크기 통일 */
+      line-height: 1.4 !important; /* 줄 간격 통일 */
+    }
+    
+    #secondaryPanel .cluster-list-header {
+      position: sticky !important;
+      top: 0 !important;
+      background: white !important;
+      z-index: 5 !important;
+      padding: 10px 15px !important;
+      border-bottom: 1px solid #eee !important;
+      font-size: 14px !important; /* 글씨 크기 통일 */
+      font-weight: bold !important;
+    }
+  }
+  
+  /* 모바일에서 1차 사이드바 접힘 시 지도 영역 확장 */
+  #sidebar.collapsed ~ #mainContent {
+    width: calc(100vw + 260px) !important; /* 280px - 20px = 260px만큼 확장 */
+  }
+  
+  /* 모바일에서 1차 사이드바 펼침 시 지도 영역 조정 */
+  #sidebar:not(.collapsed) ~ #mainContent {
+    width: auto !important;
+  }
+}
+
+/* 사이드바 접힌 상태에서 내부 요소 숨기기 */
+#sidebar.collapsed #customerControls,
+#sidebar.collapsed #listingControls,
+#sidebar.collapsed #listingSidebarWrap {
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+/* ──────────────────────────────────────────────────
+   모바일 환경에서 하단 슬라이드 패널
+────────────────────────────────────────────────── */
+
+@media (max-width: 768px) {
+  /* 모바일에서는 레이아웃을 세로로 변경 */
+  #layout {
+    display: flex !important;
+    flex-direction: column !important;
+    height: 100vh !important;
+    /* 사이드바가 레이아웃에서 완전히 분리되도록 */
+    position: relative !important;
+  }
+  
+  /* 메인 콘텐츠가 위쪽에 위치 */
+  #mainContent {
+    flex: 1 !important;
+    width: 100% !important;
+    height: calc(100vh - env(safe-area-inset-bottom)) !important; /* 하단바 고려 */
+    position: relative !important;
+    order: 1 !important;
+    /* 사이드바와 완전히 독립적으로 동작 */
+    margin: 0 !important;
+    padding: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    top: 0 !important;
+    bottom: env(safe-area-inset-bottom) !important; /* 하단바 고려 */
+    /* 기존 사이드바 관련 스타일 무시 */
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    width: 100% !important;
+    min-width: 100% !important;
+    max-width: 100% !important;
+  }
+  
+  /* 사이드바를 하단 슬라이드 패널로 변경 */
+  #sidebar {
+    position: fixed !important;
+    bottom: env(safe-area-inset-bottom) !important; /* 하단바 고려 */
+    left: 0 !important;
+    right: 0 !important;
+    width: 100% !important;
+    height: calc(50vh - env(safe-area-inset-bottom)) !important; /* 하단바 높이 고려 */
+    max-height: calc(50vh - env(safe-area-inset-bottom)) !important; /* 최대 높이도 제한 */
+    min-height: 40px !important; /* 최소 높이는 노치 크기 */
+    transform: translateY(calc(100% - 40px - env(safe-area-inset-bottom))) !important; /* 기본적으로 노치만 보이게 */
+    transition: transform 0.3s ease !important;
+    z-index: 1000 !important;
+    border-radius: 20px 20px 0 0 !important;
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15) !important;
+    background: white !important;
+    overflow: hidden !important;
+    /* 기존 좌측 위치 관련 속성들 모두 제거 */
+    top: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    /* 기존 레이아웃 속성들 완전히 덮어쓰기 */
+    flex: none !important;
+    order: unset !important;
+    min-width: unset !important;
+    max-width: unset !important;
+    flex-basis: unset !important;
+    flex-grow: unset !important;
+    flex-shrink: unset !important;
+    /* 기존 사이드바 스타일 완전히 무시 */
+    float: none !important;
+    display: block !important;
+  }
+  
+  /* 사이드바가 열린 상태 (위로 올라간 상태) */
+  #sidebar.collapsed {
+    transform: translateY(0) !important; /* 완전히 올라옴 (높이는 이미 하단바 고려됨) */
+    height: calc(50vh - env(safe-area-inset-bottom)) !important; /* 강제로 화면 절반 높이 제한 */
+    max-height: calc(50vh - env(safe-area-inset-bottom)) !important; /* 최대 높이도 제한 */
+    min-height: calc(50vh - env(safe-area-inset-bottom)) !important; /* 최소 높이도 제한 */
+  }
+  
+  /* 사이드바가 닫힌 상태 (기본) - 노치만 보임 */
+  #sidebar:not(.collapsed) {
+    transform: translateY(calc(100% - 40px - env(safe-area-inset-bottom))) !important; /* 노치 높이에 맞춤 */
+  }
+  
+  /* 사이드바 토글 버튼 위치 변경 */
+  #sidebarToggleBtn {
+    position: absolute !important;
+    top: 10px !important;
+    right: 15px !important;
+    background: rgba(0, 0, 0, 0.7) !important;
+    color: white !important;
+    border: none !important;
+    border-radius: 50% !important;
+    width: 40px !important;
+    height: 40px !important;
+    font-size: 18px !important;
+    z-index: 1001 !important;
+  }
+  
+  /* 사이드바 상단에 드래그 핸들 추가 */
+  #sidebar::before {
+    content: '' !important;
+    position: absolute !important;
+    top: 8px !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    width: 40px !important;
+    height: 4px !important;
+    background: #ccc !important;
+    border-radius: 2px !important;
+    z-index: 1002 !important;
+    pointer-events: none !important;
+  }
+  
+  /* 노치 영역 추가 */
+  #sidebar::after {
+    content: '' !important; /* 매물 목록 텍스트 제거 */
+    position: absolute !important;
+    top: 20px !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    font-size: 14px !important;
+    font-weight: 500 !important;
+    color: #666 !important;
+    z-index: 1002 !important;
+    white-space: nowrap !important;
+    pointer-events: none !important;
+    background: white !important;
+    padding: 5px 10px !important;
+    border-radius: 10px !important;
+  }
+  
+  /* 기존 사이드바 관련 스타일 모두 무시 */
+  #sidebar.collapsed,
+  #sidebar:not(.collapsed) {
+    /* 기존 collapsed 상태 스타일 무시 */
+    width: 100% !important;
+    min-width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    top: auto !important;
+    bottom: 0 !important;
+    /* 높이 관련 속성들 강제 제한 */
+    height: 50vh !important;
+    max-height: 50vh !important;
+    min-height: 40px !important;
+  }
+  
+  /* 모든 사이드바 관련 스타일을 강제로 덮어쓰기 */
+  #layout > #sidebar,
+  #sidebar[style*="height"],
+  #sidebar[style*="width"],
+  #sidebar[style*="max-height"],
+  #sidebar[style*="min-height"] {
+    height: calc(50vh - env(safe-area-inset-bottom)) !important;
+    max-height: calc(50vh - env(safe-area-inset-bottom)) !important;
+    min-height: 40px !important;
+    width: 100% !important;
+    position: fixed !important;
+    bottom: env(safe-area-inset-bottom) !important;
+    left: 0 !important;
+    right: 0 !important;
+    top: auto !important;
+  }
+  #sidebar .sidebar-content {
+    height: calc(100% - 60px) !important;
+    overflow-y: auto !important;
+    padding-top: 10px !important;
+    padding-left: 10px !important;
+    padding-right: 10px !important;
+    padding-bottom: 10px !important;
+  }
+  
+  /* 클러스터 리스트가 표시될 때 사이드바 콘텐츠 영역 조정 */
+  #sidebar:has(.cluster-list:not(.hidden)) .sidebar-content {
+    overflow: hidden !important;
+    /* 스크롤 충돌 방지 */
+    pointer-events: none !important;
+  }
+  
+  /* 클러스터 리스트가 표시될 때만 스크롤 허용 */
+  #sidebar:has(.cluster-list:not(.hidden)) .cluster-list {
+    pointer-events: auto !important;
+  }
+  
+  /* 사이드바가 열린 상태일 때 내용이 보이도록 */
+  #sidebar.collapsed .sidebar-content,
+  #sidebar.collapsed #customerControls,
+  #sidebar.collapsed #listingControls,
+  #sidebar.collapsed #listingSidebarWrap {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+  }
+  
+  /* 사이드바가 닫힌 상태일 때 내용 숨기기 */
+  #sidebar:not(.collapsed) .sidebar-content,
+  #sidebar:not(.collapsed) #customerControls,
+  #sidebar:not(.collapsed) #listingControls,
+  #sidebar:not(.collapsed) #listingSidebarWrap {
+    display: none !important;
+  }
+  
+  /* 사이드바 내부 컨트롤들 위치 조정 */
+  #sidebar #customerControls,
+  #sidebar #listingControls {
+    position: relative !important;
+    margin: 2px 0 !important;
+    padding: 2px !important;
+  }
+  
+  /* 매물 리스트 컨트롤 컨테이너 높이 최소화 */
+  #sidebar #listingControls {
+    min-height: 20px !important;
+    max-height: 20px !important;
+  }
+  
+  /* 매물 리스트 컨테이너 조정 */
+  #sidebar #listingSidebarWrap {
+    flex: 1 !important;
+    height: calc(100% - 80px) !important; /* 정렬버튼 공간 제거로 높이 확보 */
+    overflow-y: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+  }
+  
+  /* 클러스터 리스트가 표시될 때 매물 리스트 컨테이너 조정 */
+  #sidebar #listingSidebarWrap:has(.cluster-list:not(.hidden)) {
+    height: calc(100% - 40px) !important; /* 더 많은 공간 확보 */
+    overflow: hidden !important;
+  }
+  
+  /* 일반 매물 리스트 스타일 */
+  #sidebar #listingList {
+    flex: 1 !important;
+    overflow-y: auto !important;
+    height: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  
+  /* 클러스터 리스트가 숨겨져 있을 때 일반 리스트가 전체 높이 사용 */
+  #sidebar #listingSidebarWrap:not(:has(.cluster-list:not(.hidden))) #listingList {
+    height: 100% !important;
+    overflow-y: auto !important;
+  }
+  
+  /* 클러스터 리스트가 표시될 때 일반 리스트 숨김 */
+  #sidebar #listingSidebarWrap:has(.cluster-list:not(.hidden)) #listingList {
+    display: none !important;
+  }
+  
+  /* 2차 사이드바 위치 조정 */
+  #secondaryPanel {
+    position: fixed !important;
+    top: 0 !important;
+    right: 0 !important;
+    width: 280px !important;
+    height: 100vh !important;
+    transform: translateX(100%) !important;
+    transition: transform 0.3s ease !important;
+    z-index: 999 !important;
+  }
+  
+  #secondaryPanel.visible {
+    transform: translateX(0) !important;
+  }
+  
+  /* 1차 사이드바가 열려있을 때 2차 사이드바 높이 조정 - 제거 (전체화면 사용) */
+  @media (max-width: 768px) {
+    /* 2차 사이드바는 항상 전체화면 사용 */
+    #sidebar.collapsed ~ #secondaryPanel,
+    #sidebar.collapsed + #secondaryPanel,
+    #sidebar:not(.collapsed) ~ #secondaryPanel,
+    #sidebar:not(.collapsed) + #secondaryPanel {
+      height: calc(100vh - env(safe-area-inset-bottom)) !important; /* 하단바 고려 */
+      max-height: calc(100vh - env(safe-area-inset-bottom)) !important; /* 하단바 고려 */
+      top: 0 !important;
+      bottom: env(safe-area-inset-bottom) !important; /* 하단바 고려 */
+    }
+  }
+  @media (max-width: 768px) {
+    #secondaryPanel {
+      position: fixed !important;
+      top: 0 !important;
+      right: 0 !important;
+      width: 100% !important; /* 모바일에서는 전체 너비 */
+      height: 100vh !important;
+      max-height: 100vh !important;
+      transform: translateX(100%) !important;
+      transition: transform 0.3s ease !important;
+      z-index: 999 !important;
+      overflow-y: auto !important; /* 스크롤 다시 활성화 */
+      /* 하단바 고려 */
+      bottom: 0 !important;
+    }
+    
+    #secondaryPanel.visible {
+      transform: translateX(0) !important;
+    }
+    
+    /* 2차 사이드바 내부 컨테이너 높이 조정 */
+    #secondaryPanel .panel-body {
+      height: 100% !important;
+      max-height: 100% !important;
+      overflow-y: auto !important;
+      padding: 15px !important;
+      padding-bottom: calc(60px + env(safe-area-inset-bottom)) !important; /* 버튼 영역만 고려 */
+      margin: 0 !important;
+      position: relative !important;
+    }
+    
+    /* 2차 사이드바 내부 뷰 높이 조정 */
+    #secondaryPanel .panel-view {
+      height: 100% !important;
+      max-height: 100% !important;
+      overflow-y: auto !important;
+      margin: 0 !important;
+      padding: 0 !important;
+    }
+    
+    /* 고객 목록 컨테이너 높이 조정 */
+    #secondaryPanel .customer-list-container {
+      height: 100% !important;
+      max-height: 100% !important;
+      overflow-y: auto !important;
+      margin: 0 !important;
+      padding: 0 !important;
+    }
+    
+    /* 고객 상세 정보 컨테이너 높이 조정 */
+    #secondaryPanel .customer-detail-container {
+      height: 100% !important;
+      max-height: 100% !important;
+      overflow-y: auto !important;
+      margin: 0 !important;
+      padding: 0 !important;
+    }
+    
+    /* 폼 컨테이너 높이 조정 */
+    #secondaryPanel form {
+      height: 100% !important;
+      max-height: 100% !important;
+      overflow-y: auto !important;
+      margin: 0 !important;
+      padding: 0 !important;
+    }
+    
+    /* 매물 상세 정보 높이 조정 */
+    #secondaryPanel #viewListingDetail {
+      height: 100% !important;
+      max-height: 100% !important;
+      overflow-y: auto !important;
+      padding: 15px !important;
+      padding-bottom: calc(60px + env(safe-area-inset-bottom)) !important; /* 버튼 영역만 고려 */
+      margin: 0 !important;
+    }
+    
+    /* 고객 목록 내용 높이 조정 */
+    #secondaryPanel #customerListContent2 {
+      height: 100% !important;
+      max-height: 100% !important;
+      overflow-y: auto !important;
+      margin: 0 !important;
+      padding: 0 !important;
+    }
+    
+    /* 고객 상세 정보 내용 높이 조정 */
+    #secondaryPanel #customerDetailContent {
+      height: 100% !important;
+      max-height: 100% !important;
+      overflow-y: auto !important;
+      margin: 0 !important;
+      padding: 0 !important;
+    }
+    
+    /* 폼 내부 요소들 간격 조정 */
+    #secondaryPanel .form-group {
+      margin-bottom: 15px !important;
+    }
+    
+    /* 버튼 그룹 위치 조정 */
+    #secondaryPanel .form-actions {
+      position: sticky !important;
+      bottom: env(safe-area-inset-bottom) !important; /* 하단바 고려 */
+      background: white !important;
+      padding: 10px 0 !important;
+      border-top: 1px solid #eee !important;
+      margin-top: 20px !important;
+      z-index: 10 !important;
+    }
+    
+    /* 고객 폼 액션 버튼 스티키 포지션 조정 */
+    #secondaryPanel .detail-actions {
+      position: sticky !important;
+      bottom: env(safe-area-inset-bottom) !important; /* 하단바 고려 */
+      background: white !important;
+      padding: 10px 0 !important;
+      border-top: 1px solid #eee !important;
+      z-index: 10 !important;
+      margin-top: 10px !important;
+      width: 100% !important;
+      left: 0 !important;
+      right: 0 !important;
+      box-shadow: 0 -2px 10px rgba(0,0,0,0.1) !important;
+    }
+  }
+  
+  /* 별도의 노치 요소 추가 (항상 보이도록) */
+  .mobile-notch {
+    position: fixed !important;
+    bottom: env(safe-area-inset-bottom) !important; /* 하단바 고려 */
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    width: 240px !important; /* 가로 두배 */
+    height: 40px !important; /* 세로 절반 */
+    background: white !important;
+    border-radius: 20px 20px 0 0 !important;
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15) !important;
+    z-index: 999 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    pointer-events: auto !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+  }
+  
+  .mobile-notch:hover {
+    background: #f8f9fa !important;
+    box-shadow: 0 -6px 25px rgba(0, 0, 0, 0.2) !important;
+  }
+  
+  .mobile-notch:active {
+    background: #e9ecef !important;
+    transform: translateX(-50%) scale(0.95) !important;
+  }
+  
+  .mobile-notch::before {
+    content: '' !important;
+    width: 40px !important;
+    height: 4px !important;
+    background: #ccc !important;
+    border-radius: 2px !important;
+    margin-bottom: 0 !important; /* 텍스트 제거로 마진 제거 */
+  }
+  
+  .mobile-notch::after {
+    content: '' !important; /* 텍스트 제거 */
+    display: none !important;
+  }
+  
+  /* 사이드바가 열렸을 때 노치 숨기기 */
+  #sidebar.collapsed ~ .mobile-notch,
+  #sidebar.collapsed + .mobile-notch {
+    display: none !important;
+  }
+  
+  /* 모바일 환경에서 필터 섹션 최적화 */
+  @media (max-width: 768px) {
+    /* 필터 그리드 최적화 */
+    .filter-grid {
+      padding: 8px !important;
+      gap: 4px !important;
+      font-size: 11px !important;
+    }
+    
+    .filter-grid input,
+    .filter-grid select {
+      padding: 4px 6px !important;
+      font-size: 11px !important;
+      min-height: 28px !important;
+    }
+    
+    .filter-grid .filter-row {
+      gap: 4px !important;
+      margin-bottom: 6px !important;
+    }
+    
+    .filter-grid .filter-col {
+      gap: 4px !important;
+    }
+    
+    /* 필터 버튼 최적화 */
+    .filter-grid .filter-actions {
+      gap: 4px !important;
+      margin-top: 6px !important;
+    }
+    
+    .filter-grid .filter-actions button {
+      padding: 6px 12px !important;
+      font-size: 11px !important;
+      min-height: 32px !important;
+    }
+    
+    /* 필터 섹션 전체 높이 제한 */
+    .filter-section {
+      max-height: 200px !important;
+      overflow-y: auto !important;
+    }
+    
+    /* 고객정보카드와 클러스터 리스트 간 간격 최적화 */
+    #selectedCustomerInfo {
+      padding: 4px !important;
+      margin-bottom: 2px !important;
+    }
+    
+    #selectedCustomerInfo > div {
+      padding: 6px !important;
+      margin-bottom: 2px !important;
+      font-size: 12px !important;
+      line-height: 1.2 !important;
+    }
+    
+    /* 고객정보카드 내부 요소들 최적화 */
+    #selectedCustomerInfo .detail-actions {
+      gap: 2px !important;
+      margin-bottom: 2px !important;
+    }
+    
+    #selectedCustomerInfo .detail-actions button {
+      padding: 3px 6px !important;
+      font-size: 10px !important;
+      min-height: 24px !important;
+    }
+    
+    /* 고객정보카드 내부 텍스트 최적화 */
+    #selectedCustomerInfo div[style*="font-size: 14px"] {
+      font-size: 12px !important;
+      margin-bottom: 1px !important;
+    }
+    
+    #selectedCustomerInfo div[style*="font-size: 12px"] {
+      font-size: 11px !important;
+      margin-bottom: 1px !important;
+    }
+    
+    #selectedCustomerInfo div[style*="font-size: 11px"] {
+      font-size: 10px !important;
+      line-height: 1.1 !important;
+      margin-bottom: 1px !important;
+    }
+    
+    #selectedCustomerInfo div[style*="font-size: 10px"] {
+      font-size: 9px !important;
+      line-height: 1.0 !important;
+    }
+    
+    /* 고객정보카드 내부 여백 최적화 */
+    #selectedCustomerInfo div[style*="padding: 12px"] {
+      padding: 4px !important;
+      margin-bottom: 2px !important;
+    }
+    
+    #selectedCustomerInfo div[style*="margin-bottom: 4px"] {
+      margin-bottom: 1px !important;
+    }
+    
+    #selectedCustomerInfo div[style*="margin-bottom: 3px"] {
+      margin-bottom: 1px !important;
+    }
+    
+    #selectedCustomerInfo div[style*="margin-bottom: 12px"] {
+      margin-bottom: 2px !important;
+    }
+    
+    /* 탭 네비게이션 최적화 */
+    .tab-navigation {
+      padding: 3px 6px !important;
+      gap: 3px !important;
+      margin-bottom: 3px !important;
+    }
+    
+    .tab-navigation .tab-btn {
+      padding: 4px 8px !important;
+      font-size: 11px !important;
+      min-height: 24px !important;
+    }
+    
+    /* 매물 리스트 버튼들 최적화 */
+    .listing-mode-buttons {
+      gap: 2px !important;
+      margin-bottom: 3px !important;
+      padding: 2px !important;
+    }
+    
+    .listing-mode-buttons .mode-btn {
+      padding: 3px 5px !important;
+      font-size: 10px !important;
+      min-height: 22px !important;
+    }
+    
+    /* 모바일에서 정렬 버튼들 완전히 제거 */
+    .listing-actions,
+    #listingControls .listing-actions,
+    #sidebar .listing-actions,
+    #sidebar #listingControls .listing-actions {
+      display: none !important;
+      height: 0 !important;
+      width: 0 !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      overflow: hidden !important;
+      visibility: hidden !important;
+      opacity: 0 !important;
+      position: absolute !important;
+      left: -9999px !important;
+      top: -9999px !important;
+      min-height: 0 !important;
+      max-height: 0 !important;
+      min-width: 0 !important;
+      max-width: 0 !important;
+      flex: 0 0 0 !important;
+      flex-basis: 0 !important;
+      flex-grow: 0 !important;
+      flex-shrink: 0 !important;
+      grid-area: none !important;
+      transform: scale(0) !important;
+      clip: rect(0, 0, 0, 0) !important;
+    }
+    
+    /* 정렬 버튼들 개별적으로도 제거 */
+    .listing-actions button,
+    #listingControls .listing-actions button,
+    #sidebar .listing-actions button,
+    #sidebar #listingControls .listing-actions button,
+    .sortBtn {
+      display: none !important;
+      height: 0 !important;
+      width: 0 !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      overflow: hidden !important;
+      visibility: hidden !important;
+      opacity: 0 !important;
+      position: absolute !important;
+      left: -9999px !important;
+      top: -9999px !important;
+      min-height: 0 !important;
+      max-height: 0 !important;
+      min-width: 0 !important;
+      max-width: 0 !important;
+      flex: 0 0 0 !important;
+      flex-basis: 0 !important;
+      flex-grow: 0 !important;
+      flex-shrink: 0 !important;
+      transform: scale(0) !important;
+      clip: rect(0, 0, 0, 0) !important;
+    }
+    
+    /* 모바일에서 상단바 불필요한 버튼들 숨기기 */
+    .user-controls,
+    header .user-controls,
+    .header-controls,
+    header .header-controls {
+      display: none !important;
+      height: 0 !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      overflow: hidden !important;
+      visibility: hidden !important;
+      opacity: 0 !important;
+      position: absolute !important;
+      left: -9999px !important;
+    }
+    
+    /* 사용자관리 관련 버튼들 개별적으로도 제거 */
+    .user-controls button,
+    header .user-controls button,
+    .header-controls button,
+    header .header-controls button,
+    #userManagementBtn,
+    #statisticsBtn,
+    #logoutBtn {
+      display: none !important;
+      height: 0 !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      overflow: hidden !important;
+      visibility: hidden !important;
+      opacity: 0 !important;
+      position: absolute !important;
+      left: -9999px !important;
+    }
+    
+    /* 모바일에서 상태카운트바 최적화 */
+    #statusCounts {
+      padding: 4px 8px !important;
+      min-height: 24px !important;
+      max-height: 24px !important;
+    }
+    
+    #statusCounts .count-info {
+      font-size: 11px !important;
+    }
+    
+    #statusCounts .btn-add-listing {
+      padding: 3px 6px !important;
+      font-size: 10px !important;
+      min-height: 20px !important;
+    }
+    
+    /* 모바일에서 상단 헤더바 최적화 */
+    header {
+      padding: 4px 8px !important;
+      min-height: 32px !important;
+      max-height: 32px !important;
+    }
+    
+    header .header-content {
+      gap: 8px !important;
+    }
+    
+    header .office-name {
+      font-size: 12px !important;
+    }
+    
+    header .user-info {
+      font-size: 11px !important;
+    }
+    
+    /* 모바일에서 헤더 버튼들 숨기기 */
+    header .header-controls {
+      display: none !important;
+    }
+    
+    header .header-controls button {
+      display: none !important;
+    }
+    
+    /* 모바일에서 헤더 컨트롤 완전 숨기기 */
+    header .header-controls,
+    .header-controls {
+      display: none !important;
+      height: 0 !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      overflow: hidden !important;
+      visibility: hidden !important;
+      opacity: 0 !important;
+      position: absolute !important;
+      left: -9999px !important;
+    }
+    
+    /* 헤더 버튼들 개별적으로도 제거 */
+    header .header-controls button,
+    .header-controls button,
+    #userManagementBtn,
+    #statisticsBtn,
+    #logoutBtn {
+      display: none !important;
+      height: 0 !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      overflow: hidden !important;
+      visibility: hidden !important;
+      opacity: 0 !important;
+      position: absolute !important;
+      left: -9999px !important;
+    }
+    
+    /* 모바일에서 전체보기 버튼만 표시하고 위치 조정 */
+    #viewAllBtn {
+      display: block !important;
+      position: absolute !important;
+      top: 5px !important;
+      right: 10px !important;
+      padding: 4px 8px !important;
+      font-size: 10px !important;
+      background: #007bff !important;
+      color: white !important;
+      border: none !important;
+      border-radius: 4px !important;
+      z-index: 5 !important;
+    }
+    
+    /* 클러스터 매물 목록 영역 확보 */
+    .cluster-list {
+      position: relative !important;
+      height: calc(50vh - 80px - env(safe-area-inset-bottom)) !important; /* 하단바 높이 고려 */
+      max-height: calc(50vh - 80px - env(safe-area-inset-bottom)) !important;
+      min-height: 150px !important; /* 하단바 고려하여 최소 높이 조정 */
+      overflow-y: auto !important;
+      overflow-x: hidden !important;
+      display: flex !important;
+      flex-direction: column !important;
+      margin-top: 5px !important;
+      /* 스크롤 강화 설정 */
+      scrollbar-width: thin !important;
+      scrollbar-color: #888 #f1f1f1 !important;
+      -webkit-overflow-scrolling: touch !important;
+      /* 하단바 고려 */
+      padding-bottom: env(safe-area-inset-bottom) !important;
+    }
+    
+    /* 웹킷 브라우저 스크롤바 스타일 */
+    .cluster-list::-webkit-scrollbar {
+      width: 6px !important;
+    }
+    
+    .cluster-list::-webkit-scrollbar-track {
+      background: #f1f1f1 !important;
+      border-radius: 3px !important;
+    }
+    
+    .cluster-list::-webkit-scrollbar-thumb {
+      background: #888 !important;
+      border-radius: 3px !important;
+    }
+    
+    .cluster-list::-webkit-scrollbar-thumb:hover {
+      background: #555 !important;
+    }
+    
+    .cluster-list-header {
+      position: sticky !important;
+      top: 0 !important;
+      z-index: 10 !important;
+      background: white !important;
+      padding: 6px 8px !important;
+      font-size: 12px !important;
+      min-height: 32px !important;
+      flex-shrink: 0 !important;
+      border-bottom: 1px solid #ddd !important;
+      /* 헤더 고정 강화 */
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
+      backdrop-filter: blur(5px) !important;
+    }
+    
+    .cluster-list-title {
+      font-size: 12px !important;
+    }
+    
+    .cluster-close-btn {
+      font-size: 14px !important;
+      padding: 2px 4px !important;
+    }
+    
+    /* 클러스터 리스트 컨테이너 스크롤 설정 */
+    #clusterItemList {
+      flex: 1 !important;
+      overflow-y: auto !important;
+      overflow-x: hidden !important;
+      height: 100% !important;
+      max-height: none !important;
+      min-height: 0 !important;
+      padding: 0 !important;
+      margin: 0 !important;
+      /* 스크롤 강화 설정 */
+      scrollbar-width: thin !important;
+      scrollbar-color: #888 #f1f1f1 !important;
+      -webkit-overflow-scrolling: touch !important;
+      /* 스크롤 동작 강화 */
+      scroll-behavior: smooth !important;
+      /* 터치 스크롤 최적화 */
+      touch-action: pan-y !important;
+    }
+    
+    /* 웹킷 브라우저 스크롤바 스타일 */
+    #clusterItemList::-webkit-scrollbar {
+      width: 6px !important;
+    }
+    
+    #clusterItemList::-webkit-scrollbar-track {
+      background: #f1f1f1 !important;
+      border-radius: 3px !important;
+    }
+    
+    #clusterItemList::-webkit-scrollbar-thumb {
+      background: #888 !important;
+      border-radius: 3px !important;
+    }
+    
+    #clusterItemList::-webkit-scrollbar-thumb:hover {
+      background: #555 !important;
+    }
+    
+    /* 클러스터 리스트 아이템 최적화 */
+    #clusterItemList li {
+      padding: 6px 8px !important;
+      font-size: 11px !important;
+      line-height: 1.2 !important;
+      min-height: 35px !important;
+      border-bottom: 1px solid #eee !important;
+      /* 스크롤 최적화 */
+      cursor: pointer !important;
+      transition: background-color 0.2s ease !important;
+      /* 터치 최적화 */
+      touch-action: manipulation !important;
+      -webkit-tap-highlight-color: transparent !important;
+    }
+    
+    #clusterItemList li:hover {
+      background-color: #f8f9fa !important;
+    }
+    
+    #clusterItemList li:active {
+      background-color: #e9ecef !important;
+    }
+    
+    #clusterItemList .listing-item .title {
+      font-size: 14px !important;
+      margin-bottom: 4px !important;
+      line-height: 1.4 !important;
+    }
+    
+    #clusterItemList .listing-item .meta {
+      font-size: 13px !important;
+      gap: 6px !important;
+      line-height: 1.4 !important;
+    }
+  }
+  
+  /* 기존 사이드바 관련 CSS 규칙들 모두 무시 */
+  #layout > #sidebar {
+    /* 기존 레이아웃 내 사이드바 스타일 무시 */
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    width: 100% !important;
+    height: 100vh !important;
+    transform: translateY(100%) !important;
+    z-index: 1000 !important;
+  }
+  
+  #layout > #sidebar.collapsed {
+    transform: translateY(0) !important;
+  }
+  
+  #layout > #sidebar:not(.collapsed) {
+    transform: translateY(100%) !important;
+  }
+  
+  /* 기존 사이드바 너비 관련 스타일들 무시 */
+  #sidebar[style*="width"],
+  #sidebar[style*="left"],
+  #sidebar[style*="right"] {
+    width: 100% !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    top: auto !important;
+  }
+}
+
+/* ──────────────────────────────────────────────────
+   터치 제스처 시각적 피드백
+────────────────────────────────────────────────── */
+
+/* 터치 제스처 활성화 시 시각적 피드백 */
+@media (max-width: 768px) {
+  #sidebar::before,
+  #mainContent::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.02);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    z-index: 1;
+  }
+  
+  /* 터치 중일 때 시각적 피드백 */
+  #sidebar.touching::before,
+  #mainContent.touching::before {
+    opacity: 1;
+  }
+  
+  /* 스와이프 방향 힌트 (선택사항) */
+  .swipe-hint {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 12px;
+    z-index: 10000;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+  }
+  
+  .swipe-hint.show {
+    opacity: 1;
+  }
 }
 
 /* ──────────────────────────────────────────────────
@@ -2273,30 +3853,32 @@ html, body {
 /* 클러스터 목록 전용 폰트 크기 조절 */
 #clusterList .listing-item .title {
   font-weight: 600;
-  margin-bottom: 2px;
-  font-size: 13px;
+  margin-bottom: 4px;
+  font-size: 14px;
   display: flex;
   flex-wrap: wrap;
   gap: 4px;
   align-items: center;
+  line-height: 1.4;
 }
 
 #clusterList .listing-item .meta {
   color: #555;
-  font-size: 12px;
+  font-size: 13px;
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
   align-items: center;
+  line-height: 1.4;
 }
 
 /* 클러스터 리스트 아이템을 일반 매물 리스트와 동일한 스타일로 맞춤 */
 #clusterItemList li {
-  padding: 10px 12px 12px;
+  padding: 12px 12px 14px;
   border-bottom: 1px solid #ececec;
   cursor: pointer;
-  font-size: 12.8px;
-  line-height: 1.35;
+  font-size: 14px;
+  line-height: 1.4;
   position: relative;
   background: #fff;
   transition: background .18s, box-shadow .18s;
@@ -2486,6 +4068,54 @@ html, body {
   background: #f8f9fa;
   font-weight: 600;
   color: #333;
+}
+
+#secondaryPanel .panel-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+#secondaryPanel .toggle-btn {
+  background: none;
+  border: none;
+  font-size: 12px;
+  color: #666;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: all 0.3s ease;
+}
+
+#secondaryPanel .toggle-btn:hover {
+  background: #e9ecef;
+  color: #333;
+}
+
+/* 2차 사이드바 접힌 상태 */
+#secondaryPanel.collapsed {
+  width: 20px !important;
+  min-width: 20px !important;
+  max-width: 20px !important;
+}
+
+#secondaryPanel.collapsed .panel-header {
+  padding: 8px 4px;
+  flex-direction: column;
+  gap: 4px;
+}
+
+#secondaryPanel.collapsed #secondaryPanelTitle {
+  display: none;
+}
+
+#secondaryPanel.collapsed .panel-controls {
+  flex-direction: column;
+  gap: 4px;
+}
+
+#secondaryPanel.collapsed .panel-body {
+  display: none;
 }
 
 #secondaryPanel .panel-close {
@@ -3251,6 +4881,21 @@ html, body {
   border-radius: 6px;
   border: 1px solid #e9ecef;
   margin-left: 12px;
+}
+
+/* 모바일에서 새로고침 컨트롤 완전 숨기기 */
+@media (max-width: 768px) {
+  .refresh-controls {
+    display: none !important;
+    height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    position: absolute !important;
+    left: -9999px !important;
+  }
 }
 
 /* 새로고침 버튼 */

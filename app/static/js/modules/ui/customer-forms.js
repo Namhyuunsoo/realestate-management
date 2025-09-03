@@ -6,6 +6,11 @@
  * ===== 고객 폼 관련 함수들 =====
  **************************************/
 
+// 권한 확인 헬퍼 함수
+function isUserAdmin() {
+  return localStorage.getItem("X-USER-ADMIN") === "true";
+}
+
 async function submitCustomerForm(customerId) {
   console.log('고객 폼 제출:', customerId);
 
@@ -119,7 +124,7 @@ async function submitCustomerForm(customerId) {
         secondaryPanel.classList.add('hidden');
         secondaryPanel.classList.remove('visible');
       }
-      if (currentUser === 'admin') {
+      if (isUserAdmin()) {
         loadCustomerList('all');
       } else {
         loadCustomerList('own');
@@ -266,7 +271,7 @@ async function submitCustomerEditForm(customerId) {
         }
         
         // 페이지 새로고침 없이 강제로 고객 목록 새로고침
-        if (currentUser === 'admin') {
+        if (isUserAdmin()) {
           loadCustomerList('all');
         } else {
           loadCustomerList('own');
@@ -279,7 +284,7 @@ async function submitCustomerEditForm(customerId) {
         
         // 추가로 1초 후 한 번 더 새로고침 (서버 동기화 지연 고려)
         setTimeout(() => {
-          if (currentUser === 'admin') {
+          if (isUserAdmin()) {
             loadCustomerList('all');
           } else {
             loadCustomerList('own');
@@ -324,7 +329,7 @@ window.changeCustomerStatus = async function(customerId, newStatus) {
     if (response.ok) {
       console.log('✅ 고객 상태 변경 성공');
       // 고객 목록 새로고침
-      loadCustomerList(currentUser === 'admin' ? 'all' : 'own');
+      loadCustomerList(isUserAdmin() ? 'all' : 'own');
     } else {
       const error = await response.text();
       console.error('❌ 고객 상태 변경 실패:', error);
