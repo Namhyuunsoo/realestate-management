@@ -737,19 +737,19 @@
       // 앱 종료 확인 다이얼로그 관련 함수들은 auth.js에서 통합 관리
       // 중복 제거 - auth.js의 showExitConfirmDialog 사용
 
-      // 페이지 로드 시 히스토리 상태 설정
+      // 페이지 로드 시 히스토리 상태 설정 (모바일에서만)
       window.addEventListener('load', function() {
-        // 메인 페이지에서 시작할 때 히스토리에 상태 추가
-        if (window.location.pathname === '/') {
+        // 모바일 환경에서만 히스토리 상태 설정
+        if (window.location.pathname === '/' && typeof window.isMobileApp === 'function' && window.isMobileApp()) {
           window.history.replaceState({ page: 'main', preventBack: true }, '', '/');
-          console.log('✅ 메인 페이지 히스토리 상태 설정 완료');
+          console.log('✅ 모바일 메인 페이지 히스토리 상태 설정 완료');
         }
       });
 
-      // 추가: 페이지 초기 로드 시 히스토리 스택 정리
+      // 페이지 초기 로드 시 히스토리 스택 정리 (모바일에서만)
       document.addEventListener('DOMContentLoaded', function() {
-        // 페이지 로드 시 히스토리 스택을 정리하여 로그인 페이지가 남아있지 않도록 함
-        if (window.location.pathname === '/') {
+        // 모바일 환경에서만 히스토리 스택 정리
+        if (window.location.pathname === '/' && typeof window.isMobileApp === 'function' && window.isMobileApp()) {
           // 현재 히스토리 상태를 메인 페이지로 설정
           window.history.replaceState({ page: 'main', preventBack: true }, '', '/');
           
@@ -761,32 +761,35 @@
             // 다시 메인 페이지 상태로 설정
             setTimeout(() => {
               window.history.replaceState({ page: 'main', preventBack: true }, '', '/');
-              console.log('✅ 히스토리 스택 정리 완료');
+              console.log('✅ 모바일 히스토리 스택 정리 완료');
             }, 100);
           }
         }
       });
 
-      // 추가: 페이지 떠나기 방지 (beforeunload 이벤트)
+      // 페이지 떠나기 방지 (모바일에서만)
       window.addEventListener('beforeunload', function(event) {
-        // 로그인 화면이 아닌 메인 앱 화면에서만 적용
-        const loginScreen = document.getElementById('loginRequiredScreen');
-        const appRoot = document.getElementById('appRoot');
-        
-        if (loginScreen && !loginScreen.classList.contains('hidden') && 
-            appRoot && appRoot.classList.contains('hidden')) {
-          // 로그인 화면에서는 기본 동작 허용
-          return;
+        // 모바일 환경에서만 페이지 떠나기 방지
+        if (typeof window.isMobileApp === 'function' && window.isMobileApp()) {
+          // 로그인 화면이 아닌 메인 앱 화면에서만 적용
+          const loginScreen = document.getElementById('loginRequiredScreen');
+          const appRoot = document.getElementById('appRoot');
+          
+          if (loginScreen && !loginScreen.classList.contains('hidden') && 
+              appRoot && appRoot.classList.contains('hidden')) {
+            // 로그인 화면에서는 기본 동작 허용
+            return;
+          }
+          
+          // 메인 앱 화면에서는 페이지 떠나기 방지
+          console.log('📱 페이지 떠나기 시도 감지');
+          event.preventDefault();
+          event.returnValue = '앱을 종료하시겠습니까?';
+          return '앱을 종료하시겠습니까?';
         }
-        
-        // 메인 앱 화면에서는 페이지 떠나기 방지
-        console.log('📱 페이지 떠나기 시도 감지');
-        event.preventDefault();
-        event.returnValue = '앱을 종료하시겠습니까?';
-        return '앱을 종료하시겠습니까?';
       });
 
-      // 추가: 히스토리 변경 감지 및 강제 복원
+      // 히스토리 변경 감지 및 강제 복원 (모바일에서만)
       let isHistoryManipulation = false;
       
       function forceMainPage() {
@@ -810,17 +813,19 @@
         }, 100);
       }
 
-      // URL 변경 감지
-      let currentUrl = window.location.href;
-      setInterval(() => {
-        if (window.location.href !== currentUrl) {
-          currentUrl = window.location.href;
-          if (window.location.pathname !== '/') {
-            console.log('📱 URL 변경 감지:', window.location.pathname);
-            forceMainPage();
+      // URL 변경 감지 (모바일에서만)
+      if (typeof window.isMobileApp === 'function' && window.isMobileApp()) {
+        let currentUrl = window.location.href;
+        setInterval(() => {
+          if (window.location.href !== currentUrl) {
+            currentUrl = window.location.href;
+            if (window.location.pathname !== '/') {
+              console.log('📱 URL 변경 감지:', window.location.pathname);
+              forceMainPage();
+            }
           }
-        }
-      }, 100);
+        }, 100);
+      }
 
       // 인라인 로그인 폼 이벤트 리스너
       document.addEventListener('DOMContentLoaded', function() {

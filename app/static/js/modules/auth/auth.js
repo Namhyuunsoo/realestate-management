@@ -14,20 +14,26 @@ if (!window._originalFetch) {
 // 히스토리 상태 관리
 let isHistoryInitialized = false;
 
-// 히스토리 초기화 함수
+// 히스토리 초기화 함수 (모바일에서만)
 function initializeHistory() {
   if (isHistoryInitialized) return;
   
   console.log("🔍 히스토리 관리 초기화");
   
-  // popstate 이벤트 리스너 등록 (뒤로가기 버튼 감지)
-  window.addEventListener('popstate', handlePopState);
+  // 모바일 환경에서만 히스토리 관리 적용
+  if (isMobileApp()) {
+    console.log("📱 모바일 환경 - 히스토리 관리 초기화");
+    // popstate 이벤트 리스너 등록 (뒤로가기 버튼 감지)
+    window.addEventListener('popstate', handlePopState);
+    console.log("✅ 모바일 히스토리 관리 초기화 완료");
+  } else {
+    console.log("🖥️ 데스크톱 환경 - 히스토리 관리 건너뜀");
+  }
   
   isHistoryInitialized = true;
-  console.log("✅ 히스토리 관리 초기화 완료");
 }
 
-// 뒤로가기 버튼 처리 함수
+// 뒤로가기 버튼 처리 함수 (모바일에서만 작동)
 function handlePopState(event) {
   console.log("🔍 뒤로가기 버튼 감지됨");
   
@@ -56,15 +62,9 @@ function handlePopState(event) {
     }
     
     // 모바일 앱에서 뒤로가기 시 앱 종료 확인 다이얼로그 표시
-    if (isMobileApp()) {
-      console.log("📱 모바일 환경 감지 - 앱 종료 확인 다이얼로그 표시");
-      showExitConfirmDialog();
-      return; // 다이얼로그 표시 후 여기서 종료
-    }
-    
-    // 데스크톱 환경에서는 히스토리만 고정
-    console.log("🖥️ 데스크톱 환경 - 히스토리 고정");
-    window.history.pushState({ loggedIn: true, timestamp: Date.now() }, '', '/');
+    console.log("📱 모바일 환경 - 앱 종료 확인 다이얼로그 표시");
+    showExitConfirmDialog();
+    return; // 다이얼로그 표시 후 여기서 종료
   } else {
     console.log("❌ 로그인되지 않은 상태 - 로그인 화면으로 이동");
     showLoginScreen();
@@ -79,7 +79,7 @@ function isMobileApp() {
     return true;
   }
   
-  // 2. User-Agent 기반 모바일 감지
+  // 2. User-Agent 기반 모바일 감지 (더 엄격한 조건)
   const userAgent = navigator.userAgent || navigator.vendor || window.opera;
   const mobileRegex = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i;
   
@@ -88,17 +88,13 @@ function isMobileApp() {
     return true;
   }
   
-  // 3. 화면 크기 기반 감지 (추가 보조)
-  if (window.innerWidth <= 768) {
-    console.log("📱 모바일 앱 감지: 화면 크기 기반");
+  // 3. 화면 크기 기반 감지 (더 엄격한 조건)
+  if (window.innerWidth <= 480) {
+    console.log("📱 모바일 앱 감지: 화면 크기 기반 (480px 이하)");
     return true;
   }
   
-  // 4. 터치 지원 여부 확인
-  if ('ontouchstart' in window || navigator.maxTouchPoints > 0) {
-    console.log("📱 모바일 앱 감지: 터치 지원 기반");
-    return true;
-  }
+  // 4. 터치 지원 여부는 제거 (PC에서도 터치스크린 지원 가능)
   
   console.log("🖥️ 데스크톱 환경 감지");
   return false;
@@ -220,17 +216,23 @@ function hideExitConfirmDialog() {
   }
 }
 
-// 로그인 성공 시 히스토리 고정
+// 로그인 성공 시 히스토리 고정 (모바일에서만)
 function fixHistoryAfterLogin() {
   console.log("🔍 로그인 후 히스토리 고정");
   
-  // 현재 히스토리를 메인 페이지로 교체
-  window.history.replaceState({ loggedIn: true, timestamp: Date.now() }, '', '/');
-  
-  // 추가 히스토리 엔트리 생성 (뒤로가기 시 메인 페이지 유지)
-  window.history.pushState({ loggedIn: true, timestamp: Date.now() }, '', '/');
-  
-  console.log("✅ 히스토리 고정 완료");
+  // 모바일 환경에서만 히스토리 고정 적용
+  if (isMobileApp()) {
+    console.log("📱 모바일 환경 - 히스토리 고정 적용");
+    // 현재 히스토리를 메인 페이지로 교체
+    window.history.replaceState({ loggedIn: true, timestamp: Date.now() }, '', '/');
+    
+    // 추가 히스토리 엔트리 생성 (뒤로가기 시 메인 페이지 유지)
+    window.history.pushState({ loggedIn: true, timestamp: Date.now() }, '', '/');
+    
+    console.log("✅ 모바일 히스토리 고정 완료");
+  } else {
+    console.log("🖥️ 데스크톱 환경 - 히스토리 고정 건너뜀");
+  }
 }
 
 // 로그아웃 시 히스토리 정리
