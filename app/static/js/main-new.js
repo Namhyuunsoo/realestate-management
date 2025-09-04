@@ -184,7 +184,13 @@ async function initializeApplication() {
       console.log('✅ 터치 제스처 초기화 완료');
     }
     
-    // 5. 화면 크기 변경 이벤트 리스너 설정
+    // 5. 히스토리 관리 초기화 (모바일 뒤로가기 방지)
+    if (window.initializeHistory) {
+      window.initializeHistory();
+      console.log('✅ 히스토리 관리 초기화 완료');
+    }
+    
+    // 6. 화면 크기 변경 이벤트 리스너 설정
     window.addEventListener('resize', () => {
       if (window.handleResize) {
         window.handleResize();

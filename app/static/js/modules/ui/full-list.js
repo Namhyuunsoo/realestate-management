@@ -19,6 +19,10 @@ function toggleFullList(show) {
   
   
   if (UI_STATE.showFullList) {
+    // 패널 열 때 히스토리 상태 추가
+    window.history.pushState({ panel: 'fullList' }, '', '/');
+    console.log('📱 전체보기 패널 열기 - 히스토리 상태 추가');
+    
     panel.classList.remove("hidden");
     console.log("🔍 hidden 클래스 제거됨, 새로운 클래스:", panel.className);
     console.log("🔍 패널 스타일:", panel.style.display);

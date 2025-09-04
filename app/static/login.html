@@ -177,6 +177,34 @@
     </div>
 
     <script>
+        // 페이지 로드 시 히스토리 정리
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('📱 로그인 페이지 히스토리 정리 시작');
+            
+            // 현재 히스토리 상태를 로그인 페이지로 설정
+            window.history.replaceState({ page: 'login' }, '', '/login');
+            
+            // 히스토리 길이가 1보다 크면 추가 히스토리 항목들을 제거
+            if (window.history.length > 1) {
+                console.log('📱 로그인 페이지 히스토리 스택 정리 중...');
+                // 히스토리 스택을 정리하기 위해 현재 상태를 유지하면서 불필요한 항목들 제거
+                window.history.go(-(window.history.length - 1));
+                // 다시 로그인 페이지 상태로 설정
+                setTimeout(() => {
+                    window.history.replaceState({ page: 'login' }, '', '/login');
+                    console.log('✅ 로그인 페이지 히스토리 스택 정리 완료');
+                }, 100);
+            }
+        });
+
+        // 뒤로가기 버튼 처리 - 로그인 페이지에서 뒤로가기 시 메인 페이지로 이동
+        window.addEventListener('popstate', function(event) {
+            console.log('🔍 로그인 페이지에서 뒤로가기 감지:', event);
+            
+            // 메인 페이지로 강제 이동
+            window.location.href = '/';
+        });
+
         document.getElementById('loginForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
@@ -238,7 +266,16 @@
                         console.warn('localStorage 저장 중 경고:', e);
                     }
 
-                    // 로그인 성공 시 메인 페이지로 리다이렉트
+                    // 로그인 성공 시 브라우저 히스토리 완전 정리 후 메인 페이지로 이동
+                    console.log('📱 로그인 성공 - 히스토리 정리 후 메인 페이지 이동');
+                    
+                    // 히스토리에서 모든 기록 제거하고 메인 페이지로 설정
+                    window.history.replaceState({ loggedIn: true, timestamp: Date.now() }, '', '/');
+                    
+                    // 추가 히스토리 엔트리 생성 (뒤로가기 시 메인 페이지 유지)
+                    window.history.pushState({ loggedIn: true, timestamp: Date.now() }, '', '/');
+                    
+                    // 메인 페이지로 이동
                     window.location.href = '/';
                     
                 } else {

@@ -873,17 +873,90 @@ html, body {
   pointer-events: none;
 }
 
-.login-required-box{
-  width: 320px;
-  padding: 32px 28px 28px;
-  background: #fff;
-  border-radius: 16px;
-  box-shadow: 0 8px 24px rgba(0,0,0,.12);
-  text-align: center;
-  font-family: sans-serif;
-  position: relative;
+/* 인라인 로그인 폼 스타일 */
+.login-required-box .login-form {
+  text-align: left;
+  margin-top: 20px;
+}
+
+.login-required-box .login-form .form-group {
+  margin-bottom: 15px;
+}
+
+.login-required-box .login-form .form-group label {
+  display: block;
+  margin-bottom: 5px;
+  color: #333;
+  font-weight: 500;
+  font-size: 13px;
+}
+
+.login-required-box .login-form .form-group input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 2px solid #e1e5e9;
+  border-radius: 5px;
+  font-size: 14px;
+  transition: border-color 0.3s ease;
+}
+
+.login-required-box .login-form .form-group input:focus {
+  outline: none;
+  border-color: #667eea;
+}
+
+.login-required-box .login-form .btn {
+  width: 100%;
+  padding: 12px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 5px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+  margin-bottom: 15px;
+}
+
+.login-required-box .login-form .btn:hover {
+  transform: translateY(-2px);
+}
+
+.login-required-box .login-form .btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
   transform: none;
-  margin: 0;
+}
+
+.login-required-box .login-form .login-links {
+  text-align: center;
+  margin-top: 10px;
+}
+
+.login-required-box .login-form .login-links a {
+  color: #667eea;
+  text-decoration: none;
+  font-size: 12px;
+  margin: 0 8px;
+}
+
+.login-required-box .login-form .login-links a:hover {
+  text-decoration: underline;
+}
+
+.login-required-box .login-form .error-message {
+  background: #fee;
+  color: #c33;
+  padding: 8px 12px;
+  border-radius: 5px;
+  margin-bottom: 15px;
+  font-size: 12px;
+  display: none;
+}
+
+.login-required-box .login-form .error-message.show {
+  display: block;
 }
 .login-box{
   width: 320px;
@@ -1479,6 +1552,148 @@ div:has(> .cluster-bubble) {
   z-index: 10000;
   opacity: 0;
   transition: opacity 0.3s ease;
+}
+
+/* 앱 종료 확인 다이얼로그 스타일 */
+.exit-confirm-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0,0,0,0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 20000;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.exit-confirm-overlay.hidden {
+  display: none;
+}
+
+.exit-confirm-overlay.show {
+  opacity: 1;
+}
+
+.exit-confirm-dialog {
+  background: white;
+  border-radius: 16px;
+  width: 85%;
+  max-width: 320px;
+  box-shadow: 0 15px 40px rgba(0,0,0,0.3);
+  transform: scale(0.9);
+  transition: transform 0.3s ease;
+  overflow: hidden;
+}
+
+.exit-confirm-overlay.show .exit-confirm-dialog {
+  transform: scale(1);
+}
+
+.exit-confirm-header {
+  padding: 24px 20px 16px;
+  text-align: center;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.exit-confirm-header h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #333;
+  line-height: 1.4;
+}
+
+.exit-confirm-body {
+  padding: 20px;
+  text-align: center;
+}
+
+.exit-confirm-message {
+  font-size: 15px;
+  color: #666;
+  line-height: 1.5;
+  margin-bottom: 24px;
+}
+
+.exit-confirm-buttons {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.exit-confirm-btn {
+  flex: 1;
+  padding: 12px 16px;
+  border: none;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.exit-confirm-btn.cancel {
+  background: #f8f9fa;
+  color: #666;
+  border: 1px solid #e9ecef;
+}
+
+.exit-confirm-btn.cancel:hover {
+  background: #e9ecef;
+  color: #333;
+}
+
+.exit-confirm-btn.confirm {
+  background: #dc3545;
+  color: white;
+}
+
+.exit-confirm-btn.confirm:hover {
+  background: #c82333;
+  transform: translateY(-1px);
+}
+
+/* 모바일 환경에서의 앱 종료 확인 다이얼로그 최적화 */
+@media (max-width: 768px) {
+  .exit-confirm-dialog {
+    width: 90%;
+    max-width: 300px;
+  }
+  
+  .exit-confirm-header {
+    padding: 20px 16px 12px;
+  }
+  
+  .exit-confirm-header h3 {
+    font-size: 17px;
+  }
+  
+  .exit-confirm-body {
+    padding: 16px;
+  }
+  
+  .exit-confirm-message {
+    font-size: 14px;
+    margin-bottom: 20px;
+  }
+  
+  .exit-confirm-buttons {
+    gap: 10px;
+  }
+  
+  .exit-confirm-btn {
+    padding: 10px 14px;
+    font-size: 14px;
+    min-height: 40px;
+  }
 }
 
 .modal-overlay.show {

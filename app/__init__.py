@@ -140,10 +140,8 @@ def create_app(config_object=None):
     # SPA index.html 서빙 (인증 필요)
     @app.route("/")
     def index():
-        from flask import session, redirect, url_for
-        # 로그인 상태 확인
-        if 'user_id' not in session:
-            return redirect(url_for('login'))
+        from flask import session
+        # 로그인 상태 확인 - 항상 메인 페이지 서빙 (인라인 로그인 사용)
         return app.send_static_file("index.html")
     
     # 로그인 페이지 서빙

@@ -33,7 +33,10 @@ window.initializeApp = async function() {
 
   // 사용자 세션 동기화 (다른 컴퓨터에서 접속 시에도 작동)
   try {
-    if (window.syncUserFromSession) {
+    if (window.checkSessionAndAutoLogin) {
+      await window.checkSessionAndAutoLogin();
+      console.log('✅ 세션 체크 및 자동 로그인 완료');
+    } else if (window.syncUserFromSession) {
       await window.syncUserFromSession();
       console.log('✅ 사용자 세션 동기화 완료');
     } else if (window.loadUserFromStorage) {
@@ -79,6 +82,10 @@ window.initializeApp = async function() {
     const view  = document.getElementById(viewId);
     
     if (view) view.classList.remove('hidden');
+    
+    // 패널 열 때 히스토리 상태 추가
+    window.history.pushState({ panel: 'secondaryPanel', view: viewId }, '', '/');
+    console.log('📱 2차 사이드바 열기 - 히스토리 상태 추가:', viewId);
     
     // CSS transform만 사용하여 표시 (UI 변동 방지)
     // panel.style.display = 'block'; // UI 변동 방지를 위해 제거

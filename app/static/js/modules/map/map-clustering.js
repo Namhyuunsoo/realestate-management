@@ -167,6 +167,10 @@ function renderClusterGroupList(cluster) {
   // 클러스터 리스트를 표시하되, 기존 UI 요소들의 크기나 위치는 변경하지 않음
   wrap.classList.remove("hidden");
   
+  // 클러스터 리스트 열 때 히스토리 상태 추가
+  window.history.pushState({ panel: 'clusterList' }, '', '/');
+  console.log('📱 클러스터 리스트 열기 - 히스토리 상태 추가');
+  
   // 클러스터 리스트 닫기 버튼 이벤트 리스너 추가
   const closeBtn = document.getElementById("clusterListCloseBtn");
   if (closeBtn) {

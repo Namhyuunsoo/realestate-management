@@ -116,12 +116,51 @@
 </head>
 
 <body>
-  <!-- 로그인 필요 안내 화면 -->
-  <div id="loginRequiredScreen" class="login-required-screen hidden">
-    <div class="login-required-box">
-      <h2 style="margin-bottom:16px;">로그인이 필요합니다</h2>
-      <p style="margin-bottom:24px; color:#666;">매물 관리 시스템을 사용하려면 로그인해주세요.</p>
-      <a href="/login" class="btn btn-primary">로그인하기</a>
+      <!-- 로그인 필요 안내 화면 -->
+    <div id="loginRequiredScreen" class="login-required-screen hidden">
+      <div class="login-required-box">
+        <h2 style="margin-bottom:16px;">로그인이 필요합니다</h2>
+        <p style="margin-bottom:24px; color:#666;">매물 관리 시스템을 사용하려면 로그인해주세요.</p>
+        
+        <!-- 인라인 로그인 폼 -->
+        <form id="inlineLoginForm" class="login-form">
+          <div class="form-group">
+            <label for="inlineLoginEmail">이메일</label>
+            <input type="email" id="inlineLoginEmail" name="email" placeholder="email@example.com" required>
+          </div>
+          
+          <div class="form-group">
+            <label for="inlineLoginPassword">비밀번호</label>
+            <input type="password" id="inlineLoginPassword" name="password" placeholder="비밀번호를 입력하세요" required>
+          </div>
+          
+          <div id="inlineLoginErrorMsg" class="error-message"></div>
+          
+          <button type="submit" class="btn btn-primary">로그인</button>
+          
+          <div class="login-links">
+            <a href="/register">회원가입</a>
+            <a href="#" onclick="alert('관리자에게 문의하세요.')">비밀번호 찾기</a>
+          </div>
+        </form>
+      </div>
+    </div>
+
+  <!-- 앱 종료 확인 다이얼로그 -->
+  <div id="exitConfirmOverlay" class="exit-confirm-overlay hidden">
+    <div class="exit-confirm-dialog">
+      <div class="exit-confirm-header">
+        <h3>앱 종료</h3>
+      </div>
+      <div class="exit-confirm-body">
+        <div class="exit-confirm-message">
+          앱을 종료하시겠습니까?
+        </div>
+        <div class="exit-confirm-buttons">
+          <button type="button" class="exit-confirm-btn cancel" id="exitCancelBtn">취소</button>
+          <button type="button" class="exit-confirm-btn confirm" id="exitConfirmBtn">확인</button>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -689,6 +728,205 @@
           console.log('✅ MarkerClustering이 정상적으로 로드되었습니다.');
         } else {
           console.log('⏳ MarkerClustering이 아직 로드되지 않았습니다. 네이버 지도 API 로드 후 동적 로드됩니다.');
+        }
+      });
+
+      // 뒤로가기 버튼 처리는 auth.js의 handlePopState에서 통합 관리
+      // 기존 popstate 리스너 제거 - 중복 방지
+
+      // 앱 종료 확인 다이얼로그 관련 함수들은 auth.js에서 통합 관리
+      // 중복 제거 - auth.js의 showExitConfirmDialog 사용
+
+      // 페이지 로드 시 히스토리 상태 설정
+      window.addEventListener('load', function() {
+        // 메인 페이지에서 시작할 때 히스토리에 상태 추가
+        if (window.location.pathname === '/') {
+          window.history.replaceState({ page: 'main', preventBack: true }, '', '/');
+          console.log('✅ 메인 페이지 히스토리 상태 설정 완료');
+        }
+      });
+
+      // 추가: 페이지 초기 로드 시 히스토리 스택 정리
+      document.addEventListener('DOMContentLoaded', function() {
+        // 페이지 로드 시 히스토리 스택을 정리하여 로그인 페이지가 남아있지 않도록 함
+        if (window.location.pathname === '/') {
+          // 현재 히스토리 상태를 메인 페이지로 설정
+          window.history.replaceState({ page: 'main', preventBack: true }, '', '/');
+          
+          // 히스토리 길이가 1보다 크면 추가 히스토리 항목들을 제거
+          if (window.history.length > 1) {
+            console.log('📱 히스토리 스택 정리 중...');
+            // 히스토리 스택을 정리하기 위해 현재 상태를 유지하면서 불필요한 항목들 제거
+            window.history.go(-(window.history.length - 1));
+            // 다시 메인 페이지 상태로 설정
+            setTimeout(() => {
+              window.history.replaceState({ page: 'main', preventBack: true }, '', '/');
+              console.log('✅ 히스토리 스택 정리 완료');
+            }, 100);
+          }
+        }
+      });
+
+      // 추가: 페이지 떠나기 방지 (beforeunload 이벤트)
+      window.addEventListener('beforeunload', function(event) {
+        // 로그인 화면이 아닌 메인 앱 화면에서만 적용
+        const loginScreen = document.getElementById('loginRequiredScreen');
+        const appRoot = document.getElementById('appRoot');
+        
+        if (loginScreen && !loginScreen.classList.contains('hidden') && 
+            appRoot && appRoot.classList.contains('hidden')) {
+          // 로그인 화면에서는 기본 동작 허용
+          return;
+        }
+        
+        // 메인 앱 화면에서는 페이지 떠나기 방지
+        console.log('📱 페이지 떠나기 시도 감지');
+        event.preventDefault();
+        event.returnValue = '앱을 종료하시겠습니까?';
+        return '앱을 종료하시겠습니까?';
+      });
+
+      // 추가: 히스토리 변경 감지 및 강제 복원
+      let isHistoryManipulation = false;
+      
+      function forceMainPage() {
+        if (isHistoryManipulation) return;
+        
+        isHistoryManipulation = true;
+        console.log('📱 강제 메인 페이지 복원');
+        
+        // URL이 메인 페이지가 아니면 강제로 변경
+        if (window.location.pathname !== '/') {
+          window.history.replaceState({ page: 'main', preventBack: true }, '', '/');
+        }
+        
+        // 앱이 초기화되지 않았다면 초기화
+        if (typeof window.initializeApp === 'function') {
+          window.initializeApp();
+        }
+        
+        setTimeout(() => {
+          isHistoryManipulation = false;
+        }, 100);
+      }
+
+      // URL 변경 감지
+      let currentUrl = window.location.href;
+      setInterval(() => {
+        if (window.location.href !== currentUrl) {
+          currentUrl = window.location.href;
+          if (window.location.pathname !== '/') {
+            console.log('📱 URL 변경 감지:', window.location.pathname);
+            forceMainPage();
+          }
+        }
+      }, 100);
+
+      // 인라인 로그인 폼 이벤트 리스너
+      document.addEventListener('DOMContentLoaded', function() {
+        const inlineLoginForm = document.getElementById('inlineLoginForm');
+        if (inlineLoginForm) {
+          inlineLoginForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const email = document.getElementById('inlineLoginEmail').value.trim();
+            const password = document.getElementById('inlineLoginPassword').value;
+            const errorMsg = document.getElementById('inlineLoginErrorMsg');
+            const loginBtn = e.target.querySelector('button[type="submit"]');
+            
+            // 입력 검증
+            if (!email || !password) {
+              showInlineError('이메일과 비밀번호를 모두 입력해주세요.');
+              return;
+            }
+            
+            const EMAIL_RE = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
+            if (!EMAIL_RE.test(email)) {
+              showInlineError('올바른 이메일 형식이 아닙니다.');
+              return;
+            }
+            
+            if (password.length < 6) {
+              showInlineError('비밀번호는 최소 6자 이상이어야 합니다.');
+              return;
+            }
+            
+            // 로그인 버튼 비활성화
+            const originalText = loginBtn.textContent;
+            loginBtn.disabled = true;
+            loginBtn.textContent = '로그인 중...';
+            
+            try {
+              const response = await fetch('/api/auth/login', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json'
+                },
+                credentials: 'include',
+                body: JSON.stringify({
+                  email: email,
+                  password: password
+                })
+              });
+              
+              const data = await response.json();
+              
+              if (response.ok) {
+                console.log('인라인 로그인 성공:', data);
+                
+                // localStorage에 사용자 정보 저장
+                try {
+                  const userEmail = (data && data.user && data.user.email) ? data.user.email : email;
+                  const isAdmin = !!(data && data.user && data.user.role === 'admin');
+                  localStorage.setItem('X-USER', userEmail);
+                  if (isAdmin) {
+                    localStorage.setItem('X-USER-ADMIN', 'true');
+                  } else {
+                    localStorage.removeItem('X-USER-ADMIN');
+                  }
+                } catch (e) {
+                  console.warn('localStorage 저장 중 경고:', e);
+                }
+
+                // 사용자 정보 설정 및 로그인 화면 숨기기
+                if (window.setCurrentUser) {
+                  window.setCurrentUser(email);
+                }
+                if (window.hideLoginScreen) {
+                  window.hideLoginScreen();
+                }
+                
+                // 히스토리 초기화 및 고정
+                if (window.initializeHistory && window.fixHistoryAfterLogin) {
+                  window.initializeHistory();
+                  window.fixHistoryAfterLogin();
+                }
+                
+              } else {
+                console.log('인라인 로그인 실패:', data.error);
+                showInlineError(data.error || '로그인에 실패했습니다.');
+              }
+              
+            } catch (error) {
+              console.error('인라인 로그인 요청 중 오류:', error);
+              showInlineError('서버 연결에 실패했습니다.');
+            } finally {
+              // 로그인 버튼 다시 활성화
+              loginBtn.disabled = false;
+              loginBtn.textContent = originalText;
+            }
+          });
+        }
+        
+        function showInlineError(message) {
+          const errorMsg = document.getElementById('inlineLoginErrorMsg');
+          if (errorMsg) {
+            errorMsg.textContent = message;
+            errorMsg.classList.add('show');
+            setTimeout(() => {
+              errorMsg.classList.remove('show');
+            }, 5000);
+          }
         }
       });
     </script>

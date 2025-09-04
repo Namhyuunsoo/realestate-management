@@ -19,6 +19,10 @@ function toggleFullBriefingList(show) {
   
   
   if (UI_STATE.showFullBriefingList) {
+    // 패널 열 때 히스토리 상태 추가
+    window.history.pushState({ panel: 'fullBriefingList' }, '', '/');
+    console.log('📱 전체 브리핑 리스트 패널 열기 - 히스토리 상태 추가');
+    
     panel.classList.remove("hidden");
     console.log("🔍 hidden 클래스 제거됨, 새로운 클래스:", panel.className);
     console.log("🔍 패널 스타일:", panel.style.display);

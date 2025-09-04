@@ -186,6 +186,78 @@ def login():
         current_app.logger.error(f"스택 트레이스: {traceback.format_exc()}")
         return jsonify({"error": f"로그인 처리 중 오류가 발생했습니다: {str(e)}"}), 500
 
+@bp.get("/check-session")
+@handle_errors()
+@log_access()
+def check_session():
+    """세션 상태 확인"""
+    try:
+        if 'user_id' in session:
+            user_service = get_user_service()
+            if user_service:
+                user = user_service.get_user_by_id(session['user_id'])
+                if user and user.is_active:
+                    current_app.logger.info(f"세션 확인 성공: {user.email}")
+                    return jsonify({
+                        "logged_in": True,
+                        "user": {
+                            "id": user.id,
+                            "email": user.email,
+                            "name": user.name,
+                            "role": user.role,
+                            "status": user.status
+                        }
+                    })
+        
+        current_app.logger.info("세션 없음 또는 만료됨")
+        return jsonify({"logged_in": False, "user": None})
+        
+    except Exception as e:
+        current_app.logger.error(f"세션 확인 중 오류 발생: {str(e)}")
+        return jsonify({"logged_in": False, "user": None, "error": str(e)})
+
+@bp.post("/auto-login")
+@handle_errors()
+@log_access()
+def auto_login():
+    """자동 로그인 (localStorage 기반)"""
+    try:
+        user_email = request.headers.get('X-User')
+        if not user_email:
+            return jsonify({"error": "사용자 정보가 없습니다."}), 400
+        
+        user_service = get_user_service()
+        if not user_service:
+            return jsonify({"error": "사용자 서비스를 사용할 수 없습니다."}), 500
+        
+        user = user_service.get_user_by_email(user_email)
+        if not user or not user.is_active:
+            return jsonify({"error": "유효하지 않은 사용자입니다."}), 401
+        
+        # 세션에 사용자 정보 저장
+        session["user_id"] = user.id
+        session["user_email"] = user.email
+        session["user_name"] = user.name
+        session["user_role"] = user.role
+        
+        current_app.logger.info(f"자동 로그인 성공: {user.email}")
+        log_security_event('AUTO_LOGIN_SUCCESS', f'User auto-logged in: {user.email}')
+        
+        return jsonify({
+            "message": "자동 로그인되었습니다.",
+            "user": {
+                "id": user.id,
+                "email": user.email,
+                "name": user.name,
+                "role": user.role,
+                "status": user.status
+            }
+        })
+        
+    except Exception as e:
+        current_app.logger.error(f"자동 로그인 중 오류 발생: {str(e)}")
+        return jsonify({"error": f"자동 로그인 처리 중 오류가 발생했습니다: {str(e)}"}), 500
+
 @bp.post("/logout")
 @handle_errors()
 @log_access()
