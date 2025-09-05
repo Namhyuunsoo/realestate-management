@@ -385,6 +385,13 @@ async function saveManagerName(userId) {
     showToast('담당자명 입력 필드를 찾을 수 없습니다.', 'error');
     return;
   }
+  
+  // 입력 필드가 숨겨져 있으면 편집 모드로 전환
+  if (input.style.display === 'none') {
+    editManagerName(userId);
+    return;
+  }
+  
   const managerName = input.value.trim();
   
   try {
