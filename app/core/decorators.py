@@ -95,6 +95,105 @@ def require_admin():
         return decorated_function
     return decorator
 
+def require_manager_or_admin():
+    """매니저 또는 관리자 권한 데코레이터 (세션 기반)"""
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            # IP 차단 확인
+            ip = request.remote_addr
+            if security_manager.is_ip_blocked(ip):
+                log_security_event('BLOCKED_IP_MANAGER_ACCESS', f'Blocked IP {ip} attempted manager access')
+                return jsonify({"error": "Access denied"}), 403
+            
+            # 요청 빈도 제한 확인
+            if not security_manager.check_rate_limit(ip):
+                log_security_event('RATE_LIMIT_EXCEEDED_MANAGER', f'IP {ip} exceeded rate limit for manager access')
+                return jsonify({"error": "Rate limit exceeded"}), 429
+            
+            # 세션 기반 인증 확인
+            user_id = session.get("user_id")
+            if not user_id:
+                log_security_event('UNAUTHORIZED_MANAGER_ACCESS', f'No session for manager access from IP {ip}')
+                return jsonify({"error": "로그인이 필요합니다."}), 401
+            
+            # 매니저 또는 관리자 권한 확인
+            user_service = current_app.data_manager.user_service
+            user = user_service.get_user_by_id(user_id)
+            if not user or not user.is_active() or not (user.is_manager() or user.is_admin()):
+                log_security_event('UNAUTHORIZED_MANAGER_ATTEMPT', f'User {user_id} from IP {ip} attempted manager access')
+                return jsonify({"error": "매니저 또는 관리자 권한이 필요합니다."}), 403
+            
+            return f(*args, **kwargs)
+        return decorated_function
+    return decorator
+
+def require_user_management():
+    """사용자 관리 권한 데코레이터 (관리자만)"""
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            # IP 차단 확인
+            ip = request.remote_addr
+            if security_manager.is_ip_blocked(ip):
+                log_security_event('BLOCKED_IP_USER_MGMT_ACCESS', f'Blocked IP {ip} attempted user management access')
+                return jsonify({"error": "Access denied"}), 403
+            
+            # 요청 빈도 제한 확인
+            if not security_manager.check_rate_limit(ip):
+                log_security_event('RATE_LIMIT_EXCEEDED_USER_MGMT', f'IP {ip} exceeded rate limit for user management access')
+                return jsonify({"error": "Rate limit exceeded"}), 429
+            
+            # 세션 기반 인증 확인
+            user_id = session.get("user_id")
+            if not user_id:
+                log_security_event('UNAUTHORIZED_USER_MGMT_ACCESS', f'No session for user management access from IP {ip}')
+                return jsonify({"error": "로그인이 필요합니다."}), 401
+            
+            # 사용자 관리 권한 확인 (관리자만)
+            user_service = current_app.data_manager.user_service
+            user = user_service.get_user_by_id(user_id)
+            if not user or not user.is_active() or not user.can_manage_users():
+                log_security_event('UNAUTHORIZED_USER_MGMT_ATTEMPT', f'User {user_id} from IP {ip} attempted user management access')
+                return jsonify({"error": "사용자 관리 권한이 필요합니다."}), 403
+            
+            return f(*args, **kwargs)
+        return decorated_function
+    return decorator
+
+def require_stats_access():
+    """통계 조회 권한 데코레이터 (관리자만)"""
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            # IP 차단 확인
+            ip = request.remote_addr
+            if security_manager.is_ip_blocked(ip):
+                log_security_event('BLOCKED_IP_STATS_ACCESS', f'Blocked IP {ip} attempted stats access')
+                return jsonify({"error": "Access denied"}), 403
+            
+            # 요청 빈도 제한 확인
+            if not security_manager.check_rate_limit(ip):
+                log_security_event('RATE_LIMIT_EXCEEDED_STATS', f'IP {ip} exceeded rate limit for stats access')
+                return jsonify({"error": "Rate limit exceeded"}), 429
+            
+            # 세션 기반 인증 확인
+            user_id = session.get("user_id")
+            if not user_id:
+                log_security_event('UNAUTHORIZED_STATS_ACCESS', f'No session for stats access from IP {ip}')
+                return jsonify({"error": "로그인이 필요합니다."}), 401
+            
+            # 통계 조회 권한 확인 (관리자만)
+            user_service = current_app.data_manager.user_service
+            user = user_service.get_user_by_id(user_id)
+            if not user or not user.is_active() or not user.can_view_stats():
+                log_security_event('UNAUTHORIZED_STATS_ATTEMPT', f'User {user_id} from IP {ip} attempted stats access')
+                return jsonify({"error": "통계 조회 권한이 필요합니다."}), 403
+            
+            return f(*args, **kwargs)
+        return decorated_function
+    return decorator
+
 def validate_json(*required_fields):
     """JSON 요청 검증 데코레이터 (보안 강화)"""
     def decorator(f):

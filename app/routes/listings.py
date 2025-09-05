@@ -65,6 +65,24 @@ def api_listings():
     # 필터
     if status_raw:
         data = [d for d in data if d.get("status_raw") == status_raw]
+    
+    # 역할별 매물 필터링
+    if user.is_user():
+        # 일반 사용자는 본인 담당 매물만 조회
+        manager_name = user.manager_name
+        if manager_name:
+            data = [d for d in data if d.get("담당자") == manager_name]
+            current_app.logger.info(f"User {user.email} filtered listings by manager_name: {manager_name} ({len(data)} items)")
+        else:
+            # 담당자명이 설정되지 않은 경우 빈 결과 반환
+            data = []
+            current_app.logger.info(f"User {user.email} has no manager_name set, returning empty results")
+    elif user.is_manager():
+        # 매니저는 모든 매물 조회 가능
+        current_app.logger.info(f"Manager {user.email} accessing all listings ({len(data)} items)")
+    elif user.is_admin():
+        # 어드민은 모든 매물 조회 가능
+        current_app.logger.info(f"Admin {user.email} accessing all listings ({len(data)} items)")
 
     total = len(data)
     sliced = data[offset:offset+limit]

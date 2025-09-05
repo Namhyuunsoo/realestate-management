@@ -33,13 +33,19 @@ async function initUserManagement() {
       window.currentUserInfo = userInfo;
       
       if (userInfo.is_admin) {
-    
-        // 어드민 UI 표시
-        showAdminUI();
+        // 어드민 UI 표시 (모든 기능)
+        showAdminUI(true);
         
         // 이벤트 리스너 등록
         setupUserManagementEvents();
         console.log('✅ 어드민 사용자 관리 기능 초기화 완료');
+      } else if (userInfo.role === 'manager') {
+        // 매니저 UI 표시 (사용자관리/통계 제외)
+        showAdminUI(false);
+        
+        // 이벤트 리스너 등록
+        setupUserManagementEvents();
+        console.log('✅ 매니저 사용자 관리 기능 초기화 완료');
       } else {
         console.log('ℹ️ 일반 사용자 - 사용자 관리 기능 비활성화');
       }
@@ -52,16 +58,33 @@ async function initUserManagement() {
 }
 
 // 어드민 UI 표시
-function showAdminUI() {
+function showAdminUI(showAllFeatures = true) {
   
   const adminElements = document.querySelectorAll('.admin-only');
   
   
   adminElements.forEach((element, index) => {
     console.log(`🔍 요소 ${index}:`, element.className);
-    element.classList.remove('hidden');
-    element.classList.add('show');
     
+    if (showAllFeatures) {
+      // 어드민: 모든 기능 표시
+      element.classList.remove('hidden');
+      element.classList.add('show');
+    } else {
+      // 매니저: 사용자관리/통계 버튼만 숨김
+      const userManagementBtn = element.querySelector('#userManagementBtn');
+      const adminStatsBtn = element.querySelector('#adminStatsBtn');
+      
+      if (userManagementBtn || adminStatsBtn) {
+        // 사용자관리/통계 버튼은 숨김
+        element.classList.add('hidden');
+        element.classList.remove('show');
+      } else {
+        // 다른 기능들은 표시
+        element.classList.remove('hidden');
+        element.classList.add('show');
+      }
+    }
   });
   
   console.log('✅ showAdminUI 완료');
@@ -69,9 +92,9 @@ function showAdminUI() {
 
 // 사용자 관리 이벤트 설정
 function setupUserManagementEvents() {
-  // 사용자 관리 버튼 클릭
+  // 사용자 관리 버튼 클릭 (어드민만)
   const userManagementBtn = document.getElementById('userManagementBtn');
-  if (userManagementBtn) {
+  if (userManagementBtn && window.currentUserInfo && window.currentUserInfo.is_admin) {
     userManagementBtn.addEventListener('click', openUserManagementModal);
   }
 
@@ -115,6 +138,12 @@ function setupUserManagementEvents() {
 async function openUserManagementModal() {
   try {
     console.log('🔍 사용자 관리 모달 열기...');
+    
+    // 어드민 권한 확인
+    if (!window.currentUserInfo || !window.currentUserInfo.is_admin) {
+      showToast('사용자 관리 권한이 없습니다.', 'error');
+      return;
+    }
     
     // 모달 표시
     const modal = document.getElementById('userManagementModal');
@@ -203,7 +232,20 @@ async function loadUserList() {
                     style="display: ${user.job_title ? 'none' : 'inline-block'}">저장</button>
           </div>
         </td>
-        <td>${user.role}</td>
+        <td>${getRoleDisplayName(user.role)}</td>
+        <td>
+          <div class="manager-name-edit" data-user-id="${user.id}">
+            <div class="manager-name-display" style="display: ${user.manager_name ? 'inline-block' : 'none'}">
+              ${user.manager_name || ''}
+            </div>
+            <input type="text" class="manager-name-input" value="${user.manager_name || ''}" 
+                   placeholder="담당자명 입력" style="display: ${user.manager_name ? 'none' : 'inline-block'}">
+            <button class="manager-name-edit-btn" onclick="editManagerName('${user.id}')" 
+                    style="display: ${user.manager_name ? 'inline-block' : 'none'}">수정</button>
+            <button class="manager-name-save-btn" onclick="saveManagerName('${user.id}')" 
+                    style="display: ${user.manager_name ? 'none' : 'inline-block'}">저장</button>
+          </div>
+        </td>
         <td>
           <span class="status-badge ${user.status}">${getStatusText(user.status)}</span>
         </td>
@@ -303,6 +345,72 @@ async function saveJobTitle(userId) {
   } catch (error) {
     console.error('❌ 직책 변경 실패:', error);
     showToast('직책 변경에 실패했습니다.', 'error');
+  }
+}
+
+// 담당자명 수정 모드로 전환
+function editManagerName(userId) {
+  const container = document.querySelector(`[data-user-id="${userId}"]`);
+  if (!container) return;
+  
+  const display = container.querySelector('.manager-name-display');
+  const input = container.querySelector('.manager-name-input');
+  const editBtn = container.querySelector('.manager-name-edit-btn');
+  const saveBtn = container.querySelector('.manager-name-save-btn');
+  
+  if (display && input && editBtn && saveBtn) {
+    display.style.display = 'none';
+    input.style.display = 'inline-block';
+    editBtn.style.display = 'none';
+    saveBtn.style.display = 'inline-block';
+    
+    // 입력 필드에 포커스
+    input.focus();
+    input.select();
+  }
+}
+
+// 담당자명 저장
+async function saveManagerName(userId) {
+  const container = document.querySelector(`[data-user-id="${userId}"]`);
+  if (!container) return;
+  
+  const input = container.querySelector('.manager-name-input');
+  const managerName = input.value.trim();
+  
+  try {
+    const response = await fetch(`/api/admin/users/${userId}/update-manager-name`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ manager_name: managerName })
+    });
+    
+    if (!response.ok) {
+      throw new Error(`API 실패: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    
+    // 성공 시 UI 업데이트
+    const display = container.querySelector('.manager-name-display');
+    const editBtn = container.querySelector('.manager-name-edit-btn');
+    const saveBtn = container.querySelector('.manager-name-save-btn');
+    
+    if (display && editBtn && saveBtn) {
+      display.textContent = managerName;
+      display.style.display = 'inline-block';
+      input.style.display = 'none';
+      editBtn.style.display = 'inline-block';
+      saveBtn.style.display = 'none';
+    }
+    
+    showToast('담당자명이 변경되었습니다.', 'success');
+    
+  } catch (error) {
+    console.error('❌ 담당자명 변경 실패:', error);
+    showToast('담당자명 변경에 실패했습니다.', 'error');
   }
 }
 
@@ -486,11 +594,13 @@ function openUserFormModal(user = null) {
     const emailField = document.getElementById('userEmail');
     const nameField = document.getElementById('userName');
     const roleField = document.getElementById('userRole');
+    const managerNameField = document.getElementById('userManagerName');
     
     if (emailField) emailField.value = user.email || '';
     if (emailField) emailField.readOnly = true; // 이메일은 수정 불가 (disabled 대신 readonly 사용)
     if (nameField) nameField.value = user.name || '';
     if (roleField) roleField.value = user.role || 'user';
+    if (managerNameField) managerNameField.value = user.manager_name || '';
     // 상태 라디오 초기화
     const activeRadio = document.querySelector('input[name="is_active"][value="true"]');
     const inactiveRadio = document.querySelector('input[name="is_active"][value="false"]');
@@ -521,6 +631,7 @@ async function handleUserFormSubmit(e) {
   let email = formData.get('email');
   const name = formData.get('name');
   const role = formData.get('role');
+  const manager_name = formData.get('manager_name');
   const is_active = formData.get('is_active');
   
   // readonly 필드의 경우 직접 DOM에서 값을 가져오기
@@ -536,6 +647,7 @@ async function handleUserFormSubmit(e) {
     email: email ? email.trim() : '',
     name: name ? name.trim() : '',
     role: role || 'user',
+    manager_name: manager_name ? manager_name.trim() : '',
     is_active: (is_active || 'false') === 'true'
   };
 
@@ -684,6 +796,8 @@ window.openUserManagementModal = openUserManagementModal;
 window.loadUserList = loadUserList;
 window.editJobTitle = editJobTitle;
 window.saveJobTitle = saveJobTitle;
+window.editManagerName = editManagerName;
+window.saveManagerName = saveManagerName;
 window.updateTopBarUserInfo = updateTopBarUserInfo;
 window.approveUser = approveUser;
 window.rejectUser = rejectUser;
@@ -782,10 +896,42 @@ async function resetUserPassword(userId) {
 
 // 사용자 역할 변경
 async function editUserRole(userId) {
-  const newRole = prompt('새 역할을 선택하세요 (user/admin):');
-  if (!newRole || !['user', 'admin'].includes(newRole)) {
-    showToast('유효한 역할을 입력해주세요.', 'error');
+  // 현재 사용자 정보 가져오기
+  const user = currentUsers.find(u => u.id === userId);
+  if (!user) {
+    showToast('사용자를 찾을 수 없습니다.', 'error');
     return;
+  }
+  
+  // 역할 선택 다이얼로그 생성
+  const roleOptions = [
+    { value: 'user', label: '일반 사용자' },
+    { value: 'manager', label: '매니저' },
+    { value: 'admin', label: '관리자' }
+  ];
+  
+  const currentRoleLabel = roleOptions.find(opt => opt.value === user.role)?.label || user.role;
+  
+  // 간단한 선택 다이얼로그
+  const roleText = `현재 역할: ${currentRoleLabel}\n\n새 역할을 선택하세요:\n1. 일반 사용자 (user)\n2. 매니저 (manager)\n3. 관리자 (admin)\n\n번호를 입력하세요 (1-3):`;
+  
+  const choice = prompt(roleText);
+  if (!choice) return;
+  
+  let newRole;
+  switch (choice.trim()) {
+    case '1':
+      newRole = 'user';
+      break;
+    case '2':
+      newRole = 'manager';
+      break;
+    case '3':
+      newRole = 'admin';
+      break;
+    default:
+      showToast('1, 2, 3 중에서 선택해주세요.', 'error');
+      return;
   }
   
   try {
@@ -801,7 +947,8 @@ async function editUserRole(userId) {
       throw new Error(`API 실패: ${response.status}`);
     }
     
-    showToast('사용자 역할이 변경되었습니다.', 'success');
+    const newRoleLabel = roleOptions.find(opt => opt.value === newRole)?.label || newRole;
+    showToast(`사용자 역할이 "${newRoleLabel}"로 변경되었습니다.`, 'success');
     await loadUserList(); // 목록 새로고침
     
   } catch (error) {

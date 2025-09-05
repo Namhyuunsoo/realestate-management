@@ -14,10 +14,11 @@ class User:
     email: str
     password_hash: str
     name: str
-    role: str = "user"  # user, admin
+    role: str = "user"  # user, manager, admin
     status: str = "pending"  # pending, approved, rejected, inactive
     job_title: str = ""  # 직책 (예: 대표공인중개사, 공인중개사, 직원 등)
     sheet_url: str = ""  # 개인 시트 URL
+    manager_name: str = ""  # 담당자명 (예: 남, 정, 오, 고문 등)
     created_at: float = field(default_factory=time.time)
     approved_at: Optional[float] = None
     approved_by: Optional[str] = None
@@ -33,6 +34,30 @@ class User:
         """관리자인지 확인"""
         return self.role == "admin"
     
+    def is_manager(self) -> bool:
+        """매니저인지 확인"""
+        return self.role == "manager"
+    
+    def is_user(self) -> bool:
+        """일반 사용자인지 확인"""
+        return self.role == "user"
+    
+    def can_manage_users(self) -> bool:
+        """사용자 관리 권한이 있는지 확인 (어드민만)"""
+        return self.role == "admin"
+    
+    def can_view_stats(self) -> bool:
+        """통계 조회 권한이 있는지 확인 (어드민만)"""
+        return self.role == "admin"
+    
+    def can_view_all_listings(self) -> bool:
+        """모든 매물 조회 권한이 있는지 확인 (어드민, 매니저)"""
+        return self.role in ["admin", "manager"]
+    
+    def can_view_all_customers(self) -> bool:
+        """모든 고객 조회 권한이 있는지 확인 (어드민, 매니저)"""
+        return self.role in ["admin", "manager"]
+    
     def get_display_name(self) -> str:
         """직책과 이름을 조합한 표시명 반환"""
         if self.job_title:
@@ -42,6 +67,10 @@ class User:
     def set_job_title(self, job_title: str):
         """직책 설정"""
         self.job_title = job_title.strip()
+    
+    def set_manager_name(self, manager_name: str):
+        """담당자명 설정"""
+        self.manager_name = manager_name.strip()
     
     def is_locked(self) -> bool:
         """계정이 잠겨있는지 확인"""
@@ -139,6 +168,7 @@ class User:
             "status": self.status,
             "job_title": self.job_title,
             "sheet_url": self.sheet_url,
+            "manager_name": self.manager_name,
             "created_at": self.created_at,
             "approved_at": self.approved_at,
             "approved_by": self.approved_by,
@@ -164,6 +194,7 @@ class User:
             status=status,
             job_title=data.get("job_title", ""),
             sheet_url=data.get("sheet_url", ""),
+            manager_name=data.get("manager_name", ""),
             created_at=data.get("created_at", time.time()),
             approved_at=data.get("approved_at"),
             approved_by=data.get("approved_by"),

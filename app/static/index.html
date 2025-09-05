@@ -615,6 +615,7 @@
                   <th>이름</th>
                   <th>직책</th>
                   <th>역할</th>
+                  <th>담당자명</th>
                   <th>상태</th>
                   <th>가입일</th>
                   <th>시트지정</th>
@@ -654,6 +655,13 @@
                 <option value="manager">매니저</option>
                 <option value="admin">관리자</option>
               </select>
+            </div>
+            <div class="form-group">
+              <label for="userManagerName">담당자명</label>
+              <input type="text" id="userManagerName" name="manager_name" placeholder="예: 남, 정, 오, 고문 등">
+              <small style="color: #666; font-size: 12px;">
+                일반 사용자의 경우 담당자명을 설정하면 해당 담당자 매물만 조회됩니다.
+              </small>
             </div>
             <div class="form-group">
               <label>상태</label>

@@ -2,7 +2,7 @@
 
 from flask import Blueprint, request, jsonify, session, current_app
 from app.services.user_service import UserService
-from app.core.decorators import require_admin, validate_json, handle_errors, log_access
+from app.core.decorators import require_admin, require_user_management, require_stats_access, validate_json, handle_errors, log_access
 from app.core.security import log_security_event
 import time
 
@@ -17,7 +17,7 @@ def get_current_admin_id() -> str:
     return session.get("user_id")
 
 @bp.get("/users")
-@require_admin()
+@require_user_management()
 @handle_errors()
 @log_access()
 def get_users():
@@ -32,7 +32,7 @@ def get_users():
     })
 
 @bp.get("/users/pending")
-@require_admin()
+@require_user_management()
 @handle_errors()
 @log_access()
 def get_pending_users():
@@ -46,7 +46,7 @@ def get_pending_users():
     })
 
 @bp.post("/users/<user_id>/approve")
-@require_admin()
+@require_user_management()
 @handle_errors()
 @log_access()
 def approve_user(user_id):
@@ -62,7 +62,7 @@ def approve_user(user_id):
         return jsonify({"error": "사용자 승인에 실패했습니다."}), 400
 
 @bp.post("/users/<user_id>/reject")
-@require_admin()
+@require_user_management()
 @handle_errors()
 @log_access()
 def reject_user(user_id):
@@ -78,7 +78,7 @@ def reject_user(user_id):
         return jsonify({"error": "사용자 거부에 실패했습니다."}), 400
 
 @bp.post("/users/<user_id>/deactivate")
-@require_admin()
+@require_user_management()
 @handle_errors()
 @log_access()
 def deactivate_user(user_id):
@@ -94,7 +94,7 @@ def deactivate_user(user_id):
         return jsonify({"error": "사용자 비활성화에 실패했습니다."}), 400
 
 @bp.post("/users/<user_id>/reset-password")
-@require_admin()
+@require_user_management()
 @validate_json("new_password")
 @handle_errors()
 @log_access()
@@ -114,7 +114,7 @@ def reset_user_password(user_id):
         return jsonify({"error": "비밀번호 재설정에 실패했습니다."}), 400
 
 @bp.post("/users/<user_id>/set-sheet-url")
-@require_admin()
+@require_user_management()
 @validate_json("sheet_url")
 @handle_errors()
 @log_access()
@@ -134,7 +134,7 @@ def set_user_sheet_url(user_id):
         return jsonify({"error": "시트 URL 설정에 실패했습니다."}), 400
 
 @bp.get("/users/<user_id>")
-@require_admin()
+@require_user_management()
 @handle_errors()
 @log_access()
 def get_user(user_id):
@@ -148,7 +148,7 @@ def get_user(user_id):
     return jsonify({"user": user.to_dict()})
 
 @bp.put("/users/<user_id>/role")
-@require_admin()
+@require_user_management()
 @validate_json("role")
 @handle_errors()
 @log_access()
@@ -158,7 +158,7 @@ def update_user_role(user_id):
     data = request.get_json()
     role = data["role"]
     
-    if role not in ["user", "admin"]:
+    if role not in ["user", "manager", "admin"]:
         return jsonify({"error": "올바르지 않은 역할입니다."}), 400
     
     user_service = get_user_service()
@@ -178,7 +178,7 @@ def update_user_role(user_id):
     return jsonify({"message": "사용자 역할이 변경되었습니다."})
 
 @bp.post("/users/<user_id>/update-job-title")
-@require_admin()
+@require_user_management()
 @validate_json("job_title")
 @handle_errors()
 @log_access()
@@ -199,8 +199,31 @@ def update_user_job_title(user_id):
     else:
         return jsonify({"error": "직책 변경에 실패했습니다."}), 400
 
+@bp.post("/users/<user_id>/update-manager-name")
+@require_user_management()
+@validate_json("manager_name")
+@handle_errors()
+@log_access()
+def update_user_manager_name(user_id):
+    """사용자 담당자명 변경"""
+    admin_id = get_current_admin_id()
+    data = request.get_json()
+    manager_name = data.get("manager_name", "").strip()
+    
+    user_service = get_user_service()
+    user = user_service.get_user_by_id(user_id)
+    
+    if not user:
+        return jsonify({"error": "사용자를 찾을 수 없습니다."}), 404
+    
+    user.set_manager_name(manager_name)
+    user_service._save_users()
+    
+    log_security_event('USER_MANAGER_NAME_UPDATED', f'User {user.email} manager name updated to "{manager_name}" by {admin_id}')
+    return jsonify({"message": "담당자명이 변경되었습니다.", "manager_name": manager_name})
+
 @bp.get("/stats")
-@require_admin()
+@require_stats_access()
 @handle_errors()
 @log_access()
 def get_admin_stats():

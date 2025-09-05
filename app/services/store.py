@@ -306,8 +306,16 @@ def list_customers(user_email: str, filter_type: str = 'own', manager: str = '')
     - filter_type: 'own', 'all', 'manager'
     - manager: 담당자명 (filter_type이 'manager'일 때 사용)
     """
-    if is_admin(user_email):
-        # 어드민은 항상 all_customers.xlsx 사용
+    # 사용자 서비스를 통해 사용자 정보 가져오기
+    user_service = current_app.data_manager.user_service
+    user = user_service.get_user_by_email(user_email)
+    
+    if not user:
+        return []
+    
+    # 역할별 파일 선택
+    if user.is_admin() or user.is_manager():
+        # 어드민과 매니저는 항상 all_customers.xlsx 사용
         target = _admin_file()
     else:
         # 일반 사용자는 자신의 파일만 사용
@@ -366,14 +374,24 @@ def list_customers(user_email: str, filter_type: str = 'own', manager: str = '')
         except Exception as e:
             print(f"Excel 파일 저장 오류: {e}")
     
-    # 필터링 적용
+    # 역할별 필터링 적용
     try:
-        if filter_type == 'manager' and manager:
-            df = df[df['manager'] == manager]
-        elif filter_type == 'own' and is_admin(user_email):
-            pass  # 어드민은 모든 고객을 볼 수 있음
-        elif filter_type == 'own' and not is_admin(user_email):
-            df = df[df['manager'] == user_email]  # 일반 사용자는 본인이 등록한 고객만
+        if user.is_user():
+            # 일반 사용자는 본인 담당 고객만 조회
+            manager_name = user.manager_name
+            if manager_name:
+                df = df[df['manager'] == manager_name]
+                print(f"User {user.email} filtered customers by manager_name: {manager_name} ({len(df)} items)")
+            else:
+                # 담당자명이 설정되지 않은 경우 빈 결과 반환
+                df = df.iloc[0:0]  # 빈 DataFrame
+                print(f"User {user.email} has no manager_name set, returning empty results")
+        elif user.is_manager() or user.is_admin():
+            # 매니저와 어드민은 모든 고객 조회 가능
+            if filter_type == 'manager' and manager:
+                df = df[df['manager'] == manager]
+            # 다른 필터는 적용하지 않음 (모든 고객 조회)
+            print(f"{user.role.title()} {user.email} accessing all customers ({len(df)} items)")
     except Exception as e:
         print(f"필터링 오류: {e}")
     
