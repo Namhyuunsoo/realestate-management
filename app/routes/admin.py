@@ -17,11 +17,29 @@ def get_current_admin_id() -> str:
     return session.get("user_id")
 
 @bp.get("/users")
-@require_user_management()
 @handle_errors()
 @log_access()
 def get_users():
     """모든 사용자 목록 조회"""
+    # 세션 기반 인증 확인
+    user_id = session.get("user_id")
+    if not user_id:
+        # X-User 헤더 기반 인증 시도
+        user_email = request.headers.get("X-User")
+        if not user_email:
+            return jsonify({"error": "로그인이 필요합니다."}), 401
+        
+        user_service = get_user_service()
+        user = user_service.get_user_by_email(user_email)
+        if not user or not user.is_active() or not user.is_admin():
+            return jsonify({"error": "관리자 권한이 필요합니다."}), 403
+    else:
+        # 세션 기반 인증
+        user_service = get_user_service()
+        user = user_service.get_user_by_id(user_id)
+        if not user or not user.is_active() or not user.is_admin():
+            return jsonify({"error": "관리자 권한이 필요합니다."}), 403
+    
     user_service = get_user_service()
     include_inactive = request.args.get("include_inactive", "false").lower() == "true"
     users = user_service.get_all_users(include_inactive=include_inactive)

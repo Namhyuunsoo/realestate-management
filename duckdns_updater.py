@@ -13,7 +13,7 @@ logging.basicConfig(
     encoding='utf-8'
 )
 
-def load_env_file(file_path='security.env'):
+def load_env_file(file_path='.env'):
     """환경변수 파일을 로드하여 os.environ에 설정"""
     if not os.path.exists(file_path):
         logging.warning(f"환경변수 파일을 찾을 수 없습니다: {file_path}")
@@ -34,8 +34,8 @@ def load_env_file(file_path='security.env'):
 load_env_file()
 
 def update_duckdns():
+    domain = os.getenv("DUCKDNS_DOMAIN", "skrealestate")
     token = os.getenv("DUCKDNS_TOKEN", "")
-    domain = "realestate"
     
     if not token:
         logging.error("DUCKDNS_TOKEN 환경변수가 설정되지 않았습니다.")
@@ -57,8 +57,9 @@ def update_duckdns():
         print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] ❌ 오류 발생: {e}")
 
 def main():
+    domain = os.getenv("DUCKDNS_DOMAIN", "skrealestate")
     print("🚀 DuckDNS 자동 IP 업데이트 시작...")
-    print("도메인: realestate.duckdns.org")
+    print(f"도메인: {domain}.duckdns.org")
     print("업데이트 주기: 5분")
     print("로그 파일: duckdns_update.log")
     print("=" * 50)
