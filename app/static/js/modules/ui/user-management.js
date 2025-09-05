@@ -380,6 +380,11 @@ async function saveManagerName(userId) {
   if (!container) return;
   
   const input = container.querySelector('.manager-name-input');
+  if (!input) {
+    console.error('담당자명 입력 필드를 찾을 수 없습니다.');
+    showToast('담당자명 입력 필드를 찾을 수 없습니다.', 'error');
+    return;
+  }
   const managerName = input.value.trim();
   
   try {
