@@ -191,7 +191,9 @@ async function openUserManagementModal() {
 // 사용자 목록 로드
 async function loadUserList() {
   try {
-    const response = await fetch('/api/admin/users');
+    const response = await fetch('/api/admin/users', {
+      credentials: 'include'
+    });
     
     if (!response.ok) {
       if (response.status === 401) {
@@ -217,6 +219,7 @@ async function loadUserList() {
     
     users.forEach(user => {
       const row = document.createElement('tr');
+      row.setAttribute('data-user-id', user.id);
       
       // 직책 수정 기능이 포함된 행 생성
       row.innerHTML = `
@@ -319,6 +322,7 @@ async function saveJobTitle(userId) {
       headers: {
         'Content-Type': 'application/json'
       },
+      credentials: 'include',
       body: JSON.stringify({ job_title: jobTitle })
     });
     
@@ -354,8 +358,19 @@ async function saveJobTitle(userId) {
 
 // 담당자명 수정 모드로 전환
 function editManagerName(userId) {
-  const container = document.querySelector(`[data-user-id="${userId}"]`);
-  if (!container) return;
+  console.log('editManagerName 함수 호출됨:', userId);
+  
+  const row = document.querySelector(`tr[data-user-id="${userId}"]`);
+  if (!row) {
+    console.error('사용자 행을 찾을 수 없음:', userId);
+    return;
+  }
+  
+  const container = row.querySelector('.manager-name-edit');
+  if (!container) {
+    console.error('담당자명 편집 컨테이너를 찾을 수 없음');
+    return;
+  }
   
   const display = container.querySelector('.manager-name-display');
   const input = container.querySelector('.manager-name-input');
@@ -371,28 +386,39 @@ function editManagerName(userId) {
     // 입력 필드에 포커스
     input.focus();
     input.select();
+  } else {
+    console.error('담당자명 편집 요소들을 찾을 수 없음');
   }
 }
 
 // 담당자명 저장
 async function saveManagerName(userId) {
-  // 직접 입력 필드 찾기
-  const input = document.querySelector(`input[onclick*="saveManagerName('${userId}')"]`)?.parentElement?.querySelector('.manager-name-input');
+  console.log('saveManagerName 함수 호출됨:', userId);
   
+  // 사용자 행 찾기
+  const row = document.querySelector(`tr[data-user-id="${userId}"]`);
+  if (!row) {
+    console.error('사용자 행을 찾을 수 없음:', userId);
+    showToast('사용자 정보를 찾을 수 없습니다.', 'error');
+    return;
+  }
+  
+  // 담당자명 입력 필드 찾기
+  const input = row.querySelector('.manager-name-input');
   if (!input) {
-    // 다른 방법으로 찾기
-    const row = document.querySelector(`tr[data-user-id="${userId}"]`);
-    if (row) {
-      const input = row.querySelector('.manager-name-input');
-      if (input) {
-        const managerName = input.value.trim();
-        await updateManagerName(userId, managerName);
-      }
-    }
+    console.error('담당자명 입력 필드를 찾을 수 없음');
+    showToast('담당자명 입력 필드를 찾을 수 없습니다.', 'error');
     return;
   }
   
   const managerName = input.value.trim();
+  console.log('입력된 담당자명:', managerName);
+  
+  if (!managerName) {
+    showToast('담당자명을 입력해주세요.', 'error');
+    return;
+  }
+  
   await updateManagerName(userId, managerName);
 }
 
@@ -406,11 +432,16 @@ async function updateManagerName(userId, managerName) {
       headers: {
         'Content-Type': 'application/json'
       },
+      credentials: 'include', // 세션 쿠키 포함
       body: JSON.stringify({ manager_name: managerName })
     });
     
+    console.log('API 응답 상태:', response.status, response.statusText);
+    
     if (!response.ok) {
-      throw new Error(`API 실패: ${response.status}`);
+      const errorData = await response.json().catch(() => ({}));
+      console.error('API 오류 응답:', errorData);
+      throw new Error(errorData.error || `API 실패: ${response.status}`);
     }
     
     const data = await response.json();
@@ -823,7 +854,8 @@ window.editUserRole = editUserRole;
 async function approveUser(userId) {
   try {
     const response = await fetch(`/api/admin/users/${userId}/approve`, {
-      method: 'POST'
+      method: 'POST',
+      credentials: 'include'
     });
     
     if (!response.ok) {
@@ -843,7 +875,8 @@ async function approveUser(userId) {
 async function rejectUser(userId) {
   try {
     const response = await fetch(`/api/admin/users/${userId}/reject`, {
-      method: 'POST'
+      method: 'POST',
+      credentials: 'include'
     });
     
     if (!response.ok) {
@@ -863,7 +896,8 @@ async function rejectUser(userId) {
 async function deactivateUser(userId) {
   try {
     const response = await fetch(`/api/admin/users/${userId}/deactivate`, {
-      method: 'POST'
+      method: 'POST',
+      credentials: 'include'
     });
     
     if (!response.ok) {
@@ -893,6 +927,7 @@ async function resetUserPassword(userId) {
       headers: {
         'Content-Type': 'application/json'
       },
+      credentials: 'include',
       body: JSON.stringify({ new_password: newPassword })
     });
     
@@ -954,6 +989,7 @@ async function editUserRole(userId) {
       headers: {
         'Content-Type': 'application/json'
       },
+      credentials: 'include',
       body: JSON.stringify({ role: newRole })
     });
     
@@ -1060,6 +1096,7 @@ async function handleSheetUrlSubmit() {
       headers: {
         'Content-Type': 'application/json'
       },
+      credentials: 'include',
       body: JSON.stringify({ sheet_url: urlInput.value.trim() })
     });
     

@@ -229,29 +229,39 @@ def update_user_manager_name(user_id):
         data = request.get_json()
         manager_name = data.get("manager_name", "").strip()
         
+        print(f"🔍 담당자명 변경 요청: user_id={user_id}, manager_name='{manager_name}', admin_id={admin_id}")
         current_app.logger.info(f"담당자명 변경 요청: user_id={user_id}, manager_name='{manager_name}', admin_id={admin_id}")
         
         user_service = get_user_service()
         user = user_service.get_user_by_id(user_id)
         
         if not user:
+            print(f"❌ 사용자를 찾을 수 없음: user_id={user_id}")
             current_app.logger.error(f"사용자를 찾을 수 없음: user_id={user_id}")
             return jsonify({"error": "사용자를 찾을 수 없습니다."}), 404
         
+        print(f"✅ 사용자 정보: {user.email}, 현재 담당자명='{user.manager_name}'")
         current_app.logger.info(f"사용자 정보: {user.email}, 현재 담당자명='{user.manager_name}'")
         
         # 담당자명 설정
         user.set_manager_name(manager_name)
+        print(f"✅ 담당자명 설정 완료: '{manager_name}'")
         current_app.logger.info(f"담당자명 설정 완료: '{manager_name}'")
         
         # 사용자 데이터 저장
         user_service._save_users()
+        print(f"✅ 사용자 데이터 저장 완료")
         current_app.logger.info(f"사용자 데이터 저장 완료")
+        
+        # 저장 후 확인
+        saved_user = user_service.get_user_by_id(user_id)
+        print(f"✅ 저장 후 확인: 담당자명='{saved_user.manager_name}'")
         
         log_security_event('USER_MANAGER_NAME_UPDATED', f'User {user.email} manager name updated to "{manager_name}" by {admin_id}')
         return jsonify({"message": "담당자명이 변경되었습니다.", "manager_name": manager_name})
         
     except Exception as e:
+        print(f"❌ 담당자명 변경 중 오류: {e}")
         current_app.logger.error(f"❌ 담당자명 변경 중 오류: {e}")
         current_app.logger.error(f"❌ 에러 타입: {type(e).__name__}")
         import traceback
