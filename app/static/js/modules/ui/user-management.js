@@ -1080,4 +1080,8 @@ async function handleSheetUrlSubmit() {
     console.error('❌ 시트 URL 설정 실패:', error);
     showToast('시트 URL 설정에 실패했습니다.', 'error');
   }
-} 
+}  
+ / /   ���  h��  �]� 
+ w i n d o w . s a v e M a n a g e r N a m e   =   s a v e M a n a g e r N a m e ;  
+ w i n d o w . e d i t M a n a g e r N a m e   =   e d i t M a n a g e r N a m e ;  
+ 
