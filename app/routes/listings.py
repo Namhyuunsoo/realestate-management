@@ -66,23 +66,35 @@ def api_listings():
     if status_raw:
         data = [d for d in data if d.get("status_raw") == status_raw]
     
-    # 역할별 매물 필터링
-    if user.is_user():
-        # 일반 사용자는 본인 담당 매물만 조회
-        manager_name = user.manager_name
-        if manager_name:
-            data = [d for d in data if d.get("담당자") == manager_name]
-            current_app.logger.info(f"User {user.email} filtered listings by manager_name: {manager_name} ({len(data)} items)")
-        else:
-            # 담당자명이 설정되지 않은 경우 빈 결과 반환
-            data = []
-            current_app.logger.info(f"User {user.email} has no manager_name set, returning empty results")
-    elif user.is_manager():
-        # 매니저는 모든 매물 조회 가능
-        current_app.logger.info(f"Manager {user.email} accessing all listings ({len(data)} items)")
-    elif user.is_admin():
-        # 어드민은 모든 매물 조회 가능
-        current_app.logger.info(f"Admin {user.email} accessing all listings ({len(data)} items)")
+    # 역할별 매물 필터링 (안전한 처리)
+    if user and hasattr(user, 'is_user') and hasattr(user, 'is_manager') and hasattr(user, 'is_admin'):
+        try:
+            if user.is_user():
+                # 일반 사용자는 본인 담당 매물만 조회
+                manager_name = getattr(user, 'manager_name', '')
+                if manager_name:
+                    data = [d for d in data if d.get("담당자") == manager_name]
+                    current_app.logger.info(f"User {user.email} filtered listings by manager_name: {manager_name} ({len(data)} items)")
+                else:
+                    # 담당자명이 설정되지 않은 경우 빈 결과 반환
+                    data = []
+                    current_app.logger.info(f"User {user.email} has no manager_name set, returning empty results")
+            elif user.is_manager():
+                # 매니저는 모든 매물 조회 가능
+                current_app.logger.info(f"Manager {user.email} accessing all listings ({len(data)} items)")
+            elif user.is_admin():
+                # 어드민은 모든 매물 조회 가능
+                current_app.logger.info(f"Admin {user.email} accessing all listings ({len(data)} items)")
+            else:
+                # 역할이 명확하지 않은 경우 모든 매물 조회 (기본값)
+                current_app.logger.info(f"User {user.email} with unknown role accessing all listings ({len(data)} items)")
+        except Exception as filter_error:
+            current_app.logger.error(f"❌ 역할별 필터링 중 오류: {filter_error}")
+            # 필터링 실패 시 모든 매물 조회 (안전한 기본값)
+            current_app.logger.info(f"Fallback: User {user.email} accessing all listings due to filter error ({len(data)} items)")
+    else:
+        # 사용자 객체가 없거나 메서드가 없는 경우 모든 매물 조회
+        current_app.logger.warning(f"User object or role methods not available, accessing all listings ({len(data)} items)")
 
     total = len(data)
     sliced = data[offset:offset+limit]

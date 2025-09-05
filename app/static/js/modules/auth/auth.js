@@ -495,7 +495,7 @@ async function checkSessionAndAutoLogin() {
     if (response.ok) {
       const data = await response.json();
       if (data.logged_in && data.user) {
-        console.log("✅ 서버 세션에서 사용자 정보 확인:", data.user);
+        console.log("✅ 서버 세션에서 사용자 정보 확인됨");
         
         // 사용자 정보 설정
         setCurrentUser(data.user.email);
@@ -540,7 +540,7 @@ async function checkSessionAndAutoLogin() {
       
       if (response.ok) {
         const data = await response.json();
-        console.log("✅ 자동 로그인 성공:", data);
+        console.log("✅ 자동 로그인 성공");
         
         setCurrentUser(savedUser);
         hideLoginScreen();

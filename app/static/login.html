@@ -251,7 +251,7 @@
                 const data = await response.json();
                 
                 if (response.ok) {
-                    console.log('로그인 성공:', data);
+                    console.log('로그인 성공');
                     // localStorage에 사용자 및 어드민 정보 저장
                     try {
                         const userEmail = (data && data.user && data.user.email) ? data.user.email : email;

@@ -20,7 +20,7 @@
           }
           
           const config = await response.json();
-          console.log('🔑 네이버 지도 API 설정 로드됨:', config);
+          console.log('🔑 네이버 지도 API 설정 로드됨');
           
           // API 키 유효성 검사
           if (!config.ncpKeyId) {
@@ -39,7 +39,7 @@
           // ncpKeyId만 사용 (ncpClientId는 더 이상 사용하지 않음)
           const apiUrl = `https://openapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=${config.ncpKeyId}&submodules=geocoder,panorama`;
           script.src = apiUrl;
-          console.log('🔗 네이버 지도 API URL:', apiUrl);
+          console.log('🔗 네이버 지도 API 로드 시작');
           
           // 로드 성공 시
           script.onload = function() {
@@ -885,7 +885,7 @@
               const data = await response.json();
               
               if (response.ok) {
-                console.log('인라인 로그인 성공:', data);
+                console.log('인라인 로그인 성공');
                 
                 // localStorage에 사용자 정보 저장
                 try {

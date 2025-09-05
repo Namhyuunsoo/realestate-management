@@ -374,26 +374,36 @@ def list_customers(user_email: str, filter_type: str = 'own', manager: str = '')
         except Exception as e:
             print(f"Excel 파일 저장 오류: {e}")
     
-    # 역할별 필터링 적용
+    # 역할별 필터링 적용 (안전한 처리)
     try:
-        if user.is_user():
-            # 일반 사용자는 본인 담당 고객만 조회
-            manager_name = user.manager_name
-            if manager_name:
-                df = df[df['manager'] == manager_name]
-                print(f"User {user.email} filtered customers by manager_name: {manager_name} ({len(df)} items)")
+        if user and hasattr(user, 'is_user') and hasattr(user, 'is_manager') and hasattr(user, 'is_admin'):
+            if user.is_user():
+                # 일반 사용자는 본인 담당 고객만 조회
+                manager_name = getattr(user, 'manager_name', '')
+                if manager_name:
+                    df = df[df['manager'] == manager_name]
+                    print(f"User {user.email} filtered customers by manager_name: {manager_name} ({len(df)} items)")
+                else:
+                    # 담당자명이 설정되지 않은 경우 빈 결과 반환
+                    df = df.iloc[0:0]  # 빈 DataFrame
+                    print(f"User {user.email} has no manager_name set, returning empty results")
+            elif user.is_manager() or user.is_admin():
+                # 매니저와 어드민은 모든 고객 조회 가능
+                if filter_type == 'manager' and manager:
+                    df = df[df['manager'] == manager]
+                # 다른 필터는 적용하지 않음 (모든 고객 조회)
+                user_role = getattr(user, 'role', 'unknown')
+                print(f"{user_role.title()} {user.email} accessing all customers ({len(df)} items)")
             else:
-                # 담당자명이 설정되지 않은 경우 빈 결과 반환
-                df = df.iloc[0:0]  # 빈 DataFrame
-                print(f"User {user.email} has no manager_name set, returning empty results")
-        elif user.is_manager() or user.is_admin():
-            # 매니저와 어드민은 모든 고객 조회 가능
-            if filter_type == 'manager' and manager:
-                df = df[df['manager'] == manager]
-            # 다른 필터는 적용하지 않음 (모든 고객 조회)
-            print(f"{user.role.title()} {user.email} accessing all customers ({len(df)} items)")
+                # 역할이 명확하지 않은 경우 모든 고객 조회 (기본값)
+                print(f"User {user.email} with unknown role accessing all customers ({len(df)} items)")
+        else:
+            # 사용자 객체가 없거나 메서드가 없는 경우 모든 고객 조회
+            print(f"User object or role methods not available, accessing all customers ({len(df)} items)")
     except Exception as e:
         print(f"필터링 오류: {e}")
+        # 필터링 실패 시 모든 고객 조회 (안전한 기본값)
+        print(f"Fallback: accessing all customers due to filter error ({len(df)} items)")
     
     result = df.to_dict(orient="records")
     

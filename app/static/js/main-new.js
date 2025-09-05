@@ -9,139 +9,233 @@
  * ===== 모듈 로드 시스템 =====
  *******************************/
 
-// 모듈 로드 함수
+// 모듈 로드 함수 (성능 측정 포함)
 function loadModule(modulePath) {
   return new Promise((resolve, reject) => {
+    const startTime = performance.now();
     const script = document.createElement('script');
     script.src = modulePath;
-    script.onload = resolve;
-    script.onerror = reject;
+    
+    script.onload = () => {
+      const endTime = performance.now();
+      const loadTime = (endTime - startTime).toFixed(2);
+      console.log(`⚡ ${modulePath.split('/').pop()} 로드 완료 (${loadTime}ms)`);
+      resolve();
+    };
+    
+    script.onerror = (error) => {
+      console.error(`❌ ${modulePath.split('/').pop()} 로드 실패:`, error);
+      reject(error);
+    };
+    
     document.head.appendChild(script);
   });
 }
 
-// 모듈들을 순서대로 로드
+// 우선순위 기반 모듈 로드 함수
+function loadModuleWithPriority(modulePath, priority = 'normal') {
+  return new Promise((resolve, reject) => {
+    const startTime = performance.now();
+    const script = document.createElement('script');
+    script.src = modulePath;
+    
+    // 우선순위에 따른 로딩 전략
+    if (priority === 'critical') {
+      script.setAttribute('data-priority', 'critical');
+    } else if (priority === 'low') {
+      script.setAttribute('data-priority', 'low');
+    }
+    
+    script.onload = () => {
+      const endTime = performance.now();
+      const loadTime = (endTime - startTime).toFixed(2);
+      console.log(`⚡ [${priority.toUpperCase()}] ${modulePath.split('/').pop()} 로드 완료 (${loadTime}ms)`);
+      resolve();
+    };
+    
+    script.onerror = (error) => {
+      console.error(`❌ [${priority.toUpperCase()}] ${modulePath.split('/').pop()} 로드 실패:`, error);
+      reject(error);
+    };
+    
+    document.head.appendChild(script);
+  });
+}
+
+// 지연 로딩 함수 (실제로 필요한 경우에만 사용)
+function loadModuleLazy(modulePath, trigger = 'idle') {
+  return new Promise((resolve, reject) => {
+    const loadLazyModule = () => {
+      loadModule(modulePath)
+        .then(() => {
+          console.log(`🔄 [LAZY] ${modulePath.split('/').pop()} 지연 로드 완료`);
+          resolve();
+        })
+        .catch(reject);
+    };
+    
+    if (trigger === 'user-interaction') {
+      // 사용자 상호작용 시 로드
+      const events = ['click', 'scroll', 'mousemove', 'keydown'];
+      const loadOnce = () => {
+        loadLazyModule();
+        events.forEach(event => document.removeEventListener(event, loadOnce));
+      };
+      
+      events.forEach(event => document.addEventListener(event, loadOnce, { once: true }));
+    } else if (trigger === 'idle') {
+      // 브라우저 유휴 시간에 로드
+      if ('requestIdleCallback' in window) {
+        requestIdleCallback(loadLazyModule);
+      } else {
+        setTimeout(loadLazyModule, 100);
+      }
+    } else if (trigger === 'immediate') {
+      // 즉시 로드
+      loadLazyModule();
+    }
+  });
+}
+
+// 병렬 모듈 로딩 시스템
 async function loadModules() {
   try {
-    console.log('🚀 모듈 로딩 시작...');
+    console.log('🚀 병렬 모듈 로딩 시작...');
+    const startTime = performance.now();
     
-    // 1. 전역 변수/상수 (가장 먼저 로드)
+    // 1단계: 핵심 모듈 (순차 로딩 - 의존성 있음)
+    console.log('📦 1단계: 핵심 모듈 로딩...');
     await loadModule('/static/js/modules/core/globals.js');
     console.log('✅ globals.js 로드 완료');
-    
-    // 2. 모드 전환 관리자
-    await loadModule('/static/js/modules/core/mode-switcher.js');
-    console.log('✅ mode-switcher.js 로드 완료');
-    
-    // 3. 유틸리티 함수들
-    await loadModule('/static/js/modules/core/utils.js');
-    console.log('✅ utils.js 로드 완료');
     
     // 모바일 앱 높이 조정
     if (window.adjustMobileAppHeight) {
       window.adjustMobileAppHeight();
     }
     
-    // 4. 터치 제스처 관리 (모바일 환경)
-    await loadModule('/static/js/modules/core/touch-gestures.js');
-    console.log('✅ touch-gestures.js 로드 완료');
+    // 2단계: 독립적인 모듈들 (병렬 로딩)
+    console.log('📦 2단계: 독립 모듈 병렬 로딩...');
+    const independentModules = [
+      '/static/js/modules/core/mode-switcher.js',
+      '/static/js/modules/core/utils.js',
+      '/static/js/modules/core/touch-gestures.js',
+      '/static/js/modules/ui/toast.js'
+    ];
     
-    // 5. 인증 관련 함수들 (전역 변수에 의존)
-    await loadModule('/static/js/modules/auth/auth.js');
-    console.log('✅ auth.js 로드 완료');
+    await Promise.all(independentModules.map(async (modulePath) => {
+      await loadModule(modulePath);
+      console.log(`✅ ${modulePath.split('/').pop()} 로드 완료`);
+    }));
     
-    // 4. 브리핑 관련 함수들
-    await loadModule('/static/js/modules/filters/briefing.js');
-    console.log('✅ briefing.js 로드 완료');
+    // 3단계: 인증 및 데이터 모듈 (병렬 로딩)
+    console.log('📦 3단계: 인증/데이터 모듈 병렬 로딩...');
+    const authDataModules = [
+      '/static/js/modules/auth/auth.js',
+      '/static/js/modules/filters/briefing.js',
+      '/static/js/modules/data/listings.js'
+    ];
     
-    // 5. 매물 데이터 관련 함수들
-    await loadModule('/static/js/modules/data/listings.js');
+    await Promise.all(authDataModules.map(async (modulePath) => {
+      await loadModule(modulePath);
+      console.log(`✅ ${modulePath.split('/').pop()} 로드 완료`);
+    }));
     
+    // 4단계: 지도 관련 모듈 (순차 로딩 - 의존성 있음)
+    console.log('📦 4단계: 지도 모듈 순차 로딩...');
+    const mapModules = [
+      '/static/js/modules/map/map-clustering.js',
+      '/static/js/modules/map/map-controls.js',
+      '/static/js/modules/map/map-core.js',
+      '/static/js/modules/map/map-markers.js'
+    ];
     
-    // 6. 클러스터링 관리 (map-core.js보다 먼저 로드)
-    await loadModule('/static/js/modules/map/map-clustering.js');
-    console.log('✅ map-clustering.js 로드 완료');
+    for (const modulePath of mapModules) {
+      await loadModule(modulePath);
+      console.log(`✅ ${modulePath.split('/').pop()} 로드 완료`);
+    }
     
-    // 7. 지도 컨트롤 관리 (map-core.js보다 먼저 로드)
-    await loadModule('/static/js/modules/map/map-controls.js');
-    console.log('✅ map-controls.js 로드 완료');
+    // 5단계: 핵심 UI 모듈들 (우선 로딩)
+    console.log('📦 5단계: 핵심 UI 모듈 우선 로딩...');
+    const criticalUIModules = [
+      '/static/js/modules/ui/listing-list.js',
+      '/static/js/modules/ui/panels.js',
+      '/static/js/modules/ui/detail-panel.js',
+      '/static/js/modules/ui/event-handlers.js'
+    ];
     
-    // 8. 지도 핵심 기능 (map-controls.js 로드 후)
-    await loadModule('/static/js/modules/map/map-core.js');
-    console.log('✅ map-core.js 로드 완료');
+    await Promise.all(criticalUIModules.map(async (modulePath) => {
+      await loadModuleWithPriority(modulePath, 'critical');
+    }));
     
-    // 9. 마커 관리
-    await loadModule('/static/js/modules/map/map-markers.js');
-    console.log('✅ map-markers.js 로드 완료');
+    // 6단계: 일반 UI 모듈들 (병렬 로딩)
+    console.log('📦 6단계: 일반 UI 모듈 병렬 로딩...');
+    const normalUIModules = [
+      '/static/js/modules/ui/full-list.js',
+      '/static/js/modules/ui/full-briefing-list.js',
+      '/static/js/modules/ui/briefing-list.js',
+      '/static/js/modules/ui/customer-forms.js',
+      '/static/js/modules/ui/customer-management.js',
+      '/static/js/modules/ui/customer-list-detail.js'
+    ];
     
-    // 10. 토스트 메시지 UI 관리
-    await loadModule('/static/js/modules/ui/toast.js');
-    console.log('✅ toast.js 로드 완료');
+    await Promise.all(normalUIModules.map(async (modulePath) => {
+      await loadModule(modulePath);
+    }));
     
-    // 11. 매물 리스트 UI 관리
-    await loadModule('/static/js/modules/ui/listing-list.js');
-    console.log('✅ listing-list.js 로드 완료');
+    // 7단계: 관리자 전용 모듈들 (조건부 로딩)
+    console.log('📦 7단계: 관리자 모듈 조건부 로딩...');
+    const adminModules = [
+      '/static/js/modules/ui/user-management.js',
+      '/static/js/modules/ui/user-sheets.js',
+      '/static/js/modules/ui/status-bar-sheets.js'
+    ];
     
-    // 12. 패널 관리 UI 관리
-    await loadModule('/static/js/modules/ui/panels.js');
-    console.log('✅ panels.js 로드 완료');
+    // 관리자 모듈들은 즉시 로드 (이벤트 리스너 등록을 위해)
+    await Promise.all(adminModules.map(async (modulePath) => {
+      await loadModule(modulePath);
+      console.log(`✅ ${modulePath.split('/').pop()} 로드 완료`);
+    }));
     
-    // 13. 전체 리스트 UI 관리
-    await loadModule('/static/js/modules/ui/full-list.js');
-    console.log('✅ full-list.js 로드 완료');
-    
-    // 14. 전체 브리핑 리스트 UI 관리
-    await loadModule('/static/js/modules/ui/full-briefing-list.js');
-    console.log('✅ full-briefing-list.js 로드 완료');
-    
-    // 15. 상세 패널 UI 관리
-    await loadModule('/static/js/modules/ui/detail-panel.js');
-    console.log('✅ detail-panel.js 로드 완료');
-    
-    // 16. 브리핑 리스트 UI 관리
-    await loadModule('/static/js/modules/ui/briefing-list.js');
-    console.log('✅ briefing-list.js 로드 완료');
-    
-    // 17. 고객 폼 관련 함수들 관리
-    await loadModule('/static/js/modules/ui/customer-forms.js');
-    console.log('✅ customer-forms.js 로드 완료');
-    
-    // 18. 고객 관리 UI 관리
-    await loadModule('/static/js/modules/ui/customer-management.js');
-    console.log('✅ customer-management.js 로드 완료');
-    
-    // 19. 고객 목록+상세 관련 함수들 관리
-    await loadModule('/static/js/modules/ui/customer-list-detail.js');
-    console.log('✅ customer-list-detail.js 로드 완료');
-    
-    // 20. 사용자 관리 관련 함수들 관리
-    await loadModule('/static/js/modules/ui/user-management.js');
-    console.log('✅ user-management.js 로드 완료');
-    
-    // 21. 사용자 시트 관련 함수들 관리
-    await loadModule('/static/js/modules/ui/user-sheets.js');
-    console.log('✅ user-sheets.js 로드 완료');
-    
-    // 22. 상태바 시트 관련 함수들 관리
-    await loadModule('/static/js/modules/ui/status-bar-sheets.js');
-    console.log('✅ status-bar-sheets.js 로드 완료');
-    
-    // 23. 이벤트 핸들러 관련 함수들 관리
-    await loadModule('/static/js/modules/ui/event-handlers.js');
-    console.log('✅ event-handlers.js 로드 완료');
-    
-    // 24. 초기화 관련 함수들 관리 (마지막에 로드)
+    // 8단계: 초기화 모듈 (마지막에 로드)
+    console.log('📦 8단계: 초기화 모듈 로딩...');
     await loadModule('/static/js/modules/ui/initialization.js');
     console.log('✅ initialization.js 로드 완료');
     
-    // 25. 사이드바 토글 초기화
+    // 사이드바 토글 초기화
     setupSidebarToggles();
     console.log('✅ 사이드바 토글 기능 초기화 완료');
     
-    console.log('🎉 모든 모듈 로딩 완료!');
+    const endTime = performance.now();
+    const loadTime = (endTime - startTime).toFixed(2);
+    console.log(`🎉 모든 모듈 로딩 완료! (총 ${loadTime}ms)`);
+    
+    // 성능 메트릭 수집
+    const performanceMetrics = {
+      totalLoadTime: loadTime,
+      timestamp: new Date().toISOString(),
+      userAgent: navigator.userAgent,
+      connectionType: navigator.connection?.effectiveType || 'unknown'
+    };
+    
+    // 성능 데이터를 localStorage에 저장 (선택적)
+    if (window.DEBUG) {
+      localStorage.setItem('moduleLoadPerformance', JSON.stringify(performanceMetrics));
+      console.log('📊 성능 메트릭 저장됨:', performanceMetrics);
+    }
     
     // 모든 모듈 로드 완료 후 앱 초기화
     await initializeApplication();
+    
+    // 9단계: 선택적 모듈 지연 로딩 (성능 최적화)
+    console.log('📦 9단계: 선택적 모듈 지연 로딩...');
+    const optionalModules = [
+      // 향후 추가될 선택적 기능들
+    ];
+    
+    // 선택적 모듈들을 브라우저 유휴 시간에 로드
+    optionalModules.forEach(modulePath => {
+      loadModuleLazy(modulePath, 'idle');
+    });
     
   } catch (error) {
     console.error('❌ 모듈 로딩 실패:', error);
@@ -543,6 +637,12 @@ window.togglePrimarySidebar = togglePrimarySidebar;
 window.toggleSecondarySidebar = toggleSecondarySidebar;
 window.setupSidebarToggles = setupSidebarToggles;
 window.resizeMapAndRefreshMarkers = resizeMapAndRefreshMarkers;
+
+// 병렬 로딩 시스템 export
+window.loadModule = loadModule;
+window.loadModuleWithPriority = loadModuleWithPriority;
+window.loadModuleLazy = loadModuleLazy;
+window.loadModules = loadModules;
 
 /*******************************
  * ===== 모듈 로드 시작 =====

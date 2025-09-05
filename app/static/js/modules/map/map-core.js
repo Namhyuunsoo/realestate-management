@@ -310,7 +310,7 @@ async function syncUserFromSession() {
     }
     
     const data = await res.json();
-    console.log("📦 /api/me 응답 데이터:", data);
+    console.log("📦 /api/me 응답 데이터 로드됨");
 
     // /api/me 응답은 두 가지 케이스를 지원한다:
     // 1) { user: { email, role, ... } }

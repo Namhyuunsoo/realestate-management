@@ -115,7 +115,7 @@ function initRefreshButton() {
       }
       
       const data = await response.json();
-      console.log('✅ 새로고침 완료:', data);
+      console.log('✅ 새로고침 완료');
       
       // 성공 메시지
       if (typeof showToast === 'function') {
