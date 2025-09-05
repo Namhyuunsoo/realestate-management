@@ -398,6 +398,7 @@ async function saveManagerName(userId) {
 
 // 실제 저장 로직
 async function updateManagerName(userId, managerName) {
+  console.log('담당자명 저장 시도:', userId, managerName);
   
   try {
     const response = await fetch(`/api/admin/users/${userId}/update-manager-name`, {
@@ -413,25 +414,17 @@ async function updateManagerName(userId, managerName) {
     }
     
     const data = await response.json();
+    console.log('저장 성공:', data);
     
-    // 성공 시 UI 업데이트
-    const display = container.querySelector('.manager-name-display');
-    const editBtn = container.querySelector('.manager-name-edit-btn');
-    const saveBtn = container.querySelector('.manager-name-save-btn');
+    // 성공 메시지 표시
+    showToast('담당자명이 저장되었습니다.', 'success');
     
-    if (display && editBtn && saveBtn) {
-      display.textContent = managerName;
-      display.style.display = 'inline-block';
-      input.style.display = 'none';
-      editBtn.style.display = 'inline-block';
-      saveBtn.style.display = 'none';
-    }
-    
-    showToast('담당자명이 변경되었습니다.', 'success');
+    // 사용자 목록 새로고침
+    await loadUserList();
     
   } catch (error) {
-    console.error('❌ 담당자명 변경 실패:', error);
-    showToast('담당자명 변경에 실패했습니다.', 'error');
+    console.error('담당자명 저장 실패:', error);
+    showToast('담당자명 저장에 실패했습니다.', 'error');
   }
 }
 
