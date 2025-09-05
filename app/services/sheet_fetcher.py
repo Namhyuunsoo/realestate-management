@@ -82,9 +82,17 @@ def _check_cache_validity(cache_file: str, source_file: str) -> Tuple[bool, Opti
         return False, None
 
 def _read_excel_file(file_path: str) -> list[list[str]]:
-    """Excel 파일을 읽어서 2차원 배열로 변환"""
-    try:
-        print(f"Excel 파일 읽기 시작: {file_path}")
+    """Excel 파일을 읽어서 2차원 배열로 변환 (재시도 로직 포함)"""
+    import time
+    import os
+    
+    # 파일이 존재하는지 확인
+    if not os.path.exists(file_path):
+        raise Exception(f"파일이 존재하지 않습니다: {file_path}")
+    
+    # 재시도 로직 (최대 3회, 각각 2초 대기)
+    for attempt in range(3):
+        print(f"Excel 파일 읽기 시작: {file_path} (시도 {attempt + 1}/3)")
         
         # 여러 엔진을 시도하여 Excel 파일 읽기
         df = None
@@ -116,10 +124,20 @@ def _read_excel_file(file_path: str) -> list[list[str]]:
                         print("✅ odf 엔진으로 Excel 파일 읽기 성공!")
                     except Exception as e4:
                         print(f"❌ 모든 엔진 실패: {e4}")
-                        raise Exception(f"모든 Excel 엔진 시도 실패: openpyxl({e1}), xlrd({e2}), 기본({e3}), odf({e4})")
+                        if attempt < 2:  # 마지막 시도가 아니면 재시도
+                            print(f"🔄 재시도 {attempt + 1}/3 - 2초 대기...")
+                            time.sleep(2)
+                            continue
+                        else:
+                            raise Exception(f"모든 Excel 엔진 시도 실패: openpyxl({e1}), xlrd({e2}), 기본({e3}), odf({e4})")
         
         if df is None:
-            raise Exception("Excel 파일을 읽을 수 없습니다.")
+            if attempt < 2:  # 마지막 시도가 아니면 재시도
+                print(f"🔄 DataFrame이 None - 재시도 {attempt + 1}/3 - 2초 대기...")
+                time.sleep(2)
+                continue
+            else:
+                raise Exception("Excel 파일을 읽을 수 없습니다.")
         
         print(f"✅ Excel 파일 읽기 성공! 행 수: {len(df)}")
         
@@ -130,10 +148,9 @@ def _read_excel_file(file_path: str) -> list[list[str]]:
         del df
         
         return rows
-        
-    except Exception as e:
-        print(f"❌ Excel 파일 읽기 실패: {e}")
-        raise Exception(f"Excel 파일 읽기 실패: {e}")
+    
+    # 모든 재시도가 실패한 경우
+    raise Exception("모든 재시도가 실패했습니다.")
 
 def _save_to_cache(cache_file: str, data: list) -> None:
     """데이터를 캐시 파일에 저장"""

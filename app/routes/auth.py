@@ -158,6 +158,9 @@ def login():
         # 해시가 마이그레이션되었을 수 있으므로 항상 저장
         user_service._save_users()  # 로그인 기록 저장
         
+        # 기존 세션 완전 정리 (다른 사용자로 로그인 시 충돌 방지)
+        session.clear()
+        
         # 세션에 사용자 정보 저장
         session["user_id"] = user.id
         session["user_email"] = user.email

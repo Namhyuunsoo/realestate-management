@@ -169,6 +169,10 @@ def load_listings(force_reload=False) -> List[dict]:
     # sheet_fetcher에 force_reload 파라미터 전달
     rows = read_local_listing_sheet(force_reload=force_reload)
     
+    if rows is None or len(rows) == 0:
+        current_app.logger.error("❌ Excel 파일에서 데이터를 읽을 수 없습니다.")
+        return []
+    
     header = rows[0]
     hdr_map = normalize_headers(header)
     missing = [h for h in EXPECTED_HEADERS if h not in hdr_map]

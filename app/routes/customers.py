@@ -59,13 +59,26 @@ def create_customer_api():
 @require_user()
 @handle_errors()
 def list_customers_api():
-    user = request.headers.get("X-User")
+    user_email = request.headers.get("X-User")
+    
+    # 사용자 객체 가져오기
+    try:
+        user_service = current_app.data_manager.user_service
+        user = user_service.get_user_by_email(user_email)
+        
+        if not user or not user.is_active():
+            current_app.logger.warning(f"Invalid user: {user_email}")
+            return jsonify({"error": "유효하지 않은 사용자입니다."}), 401
+            
+    except Exception as auth_error:
+        current_app.logger.error(f"❌ 사용자 인증 중 오류: {auth_error}")
+        return jsonify({"error": f"사용자 인증 실패: {str(auth_error)}"}), 500
 
     # 필터링 파라미터 처리
     filter_type = request.args.get('filter', 'own')
     manager = request.args.get('manager', '')
     
-    # 원래 store.py 함수 사용
+    # 원래 store.py 함수 사용 (User 객체 전달)
     from app.services import store
     items = store.list_customers(user, filter_type, manager)
     

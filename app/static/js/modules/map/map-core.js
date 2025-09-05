@@ -332,6 +332,9 @@ async function syncUserFromSession() {
         setCurrentUser(userPayload.email);
       }
 
+      // 사용자 역할 정보 저장
+      localStorage.setItem("X-USER-ROLE", userPayload.role || "user");
+      
       // 어드민 권한 정보 저장
       if (userPayload.role === 'admin') {
         localStorage.setItem("X-USER-ADMIN", "true");
@@ -358,7 +361,8 @@ async function syncUserFromSession() {
       
       // 어드민 UI 토글
       if (typeof toggleAdminUI === 'function') {
-        toggleAdminUI(userPayload.role === 'admin');
+        const isAdminOrManager = userPayload.role === 'admin' || userPayload.role === 'manager';
+        toggleAdminUI(isAdminOrManager);
       }
       
       console.log("✅ 사용자 세션 동기화 완료");

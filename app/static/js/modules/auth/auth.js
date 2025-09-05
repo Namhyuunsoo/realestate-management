@@ -298,19 +298,74 @@ function setCurrentUser(email) {
   currentUser = email;
   localStorage.setItem("X-USER", email);
   
-  // 어드민 권한 확인
-  const isAdmin = localStorage.getItem("X-USER-ADMIN") === "true";
-  
-  const stat = document.getElementById("userStatus");
-  if (stat) {
-    const roleText = isAdmin ? `어드민: ${email}` : `사용자: ${email}`;
-    stat.textContent = roleText;
-  }
-  
-  toggleLoginLogoutUI(!!email);
-  
-  // 어드민 전용 UI 요소들 토글
-  toggleAdminUI(isAdmin);
+  // 사용자 역할 확인 (서버에서 최신 정보 가져오기)
+  fetch('/api/me', {
+    headers: { 'X-User': email },
+    credentials: 'include'
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.logged_in && data.role) {
+      localStorage.setItem('X-USER-ROLE', data.role);
+      console.log(`✅ 사용자 역할 설정: ${email} -> ${data.role}`);
+      
+      // 사용자 정보를 localStorage에 저장 (다른 모듈에서 사용)
+      if (data.manager_name) {
+        localStorage.setItem('X-USER-MANAGER-NAME', data.manager_name);
+        console.log(`✅ 사용자 담당자명 설정: ${email} -> ${data.manager_name}`);
+      }
+      
+      // UI 업데이트
+      const userRole = data.role;
+      const isAdmin = userRole === "admin";
+      const isManager = userRole === "manager";
+      
+      const stat = document.getElementById("userStatus");
+      if (stat) {
+        let roleText = "";
+        if (isAdmin) {
+          roleText = `어드민: ${email}`;
+        } else if (isManager) {
+          roleText = `매니저: ${email}`;
+        } else {
+          roleText = `사용자: ${email}`;
+        }
+        stat.textContent = roleText;
+      }
+      
+      toggleLoginLogoutUI(!!email);
+      
+      // 권한에 따른 UI 토글
+      const isAdminOrManager = userRole === "admin" || userRole === "manager";
+      toggleAdminUI(isAdminOrManager);
+    }
+  })
+  .catch(error => {
+    console.error('사용자 역할 확인 실패:', error);
+    // 실패 시 기본값 사용
+    const userRole = localStorage.getItem("X-USER-ROLE") || "user";
+    const isAdmin = userRole === "admin";
+    const isManager = userRole === "manager";
+    
+    const stat = document.getElementById("userStatus");
+    if (stat) {
+      let roleText = "";
+      if (isAdmin) {
+        roleText = `어드민: ${email}`;
+      } else if (isManager) {
+        roleText = `매니저: ${email}`;
+      } else {
+        roleText = `사용자: ${email}`;
+      }
+      stat.textContent = roleText;
+    }
+    
+    toggleLoginLogoutUI(!!email);
+    
+    // 권한에 따른 UI 토글
+    const isAdminOrManager = userRole === "admin" || userRole === "manager";
+    toggleAdminUI(isAdminOrManager);
+  });
   
   // X-User 헤더를 모든 fetch 요청에 자동으로 추가 (더 안전한 방식)
   if (email) {
@@ -363,17 +418,62 @@ function toggleLoginLogoutUI(isLoggedIn) {
 }
 
 function toggleAdminUI(isAdmin) {
-  // 어드민 전용 UI 요소들
-  const adminElements = document.querySelectorAll(".admin-only");
-  adminElements.forEach(el => {
-    if (isAdmin) {
-      el.classList.remove("hidden");
-    } else {
-      el.classList.add("hidden");
-    }
-  });
+  // 사용자 역할 확인
+  const userRole = localStorage.getItem("X-USER-ROLE") || "user";
+  console.log(`🔍 toggleAdminUI 호출: isAdmin=${isAdmin}, userRole=${userRole}`);
+  console.log(`🔍 localStorage X-USER:`, localStorage.getItem("X-USER"));
   
-  console.log(isAdmin ? "✅ 어드민 UI 활성화" : "ℹ️ 일반 사용자 UI");
+  // 어드민 전용 UI 요소들 (전체 컨테이너)
+  const adminContainer = document.querySelector(".admin-only");
+  console.log(`🔍 adminContainer 찾음:`, adminContainer);
+  
+  if (adminContainer) {
+    if (userRole === "admin" || userRole === "manager") {
+      adminContainer.classList.remove("hidden");
+      adminContainer.style.display = "flex"; // CSS의 display: none을 덮어쓰기
+      console.log("✅ 어드민 컨테이너 표시 - 클래스:", adminContainer.className, "스타일:", adminContainer.style.display);
+    } else {
+      adminContainer.classList.add("hidden");
+      adminContainer.style.display = "none";
+      console.log("ℹ️ 어드민 컨테이너 숨김 - 클래스:", adminContainer.className, "스타일:", adminContainer.style.display);
+    }
+  } else {
+    console.error("❌ adminContainer를 찾을 수 없습니다!");
+  }
+  
+  // 통계 버튼은 어드민만 표시
+  const statsBtn = document.getElementById("adminStatsBtn");
+  console.log(`🔍 statsBtn 찾음:`, statsBtn);
+  
+  if (statsBtn) {
+    if (userRole === "admin") {
+      statsBtn.style.display = "inline-block";
+      console.log("✅ 통계 버튼 표시 - 스타일:", statsBtn.style.display);
+    } else {
+      statsBtn.style.display = "none";
+      console.log("ℹ️ 통계 버튼 숨김 - 스타일:", statsBtn.style.display);
+    }
+  } else {
+    console.error("❌ adminStatsBtn을 찾을 수 없습니다!");
+  }
+  
+  // 사용자 관리 버튼은 어드민과 매니저만 표시
+  const userMgmtBtn = document.getElementById("userManagementBtn");
+  console.log(`🔍 userMgmtBtn 찾음:`, userMgmtBtn);
+  
+  if (userMgmtBtn) {
+    if (userRole === "admin" || userRole === "manager") {
+      userMgmtBtn.style.display = "inline-block";
+      console.log("✅ 사용자 관리 버튼 표시 - 스타일:", userMgmtBtn.style.display);
+    } else {
+      userMgmtBtn.style.display = "none";
+      console.log("ℹ️ 사용자 관리 버튼 숨김 - 스타일:", userMgmtBtn.style.display);
+    }
+  } else {
+    console.error("❌ userManagementBtn을 찾을 수 없습니다!");
+  }
+  
+  console.log(`✅ UI 토글 완료: ${userRole} 역할`);
 }
 
 async function applyUser() {
@@ -411,34 +511,45 @@ async function applyUser() {
   // 사용자 설정
   setCurrentUser(email);
   
-  // 서버에서 어드민 권한 확인
+  // 서버에서 사용자 정보 및 권한 확인
   try {
-    const response = await fetch("/api/check-admin", {
-      method: "POST",
+    const response = await fetch("/api/me", {
+      method: "GET",
       headers: {
-        "Content-Type": "application/json",
         "X-User": email
-      },
-      body: JSON.stringify({ email: email })
+      }
     });
     
     if (response.ok) {
-      const data = await response.json();
-      if (data.is_admin) {
+      const userInfo = await response.json();
+      console.log("🔍 사용자 정보:", userInfo);
+      
+      // 사용자 역할에 따른 권한 설정
+      if (userInfo.is_admin || userInfo.role === 'admin') {
         console.log("✅ 어드민 권한 확인됨:", email);
-        // 어드민 권한 정보를 localStorage에 저장
         localStorage.setItem("X-USER-ADMIN", "true");
+        localStorage.setItem("X-USER-ROLE", "admin");
+      } else if (userInfo.role === 'manager') {
+        console.log("ℹ️ 매니저 권한:", email);
+        localStorage.removeItem("X-USER-ADMIN");
+        localStorage.setItem("X-USER-ROLE", "manager");
       } else {
         console.log("ℹ️ 일반 사용자:", email);
         localStorage.removeItem("X-USER-ADMIN");
+        localStorage.setItem("X-USER-ROLE", "user");
       }
+      
+      // 사용자 정보를 전역 변수에 저장
+      window.currentUserInfo = userInfo;
     } else {
-      console.log("⚠️ 어드민 권한 확인 실패, 일반 사용자로 처리");
+      console.log("⚠️ 사용자 정보 확인 실패, 일반 사용자로 처리");
       localStorage.removeItem("X-USER-ADMIN");
+      localStorage.setItem("X-USER-ROLE", "user");
     }
   } catch (error) {
-    console.error("어드민 권한 확인 중 오류:", error);
+    console.error("사용자 정보 확인 중 오류:", error);
     localStorage.removeItem("X-USER-ADMIN");
+    localStorage.setItem("X-USER-ROLE", "user");
   }
   
   // 로그인 화면 강제 숨김
@@ -457,6 +568,11 @@ async function applyUser() {
     console.log("✅ 앱 화면 표시");
   }
 
+  // 권한에 따른 UI 업데이트
+  const finalUserRole = localStorage.getItem("X-USER-ROLE") || "user";
+  const isAdminOrManagerForApply = finalUserRole === "admin" || finalUserRole === "manager";
+  toggleAdminUI(isAdminOrManagerForApply);
+  
   // 히스토리 초기화 및 고정
   initializeHistory();
   fixHistoryAfterLogin();
@@ -502,6 +618,7 @@ async function checkSessionAndAutoLogin() {
         
         // localStorage에 사용자 정보 저장 (모바일 앱 재시작 시 사용)
         localStorage.setItem('X-USER', data.user.email);
+        localStorage.setItem('X-USER-ROLE', data.user.role || 'user');
         if (data.user.role === 'admin') {
           localStorage.setItem('X-USER-ADMIN', 'true');
         } else {
@@ -572,6 +689,7 @@ function handleLogoutClick(e) {
   try {
     localStorage.removeItem("X-USER");
     localStorage.removeItem("X-USER-ADMIN");
+    localStorage.removeItem("X-USER-ROLE");
     currentUser = null;
     console.log("✅ localStorage에서 사용자 정보 제거");
   } catch (err) {
@@ -662,15 +780,13 @@ window.setCurrentUser = setCurrentUser;
 window.loadUserFromStorage = loadUserFromStorage;
 window.toggleLoginLogoutUI = toggleLoginLogoutUI;
 window.toggleAdminUI = toggleAdminUI;
-window.applyUser = applyUser;
-window.handleLogoutClick = handleLogoutClick;
-window.applyCustomerInputs = applyCustomerInputs;
-window.checkSessionAndAutoLogin = checkSessionAndAutoLogin;
-window.initializeHistory = initializeHistory;
 window.fixHistoryAfterLogin = fixHistoryAfterLogin;
 window.clearHistoryOnLogout = clearHistoryOnLogout;
 window.handlePopState = handlePopState;
 window.showExitConfirmDialog = showExitConfirmDialog;
 window.hideExitConfirmDialog = hideExitConfirmDialog;
 window.isMobileApp = isMobileApp;
-window.closeOpenPanels = closeOpenPanels; 
+window.closeOpenPanels = closeOpenPanels;
+window.handleLogoutClick = handleLogoutClick;
+window.setCurrentUser = setCurrentUser;
+window.toggleAdminUI = toggleAdminUI; 

@@ -6,7 +6,16 @@
  * ===== 고객 관리 UI =====
  **************************************/
 
-async function loadCustomerList(filter = 'own') {
+async function loadCustomerList(filter = null) {
+  // 사용자 역할에 따라 기본 필터 설정
+  if (filter === null) {
+    const userRole = localStorage.getItem("X-USER-ROLE") || "user";
+    if (userRole === 'user') {
+      filter = 'own'; // 일반 사용자는 본인 고객만
+    } else {
+      filter = 'all'; // 어드민/매니저는 전체 고객
+    }
+  }
   try {
     if (!currentUser) {
       console.error('사용자가 로그인되지 않았습니다.');
@@ -96,8 +105,9 @@ function renderCustomerList(list) {
   const filterContainer = document.createElement('div');
   filterContainer.style.cssText = 'display: flex; gap: 8px; align-items: center;';
   
-  // 담당자 필터 (어드민인 경우만)
-  if (currentUser === 'darkbirth@naver.com' || currentUser === 'darkbirth1@gmail.com' || currentUser === 'jeonghannah@naver.com') {
+  // 담당자 필터 (어드민 또는 매니저인 경우만)
+  const userRole = localStorage.getItem("X-USER-ROLE") || "user";
+  if (userRole === 'admin' || userRole === 'manager') {
     const managerFilter = document.createElement('select');
     managerFilter.id = 'customerFilterSelect';
     managerFilter.style.cssText = 'padding: 4px 6px; border: 1px solid #ddd; border-radius: 4px; font-size: 11px; min-width: 100px;';

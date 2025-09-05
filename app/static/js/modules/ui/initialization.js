@@ -6,9 +6,18 @@
  * ===== 초기화 관련 함수들 =====
  **************************************/
 
-// 권한 확인 헬퍼 함수
+// 권한 확인 헬퍼 함수들
 function isUserAdmin() {
-  return localStorage.getItem("X-USER-ADMIN") === "true";
+  return localStorage.getItem("X-USER-ROLE") === "admin";
+}
+
+function isUserManager() {
+  const role = localStorage.getItem("X-USER-ROLE");
+  return role === "manager" || role === "admin";
+}
+
+function getUserRole() {
+  return localStorage.getItem("X-USER-ROLE") || "user";
 }
 
 // DOMContentLoaded 초기화 함수
@@ -371,13 +380,47 @@ window.initializeApp = async function() {
   
   if (userRoleNameEl && currentUser) {
     // 사용자 정보 가져오기
-    fetch('/api/auth/me')
+    fetch('/api/me', {
+      headers: {
+        'X-User': currentUser
+      },
+      credentials: 'include'
+    })
     .then(response => response.json())
-    .then(user => {
-      if (user.job_title) {
-        userRoleNameEl.textContent = `${user.job_title} ${user.name}`;
+    .then(data => {
+      console.log('사용자 정보 응답:', data);
+      console.log('data.logged_in:', data.logged_in);
+      console.log('data.email:', data.email);
+      console.log('data.name:', data.name);
+      console.log('data.job_title:', data.job_title);
+      console.log('data.role:', data.role);
+      
+      if (data.logged_in && data.email) {
+        let displayText = '';
+        
+        // 직책이 있으면 직책을 우선 표시
+        if (data.job_title && data.job_title.trim()) {
+          if (data.name && data.name.trim()) {
+            displayText = `${data.job_title} ${data.name}`;
+          } else {
+            displayText = data.job_title;
+          }
+        } else {
+          // 직책이 없으면 역할과 이름 표시
+          if (data.name && data.name.trim()) {
+            const roleText = data.role === 'admin' ? '관리자' : 
+                            data.role === 'manager' ? '매니저' : '사용자';
+            displayText = `${roleText} ${data.name}`;
+          } else {
+            displayText = data.email;
+          }
+        }
+        
+        userRoleNameEl.textContent = displayText;
+        console.log('사용자 정보 표시:', displayText);
       } else {
-        userRoleNameEl.textContent = user.name;
+        userRoleNameEl.textContent = currentUser;
+        console.log('기본 사용자 정보 표시:', currentUser);
       }
     })
     .catch(error => {
@@ -387,14 +430,20 @@ window.initializeApp = async function() {
   }
 
   // 3) 지도 준비 후 fetchListings
+  let FETCH_CALLED_ONCE = false; // 변수 정의 추가
+  
   document.addEventListener('map-ready', () => {
+    console.log('🗺️ map-ready 이벤트 발생, currentUser:', currentUser, 'FETCH_CALLED_ONCE:', FETCH_CALLED_ONCE);
     if (currentUser && !FETCH_CALLED_ONCE) {
       FETCH_CALLED_ONCE = true;
+      console.log('🚀 fetchListings 호출 시작');
       fetchListings();
     }
   });
+  
   if (MAP_READY && currentUser && !FETCH_CALLED_ONCE) {
     FETCH_CALLED_ONCE = true;
+    console.log('🚀 fetchListings 호출 시작 (MAP_READY)');
     fetchListings();
   }
   

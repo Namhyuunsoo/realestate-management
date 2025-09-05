@@ -111,6 +111,20 @@ function buildEffectiveFilters() {
   });
 }
 
+function applyUserRoleFilter() {
+  const userRole = localStorage.getItem("X-USER-ROLE") || "user";
+  console.log(`🔍 사용자 역할별 필터링 적용: ${userRole}`);
+  
+  if (userRole === "user") {
+    // 일반 사용자는 서버에서 이미 필터링된 데이터를 받으므로 추가 필터링 불필요
+    console.log(`✅ 일반 사용자: 서버에서 이미 필터링된 데이터 수신 (${LISTINGS.length}개)`);
+  } else {
+    // 어드민과 매니저는 모든 매물 표시 (필터링 없음)
+    console.log(`✅ ${userRole} 역할: 모든 매물 표시`);
+  }
+}
+
+
 function applyAllFilters() {
   dbg("applyAllFilters start");
 
@@ -119,6 +133,9 @@ function applyAllFilters() {
   
   // 필터 적용 시 정렬 상태 초기화
   resetSortCycles();
+  
+  // 사용자 역할별 필터링 적용
+  applyUserRoleFilter();
   
   // 디버깅: 현재 적용된 필터 확인
   // console.log('현재 적용된 필터:', EFFECTIVE_FILTERS);

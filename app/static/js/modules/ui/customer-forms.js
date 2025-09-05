@@ -6,9 +6,18 @@
  * ===== 고객 폼 관련 함수들 =====
  **************************************/
 
-// 권한 확인 헬퍼 함수
+// 권한 확인 헬퍼 함수들
 function isUserAdmin() {
-  return localStorage.getItem("X-USER-ADMIN") === "true";
+  return localStorage.getItem("X-USER-ROLE") === "admin";
+}
+
+function isUserManager() {
+  const role = localStorage.getItem("X-USER-ROLE");
+  return role === "manager" || role === "admin";
+}
+
+function getUserRole() {
+  return localStorage.getItem("X-USER-ROLE") || "user";
 }
 
 async function submitCustomerForm(customerId) {

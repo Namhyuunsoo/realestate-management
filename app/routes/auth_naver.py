@@ -172,13 +172,40 @@ def api_me():
             "name": u.get("name"),
             "provider": u.get("provider", "naver"),
             "id": u.get("id"),
-            "is_admin": bool(u.get("is_admin"))
+            "is_admin": bool(u.get("is_admin")),
+            "role": "admin" if u.get("is_admin") else "user",
+            "job_title": u.get("job_title", "")
         })
     
     # 2. X-User 헤더 기반 사용자 확인 (임시 로그인)
     user_email = request.headers.get("X-User", "").strip()
     if user_email:
-        # 어드민 권한 확인
+        # 사용자 서비스에서 실제 사용자 정보 가져오기
+        try:
+            user_service = current_app.data_manager.user_service
+            user = user_service.get_user_by_email(user_email)
+            
+            if user and user.is_active():
+                current_app.logger.info(f"사용자 정보 조회 성공: {user.email}, name={user.name}, job_title={user.job_title}, role={user.role}")
+                response_data = {
+                    "logged_in": True,
+                    "email": user.email,
+                    "name": user.name,
+                    "provider": "manual",
+                    "id": user.id,
+                    "is_admin": user.is_admin(),
+                    "role": user.role,
+                    "job_title": user.job_title or "",
+                    "manager_name": getattr(user, 'manager_name', '') or ""
+                }
+                current_app.logger.info(f"응답 데이터: {response_data}")
+                return jsonify(response_data)
+            else:
+                current_app.logger.warning(f"사용자를 찾을 수 없거나 비활성: {user_email}")
+        except Exception as e:
+            current_app.logger.error(f"사용자 정보 조회 실패: {e}")
+        
+        # 어드민 권한 확인 (fallback)
         admin_users = current_app.config.get("ADMIN_USERS", [])
         is_admin = user_email.lower() in admin_users
         
@@ -188,7 +215,9 @@ def api_me():
             "name": "",
             "provider": "manual",
             "id": "",
-            "is_admin": is_admin
+            "is_admin": is_admin,
+            "role": "admin" if is_admin else "user",
+            "job_title": ""
         })
     
     # 3. 로그인되지 않음

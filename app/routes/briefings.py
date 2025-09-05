@@ -10,12 +10,53 @@ bp = Blueprint("briefings", __name__, url_prefix="/api")
 @require_user()
 @handle_errors()
 def list_briefings_api():
-    user = request.headers.get("X-User")
+    user_email = request.headers.get("X-User")
+    
+    # 사용자 객체 가져오기
+    try:
+        user_service = current_app.data_manager.user_service
+        user = user_service.get_user_by_email(user_email)
+        
+        if not user or not user.is_active():
+            current_app.logger.warning(f"Invalid user: {user_email}")
+            return jsonify({"error": "유효하지 않은 사용자입니다."}), 401
+            
+    except Exception as auth_error:
+        current_app.logger.error(f"❌ 사용자 인증 중 오류: {auth_error}")
+        return jsonify({"error": f"사용자 인증 실패: {str(auth_error)}"}), 500
     
     # BriefingService를 통해 브리핑 목록 조회
     briefing_service = current_app.data_manager.briefing_service
-    is_admin = current_app.data_manager.is_admin(user)
-    data = briefing_service.list_briefings(user, is_admin=is_admin)
+    
+    # 역할별 필터링 적용
+    if user.is_user():
+        # 일반 사용자는 본인 담당 고객의 브리핑만 조회
+        manager_name = getattr(user, 'manager_name', '')
+        if manager_name:
+            # 담당자명으로 고객을 필터링하고, 해당 고객들의 브리핑만 조회
+            from app.services import store
+            customers = store.list_customers(user, 'own', '')
+            customer_ids = [c['id'] for c in customers if c.get('id')]
+            
+            # 해당 고객들의 브리핑만 필터링
+            all_briefings = briefing_service.list_briefings(user_email, is_admin=False)
+            data = [b for b in all_briefings if b.get('customer_id') in customer_ids]
+            
+            current_app.logger.info(f"User {user.email} filtered briefings by manager_name: {manager_name} ({len(data)} items)")
+        else:
+            # 담당자명이 설정되지 않은 경우 빈 결과 반환
+            data = []
+            current_app.logger.info(f"User {user.email} has no manager_name set, returning empty briefings")
+    elif user.is_manager() or user.is_admin():
+        # 매니저와 어드민은 모든 브리핑 조회 가능
+        is_admin = user.is_admin()
+        data = briefing_service.list_briefings(user_email, is_admin=is_admin)
+        user_role = getattr(user, 'role', 'unknown')
+        current_app.logger.info(f"{user_role.title()} {user.email} accessing all briefings ({len(data)} items)")
+    else:
+        # 역할이 명확하지 않은 경우 모든 브리핑 조회 (기본값)
+        data = briefing_service.list_briefings(user_email, is_admin=False)
+        current_app.logger.info(f"User {user.email} with unknown role accessing all briefings ({len(data)} items)")
     
     # listing_ids 길이만 간단히 포함
     items = []

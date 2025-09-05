@@ -79,7 +79,12 @@ def api_listings():
                 # 일반 사용자는 본인 담당 매물만 조회
                 manager_name = getattr(user, 'manager_name', '')
                 if manager_name:
-                    data = [d for d in data if d.get("담당자") == manager_name]
+                    # 디버깅: 첫 5개 매물의 담당자 정보 출력
+                    current_app.logger.info(f"🔍 디버깅: 첫 5개 매물의 담당자 정보:")
+                    for i, item in enumerate(data[:5]):
+                        current_app.logger.info(f"  매물 {i+1}: 담당자='{item.get('fields', {}).get('담당자', 'N/A')}' (타입: {type(item.get('fields', {}).get('담당자', 'N/A'))})")
+                    
+                    data = [d for d in data if d.get("fields", {}).get("담당자") == manager_name]
                     current_app.logger.info(f"User {user.email} filtered listings by manager_name: {manager_name} ({len(data)} items)")
                 else:
                     # 담당자명이 설정되지 않은 경우 빈 결과 반환

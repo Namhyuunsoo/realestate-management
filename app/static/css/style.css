@@ -1167,14 +1167,26 @@ html, body {
   font-size:16px;
   font-weight:700;
 }
-.user-role-name{
-  font-size:12px;
-  color:#333;
-}
+
+/* auth-links 영역 스타일 */
 .auth-links {
   display: flex;
   align-items: center;
-  gap: 15px; /* 버튼 간격 */
+  gap: 12px;
+}
+
+/* 사용자 역할명 스타일 */
+.user-role-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: #495057;
+  background: #f8f9fa;
+  padding: 4px 8px;
+  border-radius: 4px;
+  border: 1px solid #dee2e6;
+  white-space: nowrap;
+  min-width: 120px;
+  text-align: center;
 }
 
 .auth-links a{
@@ -4800,7 +4812,7 @@ html, body {
   display: none;
 }
 
-.admin-only.show {
+.admin-only:not(.hidden) {
   display: flex;
 }
 

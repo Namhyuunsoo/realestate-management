@@ -32,22 +32,28 @@ async function initUserManagement() {
       console.log('🔍 사용자 정보:', userInfo);
       window.currentUserInfo = userInfo;
       
-      if (userInfo.is_admin) {
+      if (userInfo.is_admin || userInfo.role === 'admin') {
+        console.log('✅ 어드민 권한 확인됨');
+        localStorage.setItem("X-USER-ADMIN", "true");
+        localStorage.setItem("X-USER-ROLE", "admin");
+        
         // 어드민 UI 표시 (모든 기능)
         showAdminUI(true);
-        
-        // 이벤트 리스너 등록
         setupUserManagementEvents();
         console.log('✅ 어드민 사용자 관리 기능 초기화 완료');
       } else if (userInfo.role === 'manager') {
+        console.log('ℹ️ 매니저 권한 확인됨');
+        localStorage.removeItem("X-USER-ADMIN");
+        localStorage.setItem("X-USER-ROLE", "manager");
+        
         // 매니저 UI 표시 (사용자관리/통계 제외)
         showAdminUI(false);
-        
-        // 이벤트 리스너 등록
         setupUserManagementEvents();
         console.log('✅ 매니저 사용자 관리 기능 초기화 완료');
       } else {
         console.log('ℹ️ 일반 사용자 - 사용자 관리 기능 비활성화');
+        localStorage.removeItem("X-USER-ADMIN");
+        localStorage.setItem("X-USER-ROLE", "user");
       }
     } else {
       console.log('ℹ️ 사용자 정보를 가져올 수 없음 - 사용자 관리 기능 비활성화');
@@ -211,6 +217,9 @@ async function loadUserList() {
     // 전역 변수 업데이트
     currentUsers = users;
     
+    // localStorage에도 저장 (다른 모듈에서 사용)
+    localStorage.setItem('USER_DATA', JSON.stringify(users));
+    
     // 사용자 목록 테이블 업데이트
     const tbody = document.getElementById('userListTableBody');
     if (!tbody) return;
@@ -239,7 +248,13 @@ async function loadUserList() {
                     style="display: ${user.job_title ? 'none' : 'inline-block'}">저장</button>
           </div>
         </td>
-        <td>${getRoleDisplayName(user.role)}</td>
+        <td>
+          <select class="role-select" onchange="updateUserRole('${user.id}', this.value)" style="padding: 4px; border: 1px solid #ddd; border-radius: 4px; font-size: 12px;">
+            <option value="user" ${user.role === 'user' ? 'selected' : ''}>일반사용자</option>
+            <option value="manager" ${user.role === 'manager' ? 'selected' : ''}>매니저</option>
+            <option value="admin" ${user.role === 'admin' ? 'selected' : ''}>관리자</option>
+          </select>
+        </td>
         <td>
           <div class="manager-name-edit" data-user-id="${user.id}">
             <div class="manager-name-display" style="display: ${user.manager_name ? 'inline-block' : 'none'}">
@@ -807,11 +822,41 @@ function closeAllModals() {
   editingUserId = null;
 }
 
+// 사용자 역할 변경
+async function updateUserRole(userId, newRole) {
+  try {
+    const response = await fetch(`/api/admin/users/${userId}/role`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-User': currentUser
+      },
+      credentials: 'include',
+      body: JSON.stringify({ role: newRole })
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || '역할 변경에 실패했습니다.');
+    }
+
+    showToast('사용자 역할이 변경되었습니다.', 'success');
+    // 목록 새로고침
+    await loadUserList();
+  } catch (error) {
+    console.error('역할 변경 실패:', error);
+    showToast(error.message, 'error');
+  }
+}
+
 // 특정 모달만 닫기
 function closeModalById(id) {
   const modal = document.getElementById(id);
   if (modal) modal.classList.add('hidden');
 }
+
+// 전역 함수 등록
+window.updateUserRole = updateUserRole;
 
 // 어드민 권한 확인
 function isAdminUser() {
