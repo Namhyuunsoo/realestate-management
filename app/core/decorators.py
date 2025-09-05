@@ -87,8 +87,14 @@ def require_admin():
             # 관리자 권한 확인
             user_service = current_app.data_manager.user_service
             user = user_service.get_user_by_id(user_id)
-            if not user or not user.is_active() or not user.is_admin():
-                log_security_event('UNAUTHORIZED_ADMIN_ATTEMPT', f'User {user_id} from IP {ip} attempted admin access')
+            if not user:
+                log_security_event('UNAUTHORIZED_ADMIN_ATTEMPT', f'User {user_id} not found from IP {ip}')
+                return jsonify({"error": "사용자를 찾을 수 없습니다."}), 404
+            if not user.is_active():
+                log_security_event('UNAUTHORIZED_ADMIN_ATTEMPT', f'Inactive user {user_id} from IP {ip} attempted admin access')
+                return jsonify({"error": "비활성 사용자입니다."}), 403
+            if not user.is_admin():
+                log_security_event('UNAUTHORIZED_ADMIN_ATTEMPT', f'Non-admin user {user_id} from IP {ip} attempted admin access')
                 return jsonify({"error": "관리자 권한이 필요합니다."}), 403
             
             return f(*args, **kwargs)
