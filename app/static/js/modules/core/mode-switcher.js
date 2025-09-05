@@ -66,8 +66,8 @@ class ModeSwitcher {
     
     // Z키 단축키 이벤트 리스너 등록 (passive: true로 변경하여 성능 개선)
     document.addEventListener('keydown', (e) => {
-      // Z키 (대소문자 구분 없음)를 누르면 모드 전환
-      if (e.key.toLowerCase() === 'z') {
+      // e.key가 존재하는지 확인 후 toLowerCase() 호출
+      if (e.key && typeof e.key === 'string' && e.key.toLowerCase() === 'z') {
         // Ctrl, Alt, Shift 등과 함께 누르지 않았을 때만 동작
         if (!e.ctrlKey && !e.altKey && !e.shiftKey && !e.metaKey) {
           // passive: true에서는 preventDefault()를 사용할 수 없으므로

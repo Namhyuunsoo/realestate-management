@@ -94,8 +94,12 @@ function showAdminUI(showAllFeatures = true) {
 function setupUserManagementEvents() {
   // 사용자 관리 버튼 클릭 (어드민만)
   const userManagementBtn = document.getElementById('userManagementBtn');
-  if (userManagementBtn && window.currentUserInfo && window.currentUserInfo.is_admin) {
+  if (userManagementBtn && window.currentUserInfo && 
+      (window.currentUserInfo.is_admin || window.currentUserInfo.role === 'admin')) {
     userManagementBtn.addEventListener('click', openUserManagementModal);
+    console.log('✅ 사용자 관리 버튼 이벤트 리스너 등록 완료');
+  } else {
+    console.log('⚠️ 사용자 관리 버튼 이벤트 리스너 등록 건너뜀 (권한 없음)');
   }
 
   // 모달 닫기 버튼들
