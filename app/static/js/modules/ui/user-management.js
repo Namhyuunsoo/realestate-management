@@ -376,39 +376,28 @@ function editManagerName(userId) {
 
 // 담당자명 저장
 async function saveManagerName(userId) {
-  console.log('담당자명 저장 시작:', userId);
+  // 직접 입력 필드 찾기
+  const input = document.querySelector(`input[onclick*="saveManagerName('${userId}')"]`)?.parentElement?.querySelector('.manager-name-input');
   
-  // 컨테이너 찾기 - 여러 방법으로 시도
-  let container = document.querySelector(`[data-user-id="${userId}"]`);
-  if (!container) {
-    container = document.querySelector(`.manager-name-edit[data-user-id="${userId}"]`);
-  }
-  if (!container) {
-    console.error('컨테이너를 찾을 수 없습니다:', userId);
-    showToast('사용자 컨테이너를 찾을 수 없습니다.', 'error');
-    return;
-  }
-  
-  console.log('컨테이너 찾음:', container);
-  
-  const input = container.querySelector('.manager-name-input');
   if (!input) {
-    console.error('담당자명 입력 필드를 찾을 수 없습니다.');
-    showToast('담당자명 입력 필드를 찾을 수 없습니다.', 'error');
-    return;
-  }
-  
-  console.log('입력 필드 찾음:', input);
-  
-  // 입력 필드가 숨겨져 있으면 편집 모드로 전환
-  if (input.style.display === 'none') {
-    console.log('입력 필드가 숨겨져 있음, 편집 모드로 전환');
-    editManagerName(userId);
+    // 다른 방법으로 찾기
+    const row = document.querySelector(`tr[data-user-id="${userId}"]`);
+    if (row) {
+      const input = row.querySelector('.manager-name-input');
+      if (input) {
+        const managerName = input.value.trim();
+        await updateManagerName(userId, managerName);
+      }
+    }
     return;
   }
   
   const managerName = input.value.trim();
-  console.log('담당자명 값:', managerName);
+  await updateManagerName(userId, managerName);
+}
+
+// 실제 저장 로직
+async function updateManagerName(userId, managerName) {
   
   try {
     const response = await fetch(`/api/admin/users/${userId}/update-manager-name`, {
