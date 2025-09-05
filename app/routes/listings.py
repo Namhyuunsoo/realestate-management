@@ -20,22 +20,28 @@ def api_listings():
         return jsonify({"error": "로그인이 필요합니다."}), 401
     
     # 사용자 서비스로 사용자 확인
-    user_service = current_app.data_manager.user_service
-    user = None
-    
-    if user_id:
-        # 세션 기반 인증
-        user = user_service.get_user_by_id(user_id)
-        if not user or not user.is_active():
-            session.clear()
-            current_app.logger.warning(f"Invalid session {user_id} from IP {request.remote_addr}")
-            return jsonify({"error": "유효하지 않은 세션입니다."}), 401
-    elif user_email:
-        # X-User 헤더 기반 인증
-        user = user_service.get_user_by_email(user_email)
-        if not user or not user.is_active():
-            current_app.logger.warning(f"Invalid X-User header: {user_email} from IP {request.remote_addr}")
-            return jsonify({"error": "유효하지 않은 사용자입니다."}), 401
+    try:
+        user_service = current_app.data_manager.user_service
+        user = None
+        
+        if user_id:
+            # 세션 기반 인증
+            user = user_service.get_user_by_id(user_id)
+            current_app.logger.info(f"Session user lookup: user_id={user_id}, found={user is not None}")
+            if not user or not user.is_active():
+                session.clear()
+                current_app.logger.warning(f"Invalid session {user_id} from IP {request.remote_addr}")
+                return jsonify({"error": "유효하지 않은 세션입니다."}), 401
+        elif user_email:
+            # X-User 헤더 기반 인증
+            user = user_service.get_user_by_email(user_email)
+            current_app.logger.info(f"Header user lookup: user_email={user_email}, found={user is not None}")
+            if not user or not user.is_active():
+                current_app.logger.warning(f"Invalid X-User header: {user_email} from IP {request.remote_addr}")
+                return jsonify({"error": "유효하지 않은 사용자입니다."}), 401
+    except Exception as auth_error:
+        current_app.logger.error(f"❌ 사용자 인증 중 오류: {auth_error}")
+        return jsonify({"error": f"사용자 인증 실패: {str(auth_error)}"}), 500
     
     if not user:
         current_app.logger.warning(f"User not found from IP {request.remote_addr}")

@@ -206,21 +206,39 @@ def update_user_job_title(user_id):
 @log_access()
 def update_user_manager_name(user_id):
     """사용자 담당자명 변경"""
-    admin_id = get_current_admin_id()
-    data = request.get_json()
-    manager_name = data.get("manager_name", "").strip()
-    
-    user_service = get_user_service()
-    user = user_service.get_user_by_id(user_id)
-    
-    if not user:
-        return jsonify({"error": "사용자를 찾을 수 없습니다."}), 404
-    
-    user.set_manager_name(manager_name)
-    user_service._save_users()
-    
-    log_security_event('USER_MANAGER_NAME_UPDATED', f'User {user.email} manager name updated to "{manager_name}" by {admin_id}')
-    return jsonify({"message": "담당자명이 변경되었습니다.", "manager_name": manager_name})
+    try:
+        admin_id = get_current_admin_id()
+        data = request.get_json()
+        manager_name = data.get("manager_name", "").strip()
+        
+        current_app.logger.info(f"담당자명 변경 요청: user_id={user_id}, manager_name='{manager_name}', admin_id={admin_id}")
+        
+        user_service = get_user_service()
+        user = user_service.get_user_by_id(user_id)
+        
+        if not user:
+            current_app.logger.error(f"사용자를 찾을 수 없음: user_id={user_id}")
+            return jsonify({"error": "사용자를 찾을 수 없습니다."}), 404
+        
+        current_app.logger.info(f"사용자 정보: {user.email}, 현재 담당자명='{user.manager_name}'")
+        
+        # 담당자명 설정
+        user.set_manager_name(manager_name)
+        current_app.logger.info(f"담당자명 설정 완료: '{manager_name}'")
+        
+        # 사용자 데이터 저장
+        user_service._save_users()
+        current_app.logger.info(f"사용자 데이터 저장 완료")
+        
+        log_security_event('USER_MANAGER_NAME_UPDATED', f'User {user.email} manager name updated to "{manager_name}" by {admin_id}')
+        return jsonify({"message": "담당자명이 변경되었습니다.", "manager_name": manager_name})
+        
+    except Exception as e:
+        current_app.logger.error(f"❌ 담당자명 변경 중 오류: {e}")
+        current_app.logger.error(f"❌ 에러 타입: {type(e).__name__}")
+        import traceback
+        current_app.logger.error(f"❌ 스택 트레이스: {traceback.format_exc()}")
+        return jsonify({"error": f"담당자명 변경 실패: {str(e)}"}), 500
 
 @bp.get("/stats")
 @require_stats_access()
