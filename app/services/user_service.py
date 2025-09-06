@@ -241,6 +241,10 @@ class UserService:
             if not email:
                 print("이메일이 비어있음")
                 return None
+            
+            # email이 User 객체인 경우 처리
+            if hasattr(email, 'email'):
+                email = email.email
                 
             email = email.lower().strip()
             print(f"사용자 조회 시도: {email}")
