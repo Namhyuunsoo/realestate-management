@@ -19,7 +19,7 @@ function loadModule(modulePath) {
     script.onload = () => {
       const endTime = performance.now();
       const loadTime = (endTime - startTime).toFixed(2);
-      console.log(`⚡ ${modulePath.split('/').pop()} 로드 완료 (${loadTime}ms)`);
+      // 로그 제거로 성능 최적화
       resolve();
     };
     
@@ -49,7 +49,7 @@ function loadModuleWithPriority(modulePath, priority = 'normal') {
     script.onload = () => {
       const endTime = performance.now();
       const loadTime = (endTime - startTime).toFixed(2);
-      console.log(`⚡ [${priority.toUpperCase()}] ${modulePath.split('/').pop()} 로드 완료 (${loadTime}ms)`);
+      // 로그 제거로 성능 최적화
       resolve();
     };
     
@@ -116,6 +116,8 @@ async function loadModules() {
     // 2단계: 독립적인 모듈들 (병렬 로딩)
     console.log('📦 2단계: 독립 모듈 병렬 로딩...');
     const independentModules = [
+      '/static/js/modules/core/user-utils.js',
+      '/static/js/modules/core/api-cache.js',
       '/static/js/modules/core/mode-switcher.js',
       '/static/js/modules/core/utils.js',
       '/static/js/modules/core/touch-gestures.js',
@@ -132,7 +134,8 @@ async function loadModules() {
     const authDataModules = [
       '/static/js/modules/auth/auth.js',
       '/static/js/modules/filters/briefing.js',
-      '/static/js/modules/data/listings.js'
+      '/static/js/modules/data/listings.js',
+      '/static/js/modules/data/recommendations.js'
     ];
     
     await Promise.all(authDataModules.map(async (modulePath) => {
@@ -204,6 +207,12 @@ async function loadModules() {
     // 사이드바 토글 초기화
     setupSidebarToggles();
     console.log('✅ 사이드바 토글 기능 초기화 완료');
+    
+    // 추천 데이터를 먼저 로드 (매물 데이터 로딩 전에 완료 보장)
+    if (window.loadRecommendations) {
+      await window.loadRecommendations();
+      console.log('✅ 추천 데이터 로드 완료');
+    }
     
     const endTime = performance.now();
     const loadTime = (endTime - startTime).toFixed(2);
@@ -497,7 +506,14 @@ function resizeMapAndRefreshMarkers() {
         }
         
         setTimeout(() => {
-          window.placeMarkers();
+          // 현재 필터링된 매물로 마커 재표시
+          if (typeof window.FILTERED_LISTINGS !== 'undefined' && Array.isArray(window.FILTERED_LISTINGS)) {
+            window.placeMarkers(window.FILTERED_LISTINGS);
+          } else if (typeof window.LISTINGS !== 'undefined' && Array.isArray(window.LISTINGS)) {
+            window.placeMarkers(window.LISTINGS);
+          } else {
+            console.warn('⚠️ 마커 재표시: 매물 데이터를 찾을 수 없습니다.');
+          }
           console.log('✅ 마커 재표시 완료');
           
           // 플래그 제거

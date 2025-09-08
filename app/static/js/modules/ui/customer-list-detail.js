@@ -6,19 +6,8 @@
  * ===== 고객 목록+상세 관련 함수들 =====
  **************************************/
 
-// 권한 확인 헬퍼 함수들
-function isUserAdmin() {
-  return localStorage.getItem("X-USER-ROLE") === "admin";
-}
-
-function isUserManager() {
-  const role = localStorage.getItem("X-USER-ROLE");
-  return role === "manager" || role === "admin";
-}
-
-function getUserRole() {
-  return localStorage.getItem("X-USER-ROLE") || "user";
-}
+// 권한 확인 헬퍼 함수들은 user-utils.js 모듈로 이동됨
+// 이제 전역 함수로 사용 가능
 
 // 고객 목록+상세 렌더링
 async function renderCustomerListAndDetail(selectedIdx = null) {

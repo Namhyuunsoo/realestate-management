@@ -219,8 +219,8 @@ function renderFullList() {
                 <td style="padding:6px 8px;">${escapeHtml(fields['의뢰인'] || '-')}</td>
                 <td style="padding:6px 8px;max-width:120px;word-wrap:break-word;">${escapeHtml(fields['비고3'] || '-')}</td>
                 <td style="padding:6px 8px;text-align:center;">
-                  <div style="padding:2px 6px;border-radius:8px;font-size:12px;font-weight:600;color:white;background:${briefingColor};cursor:pointer;display:inline-block;"
-                       onclick="event.stopPropagation(); cycleBriefingStatus('${item.id}')">
+                  <div style="padding:2px 6px;border-radius:8px;font-size:12px;font-weight:600;color:white;background:${briefingColor};display:inline-block;"
+                       class="briefing-status-cell" data-listing-id="${item.id}">
                     ${briefingText}
                   </div>
                 </td>
@@ -233,6 +233,33 @@ function renderFullList() {
   `;
   
   content.innerHTML = headerHtml + listHtml;
+  
+  // 브리핑 상태 셀에 클릭 이벤트 설정
+  setupBriefingStatusCells();
+}
+
+function setupBriefingStatusCells() {
+  const briefingCells = document.querySelectorAll('.briefing-status-cell');
+  const hasSelectedCustomer = window.SELECTED_CUSTOMER && window.SELECTED_CUSTOMER.id;
+  
+  briefingCells.forEach(cell => {
+    if (hasSelectedCustomer) {
+      // 고객선택 시: 클릭 기능 활성화
+      cell.style.cursor = 'pointer';
+      cell.style.display = 'inline-block';
+      cell.style.opacity = '1';
+      cell.onclick = (e) => {
+        e.stopPropagation();
+        cycleBriefingStatus(cell.dataset.listingId);
+      };
+    } else {
+      // 고객선택 안됨: 완전히 숨김
+      cell.style.cursor = 'default';
+      cell.style.display = 'none';
+      cell.style.opacity = '0';
+      cell.onclick = null;
+    }
+  });
 }
 
 function selectFullListItem(listingId) {

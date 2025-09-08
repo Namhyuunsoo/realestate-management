@@ -17,10 +17,8 @@ function updateCountsDisplay(total, filtered) {
  * ===== 서버에서 매물 로드 =====
  **************************************/
 
-async function fetchListings() {
+async function fetchListings(force = false) {
   if (!currentUser) return;
-
-  
 
   // 기존 마커들 제거
   if (MARKERS && MARKERS.length > 0) {
@@ -30,13 +28,11 @@ async function fetchListings() {
       }
     });
     MARKERS = [];
-    console.log("✅ 기존 마커들 제거");
   }
 
   // 클러스터 그룹 초기화
   if (CLUSTER_GROUP && typeof CLUSTER_GROUP.clear === 'function') {
     CLUSTER_GROUP.clear();
-  
   }
 
   const ul = document.getElementById("listingList");
@@ -46,22 +42,24 @@ async function fetchListings() {
   const label = "fetchListings";
   timeStart(label);
   try {
-    const qs = `limit=100000`;
-    dbg(`${label} start`, { user: currentUser });
+    console.log("🔍 fetchListings: getCachedListings 호출 시작");
+    // 캐싱된 API 호출 사용 (더 빠른 응답)
+    const data = await getCachedListings(force);
+    console.log("🔍 fetchListings: getCachedListings 응답:", data);
+    
+    if (!data) throw new Error("매물 데이터를 가져올 수 없습니다.");
 
-    const res = await fetch(`/api/listings?${qs}`, {
-      headers: { "X-User": currentUser }
-    });
-    if (!res.ok) throw new Error(`API 실패: ${res.status}`);
-
-    const data = await res.json();
     ORIGINAL_LIST = data.items || [];
     LISTINGS = ORIGINAL_LIST.map(x => ({ ...x }));
+    console.log(`🔍 fetchListings: 매물 ${LISTINGS.length}개 로드됨`);
 
-    assignTempCoords();
-    computeDistancesIfNeeded();
-
+    // 좌표 할당과 거리 계산을 동기적으로 처리
+    await assignTempCoords();
+    await computeDistancesIfNeeded();
+    
+    // 필터 적용
     applyAllFilters();
+
   } catch (e) {
     if (ul) ul.innerHTML = `<li style="color:red;">에러: ${escapeHtml(e.message)}</li>`;
     console.error("❌ fetchListings 오류:", e);
@@ -271,9 +269,14 @@ function applyAllFilters() {
     });
   }
 
+  // 마커 표시
+  if (MAP_READY && MAP && typeof placeMarkers === 'function') {
+    console.log(`🔍 applyAllFilters: 마커 표시 시작 - ${FILTERED_LISTINGS.length}개 매물`);
+    placeMarkers(FILTERED_LISTINGS);
+  }
+
   // 지도 이벤트 트리거는 초기 로드 시에만 실행
   if (MAP_READY && FETCH_CALLED_ONCE) {
-
     MAP.trigger('idle');
   }
 }

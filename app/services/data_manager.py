@@ -9,21 +9,26 @@ from .user_service import UserService
 from .sheet_download_service import SheetDownloadService
 from .sheet_scheduler import SheetScheduler
 from .geocoding_scheduler import GeocodingScheduler
+from .recommendation_service import RecommendationService
 
 class DataManager:
-    """중앙 데이터 관리자"""
+    """중앙 데이터 관리자 (지연 초기화 적용)"""
     
     def __init__(self, data_dir: str = "./data"):
         self.data_dir = data_dir
         self._lock = None  # 스레드 안전성을 위한 락
         
-        # 서비스 인스턴스들
+        # 서비스 인스턴스들 (지연 초기화)
         self.customer_service: Optional[CustomerService] = None
         self.briefing_service: Optional[BriefingService] = None
         self.user_service: Optional[UserService] = None
         self.sheet_download_service: Optional[SheetDownloadService] = None
         self.sheet_scheduler: Optional[SheetScheduler] = None
         self.geocoding_scheduler: Optional[GeocodingScheduler] = None
+        self.recommendation_service: Optional[RecommendationService] = None
+        
+        # 초기화 상태 추적
+        self._initialized_services = set()
         
         # 기존 호환성을 위한 데이터
         self.customers = {}
@@ -31,45 +36,80 @@ class DataManager:
         self.users = {}
     
     def initialize(self):
-        """모든 서비스 초기화"""
-        print("🚀 DataManager 초기화 시작...")
+        """핵심 서비스만 즉시 초기화 (지연 초기화 적용)"""
+        print("🚀 DataManager 핵심 초기화 시작...")
         
-        # 사용자 서비스 초기화 (가장 먼저)
-        self.user_service = UserService(self.data_dir)
-        print("✅ UserService 초기화 완료")
-        
-        # 고객 서비스 초기화
-        self.customer_service = CustomerService(self.data_dir)
-        print("✅ CustomerService 초기화 완료")
-        
-        # 브리핑 서비스 초기화
-        self.briefing_service = BriefingService(self)
-        print("✅ BriefingService 초기화 완료")
-        
-        # 시트 다운로드 서비스 초기화
-        try:
-            self.sheet_download_service = SheetDownloadService()
-            print("✅ SheetDownloadService 초기화 완료")
-            
-            # 시트 다운로드 스케줄러 초기화
-            self.sheet_scheduler = SheetScheduler(self.sheet_download_service)
-            print("✅ SheetScheduler 초기화 완료")
-            
-        except Exception as e:
-            print(f"⚠️ SheetDownloadService 초기화 실패: {e}")
-            print("   Google Sheets 자동 동기화 기능이 비활성화됩니다.")
-        
-        # 지오코딩 스케줄러는 나중에 초기화 (Flask 컨텍스트 필요)
-        self.geocoding_scheduler = None
-        print("⏳ GeocodingScheduler는 Flask 컨텍스트에서 초기화됩니다.")
+        # 사용자 서비스만 즉시 초기화 (인증에 필수)
+        self._ensure_user_service()
         
         # 기존 호환성을 위한 데이터 로드
         self._load_compatibility_data()
         
-        print("🎉 DataManager 초기화 완료!")
+        print("🎉 DataManager 핵심 초기화 완료! (지연 초기화 적용)")
+    
+    def __getattr__(self, name):
+        """서비스 속성 접근 시 지연 초기화"""
+        if name == 'user_service':
+            self._ensure_user_service()
+            return self.user_service
+        elif name == 'customer_service':
+            self._ensure_customer_service()
+            return self.customer_service
+        elif name == 'briefing_service':
+            self._ensure_briefing_service()
+            return self.briefing_service
+        elif name == 'recommendation_service':
+            self._ensure_recommendation_service()
+            return self.recommendation_service
+        elif name in ['sheet_download_service', 'sheet_scheduler']:
+            self._ensure_sheet_services()
+            return getattr(self, name)
+        else:
+            raise AttributeError(f"'{self.__class__.__name__}' object has no attribute '{name}'")
+    
+    def _ensure_user_service(self):
+        """사용자 서비스 지연 초기화"""
+        if 'user_service' not in self._initialized_services:
+            self.user_service = UserService(self.data_dir)
+            self._initialized_services.add('user_service')
+            print("✅ UserService 지연 초기화 완료")
+    
+    def _ensure_customer_service(self):
+        """고객 서비스 지연 초기화"""
+        if 'customer_service' not in self._initialized_services:
+            self.customer_service = CustomerService(self.data_dir)
+            self._initialized_services.add('customer_service')
+            print("✅ CustomerService 지연 초기화 완료")
+    
+    def _ensure_briefing_service(self):
+        """브리핑 서비스 지연 초기화"""
+        if 'briefing_service' not in self._initialized_services:
+            self.briefing_service = BriefingService(self)
+            self._initialized_services.add('briefing_service')
+            print("✅ BriefingService 지연 초기화 완료")
+    
+    def _ensure_recommendation_service(self):
+        """추천 서비스 지연 초기화"""
+        if 'recommendation_service' not in self._initialized_services:
+            self.recommendation_service = RecommendationService(self.data_dir)
+            self._initialized_services.add('recommendation_service')
+            print("✅ RecommendationService 지연 초기화 완료")
+    
+    def _ensure_sheet_services(self):
+        """시트 관련 서비스 지연 초기화"""
+        if 'sheet_services' not in self._initialized_services:
+            try:
+                self.sheet_download_service = SheetDownloadService()
+                self.sheet_scheduler = SheetScheduler(self.sheet_download_service)
+                self._initialized_services.add('sheet_services')
+                print("✅ SheetServices 지연 초기화 완료")
+            except Exception as e:
+                print(f"⚠️ SheetServices 초기화 실패: {e}")
+                print("   Google Sheets 자동 동기화 기능이 비활성화됩니다.")
     
     def start_sheet_sync(self):
-        """시트 동기화 스케줄러 시작"""
+        """시트 동기화 스케줄러 시작 (지연 초기화)"""
+        self._ensure_sheet_services()
         if self.sheet_scheduler:
             try:
                 self.sheet_scheduler.start()
@@ -108,14 +148,17 @@ class DataManager:
         return False
     
     def initialize_geocoding_scheduler(self, app):
-        """지오코딩 스케줄러 초기화 (Flask 앱 컨텍스트 필요)"""
-        try:
-            self.geocoding_scheduler = GeocodingScheduler(app=app)
-            print("✅ GeocodingScheduler 초기화 완료")
-            return True
-        except Exception as e:
-            print(f"❌ GeocodingScheduler 초기화 실패: {e}")
-            return False
+        """지오코딩 스케줄러 초기화 (Flask 앱 컨텍스트 필요) - 지연 초기화"""
+        if 'geocoding_scheduler' not in self._initialized_services:
+            try:
+                self.geocoding_scheduler = GeocodingScheduler(app=app)
+                self._initialized_services.add('geocoding_scheduler')
+                print("✅ GeocodingScheduler 지연 초기화 완료")
+                return True
+            except Exception as e:
+                print(f"❌ GeocodingScheduler 초기화 실패: {e}")
+                return False
+        return True
     
     def _load_compatibility_data(self):
         """기존 호환성을 위한 데이터 로드"""

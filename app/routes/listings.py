@@ -6,47 +6,19 @@ import json
 from flask import Blueprint, request, jsonify, session
 from ..services.listings_loader import load_listings
 from ..services.sheet_fetcher import clear_listing_cache
+from ..core.decorators import require_user
+from ..core.lazy_init import ensure_background_services
 
 bp = Blueprint("listings", __name__)
 
 @bp.route("/api/listings")
+@require_user()
 def api_listings():
-    # 사용자 인증 확인 (세션 또는 X-User 헤더)
-    user_id = session.get("user_id")
-    user_email = request.headers.get("X-User")
+    # 백그라운드 서비스 지연 초기화
+    ensure_background_services()
     
-    if not user_id and not user_email:
-        current_app.logger.warning(f"Unauthorized access attempt from IP {request.remote_addr}")
-        return jsonify({"error": "로그인이 필요합니다."}), 401
-    
-    # 사용자 서비스로 사용자 확인
-    try:
-        user_service = current_app.data_manager.user_service
-        user = None
-        
-        if user_id:
-            # 세션 기반 인증
-            user = user_service.get_user_by_id(user_id)
-            current_app.logger.info(f"Session user lookup: user_id={user_id}, found={user is not None}")
-            if not user or not user.is_active():
-                session.clear()
-                current_app.logger.warning(f"Invalid session {user_id} from IP {request.remote_addr}")
-                return jsonify({"error": "유효하지 않은 세션입니다."}), 401
-        elif user_email:
-            # X-User 헤더 기반 인증
-            user = user_service.get_user_by_email(user_email)
-            current_app.logger.info(f"Header user lookup: user_email={user_email}, found={user is not None}")
-            if not user or not user.is_active():
-                current_app.logger.warning(f"Invalid X-User header: {user_email} from IP {request.remote_addr}")
-                return jsonify({"error": "유효하지 않은 사용자입니다."}), 401
-    except Exception as auth_error:
-        current_app.logger.error(f"❌ 사용자 인증 중 오류: {auth_error}")
-        return jsonify({"error": f"사용자 인증 실패: {str(auth_error)}"}), 500
-    
-    if not user:
-        current_app.logger.warning(f"User not found from IP {request.remote_addr}")
-        return jsonify({"error": "사용자를 찾을 수 없습니다."}), 401
-    
+    # 데코레이터에서 이미 사용자 인증 완료, request.current_user 사용
+    user = request.current_user
     current_app.logger.info(f"Listings request from user: {user.email} (IP: {request.remote_addr})")
     
     force = request.args.get("force") == "1"
@@ -79,33 +51,13 @@ def api_listings():
                 # 일반 사용자는 본인 담당 매물만 조회
                 manager_name = getattr(user, 'manager_name', '')
                 if manager_name:
-                    # 디버깅: 첫 5개 매물의 담당자 정보 출력
-                    current_app.logger.info(f"🔍 디버깅: 첫 5개 매물의 담당자 정보:")
-                    for i, item in enumerate(data[:5]):
-                        current_app.logger.info(f"  매물 {i+1}: 담당자='{item.get('fields', {}).get('담당자', 'N/A')}' (타입: {type(item.get('fields', {}).get('담당자', 'N/A'))})")
-                    
                     data = [d for d in data if d.get("fields", {}).get("담당자") == manager_name]
-                    current_app.logger.info(f"User {user.email} filtered listings by manager_name: {manager_name} ({len(data)} items)")
                 else:
                     # 담당자명이 설정되지 않은 경우 빈 결과 반환
                     data = []
-                    current_app.logger.info(f"User {user.email} has no manager_name set, returning empty results")
-            elif user.is_manager():
-                # 매니저는 모든 매물 조회 가능
-                current_app.logger.info(f"Manager {user.email} accessing all listings ({len(data)} items)")
-            elif user.is_admin():
-                # 어드민은 모든 매물 조회 가능
-                current_app.logger.info(f"Admin {user.email} accessing all listings ({len(data)} items)")
-            else:
-                # 역할이 명확하지 않은 경우 모든 매물 조회 (기본값)
-                current_app.logger.info(f"User {user.email} with unknown role accessing all listings ({len(data)} items)")
         except Exception as filter_error:
             current_app.logger.error(f"❌ 역할별 필터링 중 오류: {filter_error}")
             # 필터링 실패 시 모든 매물 조회 (안전한 기본값)
-            current_app.logger.info(f"Fallback: User {user.email} accessing all listings due to filter error ({len(data)} items)")
-    else:
-        # 사용자 객체가 없거나 메서드가 없는 경우 모든 매물 조회
-        current_app.logger.warning(f"User object or role methods not available, accessing all listings ({len(data)} items)")
 
     total = len(data)
     sliced = data[offset:offset+limit]

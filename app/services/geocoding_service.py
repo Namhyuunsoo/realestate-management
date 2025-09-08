@@ -188,26 +188,19 @@ class GeocodingService:
                 self.logger.warning(f"지도캐시 파일이 없습니다: {map_cache_path}")
                 return {}
             
-            # Excel 파일 읽기 (여러 엔진 시도)
-            df = None
+            # 통합된 Excel 읽기 함수 사용
+            from .sheet_fetcher import read_excel_file_universal
             try:
-                # 1. openpyxl 엔진 시도
-                df = pd.read_excel(map_cache_path, dtype=str, engine='openpyxl').fillna("")
-            except Exception as e1:
-                try:
-                    # 2. xlrd 엔진 시도
-                    df = pd.read_excel(map_cache_path, dtype=str, engine='xlrd').fillna("")
-                except Exception as e2:
-                    try:
-                        # 3. 기본 엔진 시도
-                        df = pd.read_excel(map_cache_path, dtype=str).fillna("")
-                    except Exception as e3:
-                        try:
-                            # 4. odf 엔진 시도
-                            df = pd.read_excel(map_cache_path, dtype=str, engine='odf').fillna("")
-                        except Exception as e4:
-                            self.logger.error(f"지도캐시 Excel 읽기 실패: 모든 엔진 실패")
-                            return {}
+                rows = read_excel_file_universal(map_cache_path)
+                if not rows or len(rows) < 2:
+                    self.logger.warning("지도캐시 데이터가 없습니다.")
+                    return {}
+                
+                # 첫 번째 행을 헤더로 사용하고 나머지를 데이터로 변환
+                df = pd.DataFrame(rows[1:], columns=rows[0])
+            except Exception as e:
+                self.logger.error(f"지도캐시 Excel 읽기 실패: {e}")
+                return {}
             
             coordinates = {}
             for _, row in df.iterrows():
@@ -276,16 +269,11 @@ class GeocodingService:
                 lat = float(address_info["y"])
                 lng = float(address_info["x"])
                 
-                # 좌표값 상세 로깅
-                self.logger.info(f"📍 API 반환 좌표: {address} → 위도: {lat}, 경도: {lng}")
-                
                 # 한국 지역 범위 확인
                 if 33 <= lat <= 39 and 124 <= lng <= 132:
-                    self.logger.info(f"✅ 지오코딩 성공: {address} → ({lat}, {lng})")
                     return (lat, lng)
                 else:
                     self.logger.warning(f"⚠️ 한국 지역 범위를 벗어난 좌표: {address} → ({lat}, {lng})")
-                    self.logger.warning(f"   위도 범위: 33-39, 경도 범위: 124-132")
                     return None
             else:
                 error_msg = data.get('errorMessage', 'Unknown error')

@@ -247,18 +247,14 @@ class UserService:
                 email = email.email
                 
             email = email.lower().strip()
-            print(f"사용자 조회 시도: {email}")
             
             if not self.users:
-                print("사용자 데이터가 로드되지 않음")
                 return None
             
             for user in self.users.values():
                 if user.email == email:
-                    print(f"사용자 찾음: {email} (상태: {user.status})")
                     return user
             
-            print(f"사용자를 찾을 수 없음: {email}")
             return None
             
         except Exception as e:

@@ -105,16 +105,14 @@ function initRefreshButton() {
         showToast('매물 데이터를 새로고침하고 있습니다...', 'info');
       }
       
-      // 강제 새로고침으로 데이터 로드
-      const response = await fetch('/api/listings?force=1', {
-        headers: { 'X-User': currentUser }
-      });
+      // 캐시 무효화 후 강제 새로고침
+      clearListingsCache();
+      const data = await getCachedListings(true);
       
-      if (!response.ok) {
-        throw new Error(`새로고침 실패: ${response.status}`);
+      if (!data) {
+        throw new Error('새로고침 실패');
       }
       
-      const data = await response.json();
       console.log('✅ 새로고침 완료');
       
       // 성공 메시지
