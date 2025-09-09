@@ -28,7 +28,7 @@ class UserSheetService:
                 for sheet_data in data.get('sheets', []):
                     sheet = UserSheet.from_dict(sheet_data)
                     self.sheets[sheet.id] = sheet
-            current_app.logger.info(f"사용자 시트 {len(self.sheets)}개 로드됨")
+            # 사용자 시트 로드 완료
         except FileNotFoundError:
             current_app.logger.info("사용자 시트 데이터 파일이 없습니다. 새로 생성합니다.")
             self.save_sheets()

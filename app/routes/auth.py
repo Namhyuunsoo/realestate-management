@@ -10,7 +10,6 @@ bp = Blueprint("auth", __name__, url_prefix="/api/auth")
 
 def get_user_service() -> UserService:
     """사용자 서비스 인스턴스 반환"""
-    current_app.logger.info("get_user_service() 호출됨")
     
     if not hasattr(current_app, 'data_manager'):
         current_app.logger.error("DataManager 속성이 존재하지 않습니다.")
@@ -28,7 +27,6 @@ def get_user_service() -> UserService:
         current_app.logger.error("DataManager.user_service가 None입니다.")
         return None
         
-    current_app.logger.info("UserService 인스턴스 반환 성공")
     return current_app.data_manager.user_service
 
 @bp.post("/register")

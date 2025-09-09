@@ -6,19 +6,8 @@
  * ===== 초기화 관련 함수들 =====
  **************************************/
 
-// 권한 확인 헬퍼 함수들
-function isUserAdmin() {
-  return localStorage.getItem("X-USER-ROLE") === "admin";
-}
-
-function isUserManager() {
-  const role = localStorage.getItem("X-USER-ROLE");
-  return role === "manager" || role === "admin";
-}
-
-function getUserRole() {
-  return localStorage.getItem("X-USER-ROLE") || "user";
-}
+// 권한 확인 헬퍼 함수들은 user-utils.js 모듈로 이동됨
+// 이제 전역 함수로 사용 가능
 
 // DOMContentLoaded 초기화 함수
 window.initializeApp = async function() {
@@ -379,23 +368,9 @@ window.initializeApp = async function() {
   }
   
   if (userRoleNameEl && currentUser) {
-    // 사용자 정보 가져오기
-    fetch('/api/me', {
-      headers: {
-        'X-User': currentUser
-      },
-      credentials: 'include'
-    })
-    .then(response => response.json())
-    .then(data => {
-      console.log('사용자 정보 응답:', data);
-      console.log('data.logged_in:', data.logged_in);
-      console.log('data.email:', data.email);
-      console.log('data.name:', data.name);
-      console.log('data.job_title:', data.job_title);
-      console.log('data.role:', data.role);
-      
-      if (data.logged_in && data.email) {
+    // 캐싱된 사용자 정보 가져오기
+    getCurrentUserInfo().then(data => {
+      if (data && data.logged_in && data.email) {
         let displayText = '';
         
         // 직책이 있으면 직책을 우선 표시
@@ -417,13 +392,10 @@ window.initializeApp = async function() {
         }
         
         userRoleNameEl.textContent = displayText;
-        console.log('사용자 정보 표시:', displayText);
       } else {
         userRoleNameEl.textContent = currentUser;
-        console.log('기본 사용자 정보 표시:', currentUser);
       }
-    })
-    .catch(error => {
+    }).catch(error => {
       console.error('사용자 정보 로드 실패:', error);
       userRoleNameEl.textContent = currentUser;
     });
@@ -432,19 +404,49 @@ window.initializeApp = async function() {
   // 3) 지도 준비 후 fetchListings
   let FETCH_CALLED_ONCE = false; // 변수 정의 추가
   
-  document.addEventListener('map-ready', () => {
+  document.addEventListener('map-ready', async () => {
     console.log('🗺️ map-ready 이벤트 발생, currentUser:', currentUser, 'FETCH_CALLED_ONCE:', FETCH_CALLED_ONCE);
     if (currentUser && !FETCH_CALLED_ONCE) {
       FETCH_CALLED_ONCE = true;
+      
+      // 추천 데이터가 로드되었는지 확인하고, 없으면 로드
+      if (typeof window.loadRecommendations === 'function' && typeof window.USER_RECOMMENDATIONS === 'undefined') {
+        console.log('🔄 추천 데이터가 없어서 로드 중...');
+        await window.loadRecommendations();
+        console.log('✅ 추천 데이터 로드 완료');
+      }
+      
       console.log('🚀 fetchListings 호출 시작');
       fetchListings();
+      
+      // 초기 로딩 완료 후 추천 상태 동기화 (한 번만)
+      setTimeout(() => {
+        if (window.syncAllRecommendationUI) {
+          window.syncAllRecommendationUI();
+        }
+      }, 500);
     }
   });
   
   if (MAP_READY && currentUser && !FETCH_CALLED_ONCE) {
     FETCH_CALLED_ONCE = true;
+    
+    // 추천 데이터가 로드되었는지 확인하고, 없으면 로드
+    if (typeof window.loadRecommendations === 'function' && typeof window.USER_RECOMMENDATIONS === 'undefined') {
+      console.log('🔄 추천 데이터가 없어서 로드 중...');
+      await window.loadRecommendations();
+      console.log('✅ 추천 데이터 로드 완료');
+    }
+    
     console.log('🚀 fetchListings 호출 시작 (MAP_READY)');
     fetchListings();
+    
+    // 초기 로딩 완료 후 추천 상태 동기화 (한 번만)
+    setTimeout(() => {
+      if (window.syncAllRecommendationUI) {
+        window.syncAllRecommendationUI();
+      }
+    }, 500);
   }
   
   // 4) 브리핑 필터 초기화
@@ -530,4 +532,13 @@ function initializeRefreshControls() {
 }
 
 // 초기화 관련 함수들을 전역으로 export
-window.initializeApp = window.initializeApp; 
+window.initializeApp = window.initializeApp;
+
+// 고객선택 상태 변경 시 브리핑 상태 표시기 업데이트
+function onCustomerSelectionChanged() {
+  if (window.updateAllBriefingStatusIndicators) {
+    window.updateAllBriefingStatusIndicators();
+  }
+}
+
+window.onCustomerSelectionChanged = onCustomerSelectionChanged; 

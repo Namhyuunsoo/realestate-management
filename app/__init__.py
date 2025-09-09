@@ -76,30 +76,8 @@ def create_app(config_object=None):
     app.data_manager = data_manager
     data_manager.initialize()
     
-    # 시트 동기화 시작
-    try:
-        if data_manager.start_sheet_sync():
-            print("✅ Google Sheets 자동 동기화가 시작되었습니다.")
-        else:
-            print("⚠️ Google Sheets 자동 동기화를 시작할 수 없습니다.")
-    except Exception as e:
-        print(f"⚠️ 시트 동기화 시작 실패: {e}")
-        print("   Google Sheets 자동 동기화 기능이 비활성화됩니다.")
-    
-    # 지오코딩 동기화 시작 (Flask 컨텍스트에서)
-    try:
-        # GeocodingScheduler 초기화 (Flask 앱 컨텍스트 전달)
-        if data_manager.initialize_geocoding_scheduler(app):
-            # 지오코딩 스케줄러 시작
-            if data_manager.start_geocoding_sync():
-                print("✅ 자동 지오코딩이 시작되었습니다.")
-            else:
-                print("⚠️ 자동 지오코딩을 시작할 수 없습니다.")
-        else:
-            print("⚠️ GeocodingScheduler 초기화 실패")
-    except Exception as e:
-        print(f"⚠️ 지오코딩 동기화 시작 실패: {e}")
-        print("   자동 지오코딩 기능이 비활성화됩니다.")
+    # 백그라운드 서비스들은 첫 요청 시 지연 초기화됨
+    print("⏳ 백그라운드 서비스들은 첫 요청 시 지연 초기화됩니다.")
 
     # Blueprint 등록
     register_blueprints(app)
@@ -196,6 +174,7 @@ def register_blueprints(app):
     from .routes.user_sheets import bp as user_sheets_bp
     from .routes.geocoding import bp as geocoding_bp
     from .routes.listing_add import bp as listing_add_bp
+    from .routes.recommendations import bp as recommendations_bp
 
     app.register_blueprint(health_bp)
     app.register_blueprint(listings_bp)
@@ -209,3 +188,4 @@ def register_blueprints(app):
     app.register_blueprint(user_sheets_bp)
     app.register_blueprint(geocoding_bp)
     app.register_blueprint(listing_add_bp)
+    app.register_blueprint(recommendations_bp)

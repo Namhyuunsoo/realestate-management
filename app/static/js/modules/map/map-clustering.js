@@ -65,9 +65,24 @@ function renderClusterGroupList(cluster) {
     const status = getStatusDisplay(item.status_raw);
     
     li.innerHTML = `
-      <div class="title">${region} ${jibun} ${floor} ${storeName}</div>
-      <div class="meta">
-        ${area_real}평 보: ${dep} 월: ${rent} 권: ${premDisplay} ${status}
+      <div class="listing-item">
+        <div class="meta-top">
+          <div class="listing-info">
+            <span class="region">${region}</span>
+            <span class="jibun">${jibun}</span>
+            <span class="floor">${floor}</span>
+            <span class="store-name">${storeName}</span>
+          </div>
+          <div class="listing-controls">
+            ${window.createRecommendationStar ? window.createRecommendationStar(item.id) : ''}
+          </div>
+        </div>
+        <div class="meta-bottom">
+          <span class="area-real">${area_real}평</span>
+          <span class="deposit">보: ${dep}</span>
+          <span class="rent">월: ${rent}</span>
+          <span class="premium">권: ${premDisplay}</span>
+        </div>
       </div>
     `;
     
@@ -75,53 +90,45 @@ function renderClusterGroupList(cluster) {
     const briefingStatus = getBriefingStatus(item.id);
     updateListingItemBriefingStatus(li, briefingStatus);
 
-    li.addEventListener("click", (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-
+    li.addEventListener("click", () => {
+      clearSelection();
       setActiveMarker(item.id);
-
-      let clusterObj = null;
-      if (CLUSTERER && Array.isArray(CLUSTERER._clusters)) {
-        clusterObj = CLUSTERER._clusters.find(c =>
-          c.getClusterMember().some(m => m._listingId === item.id)
-        );
+      renderDetailPanel(item);
+      
+      // 선택 상태 업데이트 (UI 크기나 위치는 변경하지 않음)
+      ul.querySelectorAll("li .listing-item.selected")
+        .forEach(el => el.classList.remove("selected"));
+      const inner = li.querySelector(".listing-item");
+      if (inner) {
+        inner.classList.add("selected");
       }
-      if (clusterObj && clusterObj._clusterMarker) {
-        const bubble = clusterObj._clusterMarker
-          .getElement()
-          .querySelector(".cluster-bubble");
-        if (bubble) {
-          bubble.classList.remove("cluster-animate");
-          void bubble.offsetWidth;
-          bubble.classList.add("cluster-animate");
-        }
-      }
-
-      const mk = MARKERS.find(m => m._listingId === item.id);
-      if (mk?.getElement) {
-        const dotEl = mk.getElement().querySelector(".marker-dot");
+      
+      // 클릭 시 애니메이션 효과 추가 (UI 크기나 위치는 변경하지 않음)
+      const marker = MARKERS.find(m => m._listingId === item.id);
+      if (marker && marker.getElement) {
+        const dotEl = marker.getElement().querySelector(".marker-dot");
         if (dotEl) {
           dotEl.classList.add("blink");
           setTimeout(() => dotEl.classList.remove("blink"), 800);
         }
       }
-
-      ul.querySelectorAll("li.selected")
-        .forEach(el => el.classList.remove("selected"));
-      li.classList.add("selected");
-
-      const mainUl = document.getElementById("listingList");
-      const mainLi = mainUl?.querySelector(`li[data-id="${item.id}"]`);
-      if (mainLi) {
-        const inner = mainLi.querySelector(".listing-item");
-        if (inner) {
-          inner.classList.add("selected");
-          // UI 변동 방지를 위해 scrollIntoView 제거
-          // mainLi.scrollIntoView({ behavior: "smooth", block: "center" });
+      
+      // 클러스터 버블 애니메이션도 시도 (UI 크기나 위치는 변경하지 않음)
+      if (CLUSTERER && CLUSTERER._clusters) {
+        const clusterObj = CLUSTERER._clusters.find(c =>
+          c.getClusterMember().some(m => m._listingId === item.id)
+        );
+        if (clusterObj && clusterObj._clusterMarker) {
+          const bubble = clusterObj._clusterMarker
+            .getElement()
+            .querySelector(".cluster-bubble");
+          if (bubble) {
+            bubble.classList.remove("cluster-animate");
+            void bubble.offsetWidth;
+            bubble.classList.add("cluster-animate");
+          }
         }
       }
-      renderDetailPanel(item);
     });
 
     // 클러스터 목록 마우스오버 이벤트 추가
@@ -187,6 +194,23 @@ function hideClusterList() {
   // 클러스터 리스트가 숨겨질 때도 기존 UI 요소들의 크기나 위치는 변경하지 않음
   // 매물리스트는 그대로 유지 (이미 보이고 있음)
 }
+
+/**
+ * 클러스터 매물 목록의 추천 UI 업데이트
+ */
+function updateClusterRecommendationUI(listingId) {
+  // 클러스터 매물 목록의 별표 업데이트
+  const clusterStarElement = document.querySelector(`#clusterItemList [data-listing-id="${listingId}"] .recommendation-star`);
+  if (clusterStarElement) {
+    const isRecommended = window.isRecommended ? window.isRecommended(listingId) : false;
+    clusterStarElement.classList.toggle('recommended', isRecommended);
+    clusterStarElement.title = isRecommended ? '추천 상세보기' : '추천하기';
+    clusterStarElement.textContent = isRecommended ? '⭐' : '☆';
+  }
+}
+
+// 전역 함수로 export
+window.updateClusterRecommendationUI = updateClusterRecommendationUI;
 
 function bindClusterClickDelegation() {
   if (window._clusterClickDelegationBound) return;

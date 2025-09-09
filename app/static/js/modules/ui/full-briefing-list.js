@@ -236,8 +236,8 @@ function renderFullBriefingList() {
                 <td data-field="의뢰인" class="${isModified('의뢰인') ? 'modified' : ''}" style="padding:6px 8px;" ondblclick="editFullBriefingCell('${item.id}', '의뢰인', event)">${escapeHtml(displayFields['의뢰인'] || '-')}</td>
                 <td data-field="비고3" class="${isModified('비고3') ? 'modified' : ''}" style="padding:6px 8px;max-width:120px;word-wrap:break-word;white-space:pre-wrap;" ondblclick="editFullBriefingCell('${item.id}', '비고3', event)">${escapeHtml(displayFields['비고3'] || '-')}</td>
                 <td style="padding:6px 8px;text-align:center;">
-                  <div style="padding:2px 6px;border-radius:8px;font-size:12px;font-weight:600;color:white;background:${briefingColor};cursor:pointer;display:inline-block;"
-                       onclick="event.stopPropagation(); cycleBriefingStatus('${item.id}')">
+                  <div style="padding:2px 6px;border-radius:8px;font-size:12px;font-weight:600;color:white;background:${briefingColor};display:inline-block;"
+                       class="briefing-status-cell" data-listing-id="${item.id}">
                     ${briefingText}
                   </div>
                 </td>
@@ -250,6 +250,33 @@ function renderFullBriefingList() {
   `;
   
   content.innerHTML = headerHtml + listHtml;
+  
+  // 브리핑 상태 셀에 클릭 이벤트 설정
+  setupBriefingStatusCells();
+}
+
+function setupBriefingStatusCells() {
+  const briefingCells = document.querySelectorAll('.briefing-status-cell');
+  const hasSelectedCustomer = window.SELECTED_CUSTOMER && window.SELECTED_CUSTOMER.id;
+  
+  briefingCells.forEach(cell => {
+    if (hasSelectedCustomer) {
+      // 고객선택 시: 클릭 기능 활성화
+      cell.style.cursor = 'pointer';
+      cell.style.display = 'inline-block';
+      cell.style.opacity = '1';
+      cell.onclick = (e) => {
+        e.stopPropagation();
+        cycleBriefingStatus(cell.dataset.listingId);
+      };
+    } else {
+      // 고객선택 안됨: 완전히 숨김
+      cell.style.cursor = 'default';
+      cell.style.display = 'none';
+      cell.style.opacity = '0';
+      cell.onclick = null;
+    }
+  });
 }
 
 function selectFullBriefingListItem(listingId) {

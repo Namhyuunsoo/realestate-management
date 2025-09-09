@@ -6,7 +6,7 @@ from typing import Optional, Tuple, Any
 from .security import security_manager, rate_limit, validate_input, log_security_event, validate_csrf_token
 
 def require_user():
-    """사용자 인증 데코레이터 (세션 기반 또는 X-User 헤더 기반)"""
+    """사용자 인증 데코레이터 (세션 기반 또는 X-User 헤더 기반) - 사용자 객체를 request에 추가"""
     def decorator(f):
         @wraps(f)
         def decorated_function(*args, **kwargs):
@@ -30,16 +30,17 @@ def require_user():
                 log_security_event('UNAUTHORIZED_ACCESS', f'No session or X-User header from IP {ip}')
                 return jsonify({"error": "로그인이 필요합니다."}), 401
             
+            user_service = current_app.data_manager.user_service
+            current_user = None
+            
             # 세션 기반 인증 확인
             if user_id:
                 try:
-                    user_service = current_app.data_manager.user_service
-                    user = user_service.get_user_by_id(user_id)
-                    if not user or not user.is_active():
+                    current_user = user_service.get_user_by_id(user_id)
+                    if not current_user or not current_user.is_active():
                         session.clear()
                         log_security_event('INVALID_SESSION', f'Invalid session {user_id} from IP {ip}')
                         return jsonify({"error": "유효하지 않은 세션입니다."}), 401
-                    # 세션이 유효하면 계속 진행
                 except Exception as e:
                     log_security_event('SESSION_ERROR', f'Session error for {user_id} from IP {ip}: {str(e)}')
                     session.clear()
@@ -48,15 +49,16 @@ def require_user():
             # X-User 헤더 기반 인증 확인 (세션이 없거나 유효하지 않은 경우)
             elif user_email:
                 try:
-                    user_service = current_app.data_manager.user_service
-                    user = user_service.get_user_by_email(user_email)
-                    if not user or not user.is_active():
+                    current_user = user_service.get_user_by_email(user_email)
+                    if not current_user or not current_user.is_active():
                         log_security_event('INVALID_X_USER', f'Invalid X-User header: {user_email} from IP {ip}')
                         return jsonify({"error": "유효하지 않은 사용자입니다."}), 401
-                    # X-User 헤더가 유효하면 계속 진행
                 except Exception as e:
                     log_security_event('X_USER_ERROR', f'X-User error for {user_email} from IP {ip}: {str(e)}')
                     return jsonify({"error": "사용자 인증 오류가 발생했습니다."}), 401
+            
+            # 사용자 객체를 request에 추가하여 중복 조회 방지
+            request.current_user = current_user
             
             return f(*args, **kwargs)
         return decorated_function
@@ -86,16 +88,19 @@ def require_admin():
             
             # 관리자 권한 확인
             user_service = current_app.data_manager.user_service
-            user = user_service.get_user_by_id(user_id)
-            if not user:
+            current_user = user_service.get_user_by_id(user_id)
+            if not current_user:
                 log_security_event('UNAUTHORIZED_ADMIN_ATTEMPT', f'User {user_id} not found from IP {ip}')
                 return jsonify({"error": "사용자를 찾을 수 없습니다."}), 404
-            if not user.is_active():
+            if not current_user.is_active():
                 log_security_event('UNAUTHORIZED_ADMIN_ATTEMPT', f'Inactive user {user_id} from IP {ip} attempted admin access')
                 return jsonify({"error": "비활성 사용자입니다."}), 403
-            if not user.is_admin():
+            if not current_user.is_admin():
                 log_security_event('UNAUTHORIZED_ADMIN_ATTEMPT', f'Non-admin user {user_id} from IP {ip} attempted admin access')
                 return jsonify({"error": "관리자 권한이 필요합니다."}), 403
+            
+            # 사용자 객체를 request에 추가
+            request.current_user = current_user
             
             return f(*args, **kwargs)
         return decorated_function

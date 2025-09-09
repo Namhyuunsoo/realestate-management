@@ -46,13 +46,22 @@ def read_map_cache() -> Dict[str, tuple[float,float]]:
         return {}
 
     try:
+        # 통합된 Excel 읽기 함수 사용
+        from .sheet_fetcher import read_excel_file_universal
+        
         # Excel 파일 열고 시트 이름 목록을 확인
         xls = pd.ExcelFile(path)
         # 만약 '지도캐시' 시트가 있으면, 그걸 쓰고 아니면 첫 번째 시트 사용
         sheet = "지도캐시" if "지도캐시" in xls.sheet_names else xls.sheet_names[0]
         current_app.logger.info(f"Using sheet for map cache: {sheet}")
 
-        df = pd.read_excel(path, sheet_name=sheet, dtype=str).fillna("")
+        rows = read_excel_file_universal(path, sheet_name=sheet)
+        if not rows or len(rows) < 2:
+            current_app.logger.warning("지도캐시 데이터가 없습니다.")
+            return {}
+        
+        # 첫 번째 행을 헤더로 사용하고 나머지를 데이터로 변환
+        df = pd.DataFrame(rows[1:], columns=rows[0])
 
         mapping: dict[str, tuple[float,float]] = {}
         for _, row in df.iterrows():
@@ -109,9 +118,9 @@ def build_address(row: list[str], hdr: Dict[str,int]) -> str:
 def normalize_listing(row_idx: int, row: list[str], hdr: Dict[str,int]) -> Listing | None:
     try:
         status_raw = row[hdr["현황"]].strip()
-        # 디버그: 현황 값 확인
-        if row_idx <= 5:  # 처음 5개 행만 로그
-            current_app.logger.info(f"Row {row_idx}: 현황 = '{status_raw}' (원본: '{row[hdr['현황']]}')")
+        # 디버그: 현황 값 확인 (비활성화)
+        # if row_idx <= 5:  # 처음 5개 행만 로그
+        #     current_app.logger.info(f"Row {row_idx}: 현황 = '{status_raw}' (원본: '{row[hdr['현황']]}')")
     except Exception as e:
         current_app.logger.error(f"Row {row_idx}: 현황 읽기 실패 - {e}")
         status_raw = ""
@@ -161,10 +170,7 @@ def load_listings(force_reload=False) -> List[dict]:
     매물 데이터 로드
     force_reload=True 시 캐시 무시하고 파일에서 직접 읽기
     """
-    if force_reload:
-        current_app.logger.info("🔄 강제 새로고침: 캐시 무시하고 파일에서 직접 로드")
-    else:
-        current_app.logger.info("📊 일반 로드: 캐시 우선 사용")
+    # 로그 제거로 성능 최적화
     
     # sheet_fetcher에 force_reload 파라미터 전달
     rows = read_local_listing_sheet(force_reload=force_reload)
@@ -185,23 +191,55 @@ def load_listings(force_reload=False) -> List[dict]:
         if listing:
             listings.append(listing.to_dict())
 
-    # 지도캐시 매핑 적용
+    # 지도캐시 매핑 적용 (동기)
     _apply_map_cache(listings)
     
     current_app.logger.info(f"✅ Loaded listings: {len(listings)} (force_reload: {force_reload})")
     return listings
 
+def _apply_map_cache_async(listings: List[dict]) -> None:
+    """지도 캐시 매핑 적용 (비동기)"""
+    import threading
+    
+    def apply_cache():
+        try:
+            map_cache = read_map_cache()
+            for item in listings:
+                addr = item.get("address_full", "")
+                if addr in map_cache and item.get("status_raw") == "생":
+                    lat, lng = map_cache[addr]
+                    item["coords"] = {"lat": lat, "lng": lng}
+                else:
+                    item["coords"] = {"lat": None, "lng": None}
+        except Exception as e:
+            current_app.logger.warning(f"지도캐시 매핑 실패, 기본값 사용: {e}")
+            for item in listings:
+                item["coords"] = {"lat": None, "lng": None}
+    
+    # 백그라운드 스레드에서 실행
+    thread = threading.Thread(target=apply_cache, daemon=True)
+    thread.start()
+
 def _apply_map_cache(listings: List[dict]) -> None:
-    """지도 캐시 매핑 적용"""
+    """지도 캐시 매핑 적용 (동기)"""
     try:
         map_cache = read_map_cache()
+        current_app.logger.info(f"🔍 지도 캐시 로드됨: {len(map_cache)}개 주소")
+        
+        assigned_coords = 0
+        total_listings = len(listings)
+        
         for item in listings:
             addr = item.get("address_full", "")
             if addr in map_cache and item.get("status_raw") == "생":
                 lat, lng = map_cache[addr]
                 item["coords"] = {"lat": lat, "lng": lng}
+                assigned_coords += 1
             else:
                 item["coords"] = {"lat": None, "lng": None}
+        
+        current_app.logger.info(f"✅ 지도 캐시 적용 완료: {assigned_coords}/{total_listings}개 매물에 좌표 할당")
+        
     except Exception as e:
         current_app.logger.warning(f"지도캐시 매핑 실패, 기본값 사용: {e}")
         for item in listings:

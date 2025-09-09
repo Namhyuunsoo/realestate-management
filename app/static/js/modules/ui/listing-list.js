@@ -46,17 +46,21 @@ function renderListingList(arr) {
     li.innerHTML = `
       <div class="listing-item">
         <div class="meta-top">
-          <span class="region">${region}</span>
-          <span class="jibun">${jibun}</span>
-          <span class="floor">${floor}</span>
-          <span class="store-name">${storeName}</span>
+          <div class="listing-info">
+            <span class="region">${region}</span>
+            <span class="jibun">${jibun}</span>
+            <span class="floor">${floor}</span>
+            <span class="store-name">${storeName}</span>
+          </div>
+          <div class="listing-controls">
+            ${window.createRecommendationStar ? window.createRecommendationStar(item.id) : ''}
+          </div>
         </div>
         <div class="meta-bottom">
           <span class="area-real">${areaReal}평</span>
           <span class="deposit">보: ${dep}</span>
           <span class="rent">월: ${rent}</span>
           <span class="premium">권: ${premDisplay}</span>
-          <span class="status">${getStatusDisplay(item.status_raw)}</span>
         </div>
       </div>
     `;

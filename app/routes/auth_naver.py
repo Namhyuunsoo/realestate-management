@@ -186,7 +186,7 @@ def api_me():
             user = user_service.get_user_by_email(user_email)
             
             if user and user.is_active():
-                current_app.logger.info(f"사용자 정보 조회 성공: {user.email}, name={user.name}, job_title={user.job_title}, role={user.role}")
+                # 사용자 정보 조회 성공
                 response_data = {
                     "logged_in": True,
                     "email": user.email,
@@ -198,7 +198,6 @@ def api_me():
                     "job_title": user.job_title or "",
                     "manager_name": getattr(user, 'manager_name', '') or ""
                 }
-                current_app.logger.info(f"응답 데이터: {response_data}")
                 return jsonify(response_data)
             else:
                 current_app.logger.warning(f"사용자를 찾을 수 없거나 비활성: {user_email}")

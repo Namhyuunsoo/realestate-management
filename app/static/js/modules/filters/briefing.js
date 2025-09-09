@@ -104,11 +104,25 @@ function updateListingItemBriefingStatus(listItem, status) {
   indicator.className = 'briefing-status-indicator';
   indicator.classList.add(`briefing-${status}`);
   
-  // 클릭 이벤트
-  indicator.onclick = (e) => {
-    e.stopPropagation();
-    cycleBriefingStatus(listItem.dataset.id);
-  };
+  // 고객선택 상태에 따른 클릭 기능 제어
+  const hasSelectedCustomer = window.SELECTED_CUSTOMER && window.SELECTED_CUSTOMER.id;
+  
+  if (hasSelectedCustomer) {
+    // 고객선택 시: 클릭 기능 활성화
+    indicator.onclick = (e) => {
+      e.stopPropagation();
+      cycleBriefingStatus(listItem.dataset.id);
+    };
+    indicator.style.cursor = 'pointer';
+    indicator.style.display = 'block';
+    indicator.style.opacity = '1';
+  } else {
+    // 고객선택 안됨: 완전히 숨김
+    indicator.onclick = null;
+    indicator.style.cursor = 'default';
+    indicator.style.display = 'none';
+    indicator.style.opacity = '0';
+  }
 }
 
 function updateDetailPanelBriefingStatus(status) {
@@ -123,7 +137,6 @@ function updateDetailPanelBriefingStatus(status) {
     if (addrElement) {
       statusElement = document.createElement('span');
       statusElement.className = 'listing-detail-briefing-status';
-      statusElement.onclick = () => cycleBriefingStatus(SELECTED_MARKER_ID);
       addrElement.appendChild(statusElement);
     }
   }
@@ -132,6 +145,23 @@ function updateDetailPanelBriefingStatus(status) {
     statusElement.className = 'listing-detail-briefing-status';
     statusElement.classList.add(`briefing-${status}`);
     statusElement.textContent = getBriefingStatusText(status);
+    
+    // 고객선택 상태에 따른 클릭 기능 제어
+    const hasSelectedCustomer = window.SELECTED_CUSTOMER && window.SELECTED_CUSTOMER.id;
+    
+    if (hasSelectedCustomer) {
+      // 고객선택 시: 클릭 기능 활성화
+      statusElement.onclick = () => cycleBriefingStatus(SELECTED_MARKER_ID);
+      statusElement.style.cursor = 'pointer';
+      statusElement.style.display = 'inline';
+      statusElement.style.opacity = '1';
+    } else {
+      // 고객선택 안됨: 완전히 숨김
+      statusElement.onclick = null;
+      statusElement.style.cursor = 'default';
+      statusElement.style.display = 'none';
+      statusElement.style.opacity = '0';
+    }
   }
 }
 
@@ -335,4 +365,52 @@ window.getBriefingStatusText = getBriefingStatusText;
 window.applyBriefingFilters = applyBriefingFilters;
 window.initializeBriefingFilters = initializeBriefingFilters;
 window.resetBriefingFilters = resetBriefingFilters;
-window.toggleBriefingFilter = toggleBriefingFilter; 
+window.toggleBriefingFilter = toggleBriefingFilter;
+
+// 고객선택 상태 변경 시 모든 색인표시 업데이트
+function updateAllBriefingStatusIndicators() {
+  const hasSelectedCustomer = window.SELECTED_CUSTOMER && window.SELECTED_CUSTOMER.id;
+  
+  // 매물 리스트의 색인표시 업데이트
+  const listingItems = document.querySelectorAll('#listingList li');
+  listingItems.forEach(item => {
+    const status = getBriefingStatus(item.dataset.id);
+    updateListingItemBriefingStatus(item, status);
+  });
+  
+  // 클러스터 팝업의 색인표시 업데이트
+  const clusterItems = document.querySelectorAll('#clusterItemList li');
+  clusterItems.forEach(item => {
+    const status = getBriefingStatus(item.dataset.id);
+    updateListingItemBriefingStatus(item, status);
+  });
+  
+  // 매물상세정보의 색인표시 업데이트
+  if (SELECTED_MARKER_ID) {
+    const status = getBriefingStatus(SELECTED_MARKER_ID);
+    updateDetailPanelBriefingStatus(status);
+  }
+  
+  // 전체 브리핑 리스트의 색인표시 업데이트
+  const briefingCells = document.querySelectorAll('.briefing-status-cell');
+  briefingCells.forEach(cell => {
+    if (hasSelectedCustomer) {
+      cell.style.cursor = 'pointer';
+      cell.style.display = 'inline-block';
+      cell.style.opacity = '1';
+      cell.onclick = (e) => {
+        e.stopPropagation();
+        cycleBriefingStatus(cell.dataset.listingId);
+      };
+    } else {
+      cell.style.cursor = 'default';
+      cell.style.display = 'none';
+      cell.style.opacity = '0';
+      cell.onclick = null;
+    }
+  });
+  
+  console.log(`✅ 모든 색인표시 업데이트 완료: ${hasSelectedCustomer ? '고객선택됨' : '고객선택안됨'}`);
+}
+
+window.updateAllBriefingStatusIndicators = updateAllBriefingStatusIndicators; 

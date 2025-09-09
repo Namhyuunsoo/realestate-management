@@ -18,16 +18,16 @@ let isHistoryInitialized = false;
 function initializeHistory() {
   if (isHistoryInitialized) return;
   
-  console.log("🔍 히스토리 관리 초기화");
+  // 히스토리 관리 초기화
   
   // 모바일 환경에서만 히스토리 관리 적용
   if (isMobileApp()) {
-    console.log("📱 모바일 환경 - 히스토리 관리 초기화");
+    // 모바일 환경에서만 히스토리 관리 적용
     // popstate 이벤트 리스너 등록 (뒤로가기 버튼 감지)
     window.addEventListener('popstate', handlePopState);
     console.log("✅ 모바일 히스토리 관리 초기화 완료");
   } else {
-    console.log("🖥️ 데스크톱 환경 - 히스토리 관리 건너뜀");
+    // 데스크톱 환경 - 히스토리 관리 건너뜀
   }
   
   isHistoryInitialized = true;
@@ -96,7 +96,7 @@ function isMobileApp() {
   
   // 4. 터치 지원 여부는 제거 (PC에서도 터치스크린 지원 가능)
   
-  console.log("🖥️ 데스크톱 환경 감지");
+  // 데스크톱 환경 감지
   return false;
 }
 
@@ -269,7 +269,7 @@ function showLoginScreen(msg = "") {
 }
 
 function hideLoginScreen() {
-  console.log("🔍 hideLoginScreen 호출됨");
+  // hideLoginScreen 호출됨
   
   const loginRequired = document.getElementById("loginRequiredScreen");
   const appRoot = document.getElementById("appRoot");
@@ -277,13 +277,13 @@ function hideLoginScreen() {
   if (loginRequired) {
     loginRequired.classList.add("hidden");
     // style.display 직접 조작 제거 - CSS의 flexbox가 작동하도록 함
-    console.log("✅ 로그인 필요 화면 숨김");
+    // 로그인 필요 화면 숨김
   }
   
   if (appRoot) {
     appRoot.classList.remove("hidden");
     appRoot.style.display = "block";
-    console.log("✅ 앱 화면 표시");
+    // 앱 화면 표시
   }
 
   toggleLoginLogoutUI(!!currentUser);
@@ -307,12 +307,12 @@ function setCurrentUser(email) {
   .then(data => {
     if (data.logged_in && data.role) {
       localStorage.setItem('X-USER-ROLE', data.role);
-      console.log(`✅ 사용자 역할 설정: ${email} -> ${data.role}`);
+      // 사용자 역할 설정
       
       // 사용자 정보를 localStorage에 저장 (다른 모듈에서 사용)
       if (data.manager_name) {
         localStorage.setItem('X-USER-MANAGER-NAME', data.manager_name);
-        console.log(`✅ 사용자 담당자명 설정: ${email} -> ${data.manager_name}`);
+        // 사용자 담당자명 설정
       }
       
       // UI 업데이트
@@ -389,7 +389,7 @@ function setCurrentUser(email) {
       return originalFetch(url, options);
     };
     
-    console.log('✅ X-User 헤더 자동 설정 완료:', email);
+    // X-User 헤더 자동 설정 완료
   } else {
     // 사용자가 없는 경우 원래 fetch 함수로 복원
     if (window._originalFetch) {
@@ -420,38 +420,36 @@ function toggleLoginLogoutUI(isLoggedIn) {
 function toggleAdminUI(isAdmin) {
   // 사용자 역할 확인
   const userRole = localStorage.getItem("X-USER-ROLE") || "user";
-  console.log(`🔍 toggleAdminUI 호출: isAdmin=${isAdmin}, userRole=${userRole}`);
-  console.log(`🔍 localStorage X-USER:`, localStorage.getItem("X-USER"));
+  // 사용자 역할 확인
+  // localStorage X-USER 확인
   
   // 어드민 전용 UI 요소들 (전체 컨테이너)
   const adminContainer = document.querySelector(".admin-only");
-  console.log(`🔍 adminContainer 찾음:`, adminContainer);
+  // adminContainer 찾음
   
   if (adminContainer) {
     if (userRole === "admin" || userRole === "manager") {
       adminContainer.classList.remove("hidden");
       adminContainer.style.display = "flex"; // CSS의 display: none을 덮어쓰기
-      console.log("✅ 어드민 컨테이너 표시 - 클래스:", adminContainer.className, "스타일:", adminContainer.style.display);
+      // 어드민 컨테이너 표시
     } else {
       adminContainer.classList.add("hidden");
       adminContainer.style.display = "none";
-      console.log("ℹ️ 어드민 컨테이너 숨김 - 클래스:", adminContainer.className, "스타일:", adminContainer.style.display);
+      // 어드민 컨테이너 숨김
     }
   } else {
     console.error("❌ adminContainer를 찾을 수 없습니다!");
   }
   
-  // 통계 버튼은 어드민만 표시
   const statsBtn = document.getElementById("adminStatsBtn");
-  console.log(`🔍 statsBtn 찾음:`, statsBtn);
   
   if (statsBtn) {
     if (userRole === "admin") {
       statsBtn.style.display = "inline-block";
-      console.log("✅ 통계 버튼 표시 - 스타일:", statsBtn.style.display);
+      // 통계 버튼 표시
     } else {
       statsBtn.style.display = "none";
-      console.log("ℹ️ 통계 버튼 숨김 - 스타일:", statsBtn.style.display);
+      // 통계 버튼 숨김
     }
   } else {
     console.error("❌ adminStatsBtn을 찾을 수 없습니다!");
@@ -459,21 +457,20 @@ function toggleAdminUI(isAdmin) {
   
   // 사용자 관리 버튼은 어드민과 매니저만 표시
   const userMgmtBtn = document.getElementById("userManagementBtn");
-  console.log(`🔍 userMgmtBtn 찾음:`, userMgmtBtn);
   
   if (userMgmtBtn) {
     if (userRole === "admin" || userRole === "manager") {
       userMgmtBtn.style.display = "inline-block";
-      console.log("✅ 사용자 관리 버튼 표시 - 스타일:", userMgmtBtn.style.display);
+      // 사용자 관리 버튼 표시
     } else {
       userMgmtBtn.style.display = "none";
-      console.log("ℹ️ 사용자 관리 버튼 숨김 - 스타일:", userMgmtBtn.style.display);
+      // 사용자 관리 버튼 숨김
     }
   } else {
     console.error("❌ userManagementBtn을 찾을 수 없습니다!");
   }
   
-  console.log(`✅ UI 토글 완료: ${userRole} 역할`);
+  // UI 토글 완료
 }
 
 async function applyUser() {
@@ -565,7 +562,7 @@ async function applyUser() {
   if (appRoot) {
     appRoot.classList.remove("hidden");
     appRoot.style.display = "block";
-    console.log("✅ 앱 화면 표시");
+    // 앱 화면 표시
   }
 
   // 권한에 따른 UI 업데이트
@@ -596,7 +593,7 @@ async function applyUser() {
 
 // 세션 체크 및 자동 로그인 처리
 async function checkSessionAndAutoLogin() {
-  console.log("🔍 세션 체크 및 자동 로그인 시작");
+  // 세션 체크 및 자동 로그인 시작
   
   try {
     // 서버에 세션 상태 확인 요청
@@ -611,7 +608,7 @@ async function checkSessionAndAutoLogin() {
     if (response.ok) {
       const data = await response.json();
       if (data.logged_in && data.user) {
-        console.log("✅ 서버 세션에서 사용자 정보 확인됨");
+        // 서버 세션에서 사용자 정보 확인됨
         
         // 사용자 정보 설정
         setCurrentUser(data.user.email);
