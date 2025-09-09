@@ -165,6 +165,9 @@ function placeMarkers(arr) {
     validMarkers++;
 
     naver.maps.Event.addListener(marker, "click", () => {
+      // 클러스터매물목록이 열려있으면 닫기
+      hideClusterList();
+      
       setActiveMarker(item.id);
       scrollToListing(item.id);
       renderDetailPanel(item);
@@ -177,8 +180,11 @@ function placeMarkers(arr) {
   // 클러스터 변경 이벤트 리스너 추가
   if (CLUSTERER) {
     CLUSTERER.addListener('cluster_changed', () => {
-    
+      // 클러스터 변경 후 추천 상태 업데이트
       setTimeout(() => {
+        if (window.updateClusterBubblesRecommendationStatus) {
+          window.updateClusterBubblesRecommendationStatus();
+        }
         if (typeof bindClusterClickDelegation === 'function') {
           bindClusterClickDelegation();
         }
@@ -187,6 +193,9 @@ function placeMarkers(arr) {
     
     // 초기 클러스터 생성 후에도 이벤트 바인딩
     setTimeout(() => {
+      if (window.updateClusterBubblesRecommendationStatus) {
+        window.updateClusterBubblesRecommendationStatus();
+      }
       if (typeof bindClusterClickDelegation === 'function') {
         bindClusterClickDelegation();
       }
