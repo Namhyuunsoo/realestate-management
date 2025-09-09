@@ -368,37 +368,33 @@ window.initializeApp = async function() {
   }
   
   if (userRoleNameEl && currentUser) {
-    // 캐싱된 사용자 정보 가져오기
-    getCurrentUserInfo().then(data => {
-      if (data && data.logged_in && data.email) {
-        let displayText = '';
-        
-        // 직책이 있으면 직책을 우선 표시
-        if (data.job_title && data.job_title.trim()) {
-          if (data.name && data.name.trim()) {
-            displayText = `${data.job_title} ${data.name}`;
-          } else {
-            displayText = data.job_title;
-          }
+    // 사용자 정보 가져오기 (동기 방식)
+    const userInfo = getCurrentUserInfo();
+    if (userInfo && userInfo.email) {
+      let displayText = '';
+      
+      // 직책이 있으면 직책을 우선 표시
+      if (userInfo.job_title && userInfo.job_title.trim()) {
+        if (userInfo.name && userInfo.name.trim()) {
+          displayText = `${userInfo.job_title} ${userInfo.name}`;
         } else {
-          // 직책이 없으면 역할과 이름 표시
-          if (data.name && data.name.trim()) {
-            const roleText = data.role === 'admin' ? '관리자' : 
-                            data.role === 'manager' ? '매니저' : '사용자';
-            displayText = `${roleText} ${data.name}`;
-          } else {
-            displayText = data.email;
-          }
+          displayText = userInfo.job_title;
         }
-        
-        userRoleNameEl.textContent = displayText;
       } else {
-        userRoleNameEl.textContent = currentUser;
+        // 직책이 없으면 역할과 이름 표시
+        if (userInfo.name && userInfo.name.trim()) {
+          const roleText = userInfo.role === 'admin' ? '관리자' : 
+                          userInfo.role === 'manager' ? '매니저' : '사용자';
+          displayText = `${roleText} ${userInfo.name}`;
+        } else {
+          displayText = userInfo.email;
+        }
       }
-    }).catch(error => {
-      console.error('사용자 정보 로드 실패:', error);
+      
+      userRoleNameEl.textContent = displayText;
+    } else {
       userRoleNameEl.textContent = currentUser;
-    });
+    }
   }
 
   // 3) 지도 준비 후 fetchListings
