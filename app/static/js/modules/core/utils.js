@@ -20,7 +20,14 @@ function clearSelection() {
     const listing = LISTINGS.find(x => x.id === m._listingId);
     const color = STATUS_COLORS[listing?.status_raw] || "#007AFF";
     const briefingStatus = getBriefingStatus(m._listingId);
-    m.setIcon({ content: createMarkerIcon(color, false, briefingStatus) });
+    
+    // 🔥 추천 상태 확인 강화
+    let isRecommended = false;
+    if (window.USER_RECOMMENDATIONS && window.USER_RECOMMENDATIONS.has) {
+      isRecommended = window.USER_RECOMMENDATIONS.has(m._listingId);
+    }
+    
+    m.setIcon({ content: createMarkerIcon(color, false, briefingStatus, isRecommended) });
     m.setZIndex(1);
   });
 
@@ -271,33 +278,53 @@ function cleanObject(obj) {
   return cleaned;
 }
 
-// 동적 높이 계산 시스템
+// 동적 높이 계산 시스템 - 모든 요소 고정 위치 유지
 function calculateSecondaryPanelPosition() {
   const topbar = document.getElementById('topbar');
   const statusCounts = document.getElementById('statusCounts');
   const topFilterBar = document.getElementById('topFilterBar');
   const secondaryPanel = document.getElementById('secondaryPanel');
+  const sidebar = document.getElementById('sidebar');
+  const mainContent = document.getElementById('mainContent');
   
-  if (!secondaryPanel) return;
+  if (!topbar || !statusCounts || !topFilterBar) return;
   
-  let totalHeight = 0;
+  // 모든 요소를 고정 위치로 설정
+  topbar.style.position = 'absolute';
+  topbar.style.top = '0px';
+  topbar.style.height = '40px';
   
-  // 각 상단 요소의 실제 높이를 계산
-  if (topbar) {
-    totalHeight += topbar.offsetHeight;
+  statusCounts.style.position = 'absolute';
+  statusCounts.style.top = '40px';
+  statusCounts.style.height = '34px';
+  
+  topFilterBar.style.position = 'absolute';
+  topFilterBar.style.top = '74px';
+  topFilterBar.style.height = '92px';
+  
+  if (sidebar) {
+    sidebar.style.position = 'absolute';
+    sidebar.style.top = '166px';
+    sidebar.style.height = 'calc(100vh - 166px)';
+    sidebar.style.left = '0px';
+    sidebar.style.width = '280px';
   }
   
-  if (statusCounts) {
-    totalHeight += statusCounts.offsetHeight;
+  if (secondaryPanel) {
+    secondaryPanel.style.position = 'absolute';
+    secondaryPanel.style.top = '166px';
+    secondaryPanel.style.height = 'calc(100vh - 166px)';
+    secondaryPanel.style.left = '280px';
+    secondaryPanel.style.width = '300px';
   }
   
-  if (topFilterBar) {
-    totalHeight += topFilterBar.offsetHeight;
+  if (mainContent) {
+    mainContent.style.position = 'absolute';
+    mainContent.style.top = '166px';
+    mainContent.style.height = 'calc(100vh - 166px)';
+    mainContent.style.left = '280px';
+    mainContent.style.right = '0px';
   }
-  
-  // secondaryPanel 위치 조정
-  secondaryPanel.style.top = totalHeight + 'px';
-  secondaryPanel.style.height = `calc(100vh - ${totalHeight}px)`;
 }
 
 // ResizeObserver를 사용하여 레이아웃 변경 시 자동으로 위치 재계산

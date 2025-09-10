@@ -196,7 +196,24 @@ function initMap() {
     }
 
     const bounds = MAP.getBounds();
-    if (typeof FILTERED_LISTINGS !== 'undefined' && FILTERED_LISTINGS) {
+    
+    // 🔥 성능 최적화: 지도 영역 변경 감지
+    if (LAST_MAP_BOUNDS && 
+        typeof LAST_MAP_BOUNDS.getNorthEast === 'function' &&
+        typeof LAST_MAP_BOUNDS.getSouthWest === 'function' &&
+        LAST_MAP_BOUNDS.getNorthEast().equals(bounds.getNorthEast()) &&
+        LAST_MAP_BOUNDS.getSouthWest().equals(bounds.getSouthWest())) {
+      return; // 영역이 변경되지 않았으면 스킵
+    }
+    
+    LAST_MAP_BOUNDS = bounds;
+    
+    // 🔥 핵심 수정: 지도 이동/줌 시 새로운 매물 로딩
+    if (typeof applyAllFilters === 'function') {
+      console.log('🗺️ 지도 영역 변경 감지 - 새로운 매물 로딩 시작');
+      applyAllFilters(); // 새로운 매물 로딩 및 필터링
+    } else if (typeof FILTERED_LISTINGS !== 'undefined' && FILTERED_LISTINGS) {
+      // 기존 방식 (백업용)
       const visibleItems = FILTERED_LISTINGS.filter(item => {
         const { lat, lng } = item.coords || {};
         if (lat == null || lng == null) return false;

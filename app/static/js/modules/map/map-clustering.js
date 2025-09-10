@@ -202,7 +202,7 @@ function updateClusterRecommendationUI(listingId) {
   // 클러스터 매물 목록의 별표 업데이트
   const clusterStarElement = document.querySelector(`#clusterItemList [data-listing-id="${listingId}"] .recommendation-star`);
   if (clusterStarElement) {
-    const isRecommended = window.isRecommended ? window.isRecommended(listingId) : false;
+    const isRecommended = (window.USER_RECOMMENDATIONS && window.USER_RECOMMENDATIONS.has) ? window.USER_RECOMMENDATIONS.has(listingId) : false;
     clusterStarElement.classList.toggle('recommended', isRecommended);
     clusterStarElement.title = isRecommended ? '추천 상세보기' : '추천하기';
     clusterStarElement.textContent = isRecommended ? '⭐' : '☆';

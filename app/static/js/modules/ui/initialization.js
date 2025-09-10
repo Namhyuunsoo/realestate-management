@@ -373,7 +373,7 @@ window.initializeApp = async function() {
     if (userInfo && userInfo.email) {
       let displayText = '';
       
-      // 직책이 있으면 직책을 우선 표시
+      // 직책이 있으면 직책과 이름 표시
       if (userInfo.job_title && userInfo.job_title.trim()) {
         if (userInfo.name && userInfo.name.trim()) {
           displayText = `${userInfo.job_title} ${userInfo.name}`;
@@ -381,13 +381,11 @@ window.initializeApp = async function() {
           displayText = userInfo.job_title;
         }
       } else {
-        // 직책이 없으면 역할과 이름 표시
+        // 직책이 없으면 이름만 표시
         if (userInfo.name && userInfo.name.trim()) {
-          const roleText = userInfo.role === 'admin' ? '관리자' : 
-                          userInfo.role === 'manager' ? '매니저' : '사용자';
-          displayText = `${roleText} ${userInfo.name}`;
+          displayText = userInfo.name;
         } else {
-          displayText = userInfo.email;
+          displayText = '사용자';
         }
       }
       
@@ -406,14 +404,14 @@ window.initializeApp = async function() {
       FETCH_CALLED_ONCE = true;
       
       // 추천 데이터가 로드되었는지 확인하고, 없으면 로드
-      if (typeof window.loadRecommendations === 'function' && typeof window.USER_RECOMMENDATIONS === 'undefined') {
+      if (typeof window.loadRecommendations === 'function' && (!window.USER_RECOMMENDATIONS || window.USER_RECOMMENDATIONS.size === 0)) {
         console.log('🔄 추천 데이터가 없어서 로드 중...');
         await window.loadRecommendations();
-        console.log('✅ 추천 데이터 로드 완료');
+        console.log('✅ 추천 데이터 로드 완료, USER_RECOMMENDATIONS:', window.USER_RECOMMENDATIONS?.size);
       }
       
       console.log('🚀 fetchListings 호출 시작');
-      fetchListings();
+      await fetchListings();
       
       // 초기 로딩 완료 후 추천 상태 동기화 (한 번만)
       setTimeout(() => {
@@ -428,14 +426,14 @@ window.initializeApp = async function() {
     FETCH_CALLED_ONCE = true;
     
     // 추천 데이터가 로드되었는지 확인하고, 없으면 로드
-    if (typeof window.loadRecommendations === 'function' && typeof window.USER_RECOMMENDATIONS === 'undefined') {
+    if (typeof window.loadRecommendations === 'function' && (!window.USER_RECOMMENDATIONS || window.USER_RECOMMENDATIONS.size === 0)) {
       console.log('🔄 추천 데이터가 없어서 로드 중...');
       await window.loadRecommendations();
-      console.log('✅ 추천 데이터 로드 완료');
+      console.log('✅ 추천 데이터 로드 완료, USER_RECOMMENDATIONS:', window.USER_RECOMMENDATIONS?.size);
     }
     
     console.log('🚀 fetchListings 호출 시작 (MAP_READY)');
-    fetchListings();
+    await fetchListings();
     
     // 초기 로딩 완료 후 추천 상태 동기화 (한 번만)
     setTimeout(() => {

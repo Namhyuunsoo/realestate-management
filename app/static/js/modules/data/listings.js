@@ -187,7 +187,7 @@ function applyAllFilters() {
 
   const floorFilter = buildFloorFilter(EFFECTIVE_FILTERS.floor || "");
 
-  const arr = LISTINGS.filter(item => {
+  let arr = LISTINGS.filter(item => {
     const fields = item.fields || {};
 
     for (const tk of TEXT_KEYS) {
@@ -215,6 +215,32 @@ function applyAllFilters() {
 
     return true;
   });
+
+  // 🔥 핵심 수정: 지도 영역 필터링 추가
+  if (MAP_READY && MAP) {
+    const bounds = MAP.getBounds();
+    if (bounds) {
+      arr = arr.filter(item => {
+        const { lat, lng } = item.coords || {};
+        if (lat == null || lng == null) return false;
+        
+        try {
+          const latNum = parseFloat(lat);
+          const lngNum = parseFloat(lng);
+          
+          if (isNaN(latNum) || isNaN(lngNum)) return false;
+          
+          const latLng = new naver.maps.LatLng(latNum, lngNum);
+          return bounds.hasLatLng(latLng);
+        } catch (error) {
+          console.warn(`⚠️ 지도 영역 필터링 실패: lat=${lat}, lng=${lng}`, error);
+          return false;
+        }
+      });
+      
+      console.log(`🗺️ 지도 영역 필터링 적용: ${arr.length}개 매물`);
+    }
+  }
 
   sortListingsInPlace(arr);
   FILTERED_LISTINGS = arr;
@@ -295,6 +321,19 @@ function sortListingsInPlace(arr) {
   arr.sort((a, b) => {
     const fieldsA = a.fields || {};
     const fieldsB = b.fields || {};
+
+    // 🔥 추천매물 최상단 정렬
+    const isRecommendedA = (window.USER_RECOMMENDATIONS && window.USER_RECOMMENDATIONS.has) ? window.USER_RECOMMENDATIONS.has(a.id) : false;
+    const isRecommendedB = (window.USER_RECOMMENDATIONS && window.USER_RECOMMENDATIONS.has) ? window.USER_RECOMMENDATIONS.has(b.id) : false;
+    
+    // 추천매물이 아닌 경우에만 기존 정렬 로직 적용
+    if (isRecommendedA && !isRecommendedB) return -1; // A가 추천, B가 비추천 → A가 위로
+    if (!isRecommendedA && isRecommendedB) return 1;  // A가 비추천, B가 추천 → B가 위로
+    if (isRecommendedA && isRecommendedB) {
+      // 둘 다 추천매물인 경우 기존 정렬 로직 적용
+    } else {
+      // 둘 다 비추천매물인 경우 기존 정렬 로직 적용
+    }
 
     switch (sortMode) {
       case "latest":

@@ -45,6 +45,9 @@ let LAST_DISTANCE_CENTER = null;
 let CROSS_FLASH_TIMER = null;
 let _clusterClickDelegationBound = false;
 
+// 🔥 성능 최적화: 지도 영역 캐시
+let LAST_MAP_BOUNDS = null;
+
 // 상태 관련 상수
 const FIXED_STATUS = "생";
 const STATUS_COLORS = { "생": "#007AFF" };

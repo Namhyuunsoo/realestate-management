@@ -1,3 +1,16 @@
+/* 2차 사이드바 강제 고정 - 최우선 적용 */
+#secondaryPanel.sidepanel,
+#secondaryPanel.visible,
+#secondaryPanel[class*="sidepanel"] {
+  position: fixed !important;
+  top: 166px !important;
+  height: calc(100vh - 166px) !important;
+  right: 0 !important;
+  width: 280px !important;
+  z-index: 999 !important;
+  transform: translateX(0) !important;
+}
+
 /* 기본 리셋 & 바디 설정 */
 html, body {
   margin: 0;
@@ -28,27 +41,29 @@ html, body {
    상단 요소들 고정 높이 설정
 ────────────────────────────────────────────────── */
 #topbar {
-  flex: 0 0 40px; /* 고정 높이 40px */
+  position: absolute !important;
+  top: 0px !important;
+  height: 40px !important;
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 6px 12px;
   background: #e9f2ff;
   border-bottom: 1px solid #c9dfff;
-  position: sticky;
-  top: 0;
   z-index: 1000;
   width: 100%;
   min-height: 40px;
   max-height: 40px;
   box-sizing: border-box;
-  flex-shrink: 0;
   /* UI 변동 방지를 위한 추가 설정 */
   min-width: 100% !important;
   max-width: 100% !important;
 }
 
 #statusCounts {
+  position: absolute !important;
+  top: 40px !important;
+  height: 34px !important;
   display: flex;
   justify-content: flex-start;
   align-items: center;
@@ -62,7 +77,6 @@ html, body {
   flex-shrink: 0; /* 크기 고정 */
   /* UI 변동 방지를 위한 추가 설정 */
   box-sizing: border-box !important;
-  position: relative !important;
   z-index: 1000 !important;
   width: 100% !important;
   min-width: 100% !important;
@@ -70,9 +84,9 @@ html, body {
 }
 
 #topFilterBar {
-  flex: 0 0 92px; /* 고정 높이 92px */
-  position: sticky;
-  top: 74px; /* topbar(40px) + statusCounts(34px) */
+  position: absolute !important;
+  top: 74px !important; /* topbar(40px) + statusCounts(34px) */
+  height: 92px !important;
   z-index: 1000;
   min-height: 92px;
   max-height: 92px;
@@ -479,7 +493,8 @@ html, body {
 /* ----------------- 리스트 ----------------- */
 #listingList {
   list-style:none;
-  margin:0; padding:0;
+  margin:0; 
+  padding:0;
 }
 #listingList li {
   padding:10px 12px 12px;
@@ -1673,40 +1688,6 @@ div:has(> .cluster-bubble) {
   transform: translateY(-1px);
 }
 
-/* 모바일 환경에서의 앱 종료 확인 다이얼로그 최적화 */
-@media (max-width: 768px) {
-  .exit-confirm-dialog {
-    width: 90%;
-    max-width: 300px;
-  }
-  
-  .exit-confirm-header {
-    padding: 20px 16px 12px;
-  }
-  
-  .exit-confirm-header h3 {
-    font-size: 17px;
-  }
-  
-  .exit-confirm-body {
-    padding: 16px;
-  }
-  
-  .exit-confirm-message {
-    font-size: 14px;
-    margin-bottom: 20px;
-  }
-  
-  .exit-confirm-buttons {
-    gap: 10px;
-  }
-  
-  .exit-confirm-btn {
-    padding: 10px 14px;
-    font-size: 14px;
-    min-height: 40px;
-  }
-}
 
 .modal-overlay.show {
   opacity: 1;
@@ -1894,123 +1875,7 @@ div:has(> .cluster-bubble) {
   margin-left: auto; /* 우측 정렬 */
 }
 
-/* 모바일 환경 전체 앱 높이 조정 */
-@media (max-width: 768px) {
-  /* 전체 앱 컨테이너 높이 조정 */
-  body {
-    height: 100% !important;
-    max-height: 100% !important;
-    overflow: hidden !important;
-    position: fixed !important;
-    top: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
-    bottom: 0 !important;
-    width: 100% !important;
-  }
-  
-  /* 메인 레이아웃 높이 조정 */
-  #layout {
-    height: 100% !important;
-    max-height: 100% !important;
-    display: flex !important;
-    flex-direction: column !important;
-    position: relative !important;
-    overflow: hidden !important;
-    width: 100% !important;
-  }
-  
-  /* 메인 콘텐츠 높이 조정 */
-  #mainContent {
-    flex: 1 !important;
-    width: 100% !important;
-    height: 100% !important;
-    position: relative !important;
-    order: 1 !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
-    top: 0 !important;
-    bottom: 0 !important;
-    overflow: hidden !important;
-  }
-  
-  /* 지도 컨테이너 높이 조정 */
-  #map {
-    height: 100% !important;
-    max-height: 100% !important;
-    width: 100% !important;
-    position: relative !important;
-  }
-  
-  /* 헤더 높이 조정 */
-  header {
-    padding: 8px 12px !important;
-    min-height: 40px !important;
-    max-height: 40px !important;
-    background: white !important;
-    border-bottom: 1px solid #ddd !important;
-    z-index: 100 !important;
-    position: relative !important;
-  }
-  
-  /* 상태 카운트 높이 조정 */
-  #statusCounts {
-    padding: 4px 12px !important;
-    min-height: 30px !important;
-    max-height: 30px !important;
-    background: #f8f9fa !important;
-    border-bottom: 1px solid #ddd !important;
-    z-index: 99 !important;
-    position: relative !important;
-  }
-  
-  /* 모바일에서 글씨 크기 통일 */
-  #listingList li {
-    font-size: 14px !important; /* 글씨 크기 통일 */
-    line-height: 1.4 !important; /* 줄 간격 통일 */
-  }
-  
-  #listingList .card-line1,
-  #listingList .card-line2,
-  #listingList .card-line3,
-  #listingList .card-line4 {
-    font-size: 14px !important; /* 글씨 크기 통일 */
-  }
-  
-  #listingList .card-line5 {
-    font-size: 13px !important; /* 약간 작게 */
-  }
-  
-  .cluster-list li,
-  .cluster-list .card-line1,
-  .cluster-list .card-line2,
-  .cluster-list .card-line3,
-  .cluster-list .card-line4 {
-    font-size: 14px !important; /* 글씨 크기 통일 */
-    line-height: 1.4 !important; /* 줄 간격 통일 */
-  }
-  
-  .cluster-list .card-line5 {
-    font-size: 13px !important; /* 약간 작게 */
-  }
-}
 
-/* 모바일에서 시트 컨트롤 완전 숨기기 */
-@media (max-width: 768px) {
-  .sheet-controls {
-    display: none !important;
-    height: 0 !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    overflow: hidden !important;
-    visibility: hidden !important;
-    opacity: 0 !important;
-    position: absolute !important;
-    left: -9999px !important;
-  }
-}
 
 .sheet-buttons {
   display: flex;
@@ -2413,58 +2278,53 @@ html, body {
   transition: opacity 0.3s ease, visibility 0.3s ease;
 }
 
-/* 2차 사이드바 위치 조정 */
+/* 2차 사이드바 위치 조정 - 상단 고정, 하단 반응형 */
 #secondaryPanel {
   position: absolute !important;
-  top: 0 !important;
-  height: 100% !important;
+  top: 166px !important; /* 상단 고정 */
+  height: calc(100vh - 166px) !important; /* 하단 반응형 */
   z-index: 1000 !important;
   transition: left 0.3s ease !important;
   left: 280px !important; /* 기본 위치: 1차 사이드바 바로 옆 */
 }
 
-/* 1차 사이드바 접힘 시 2차 사이드바 위치 조정 */
-#sidebar.collapsed ~ #secondaryPanel {
+/* 1차 사이드바 위치 조정 - 상단 고정, 하단 반응형 */
+#sidebar {
+  position: absolute !important;
+  top: 166px !important; /* 상단 고정 */
+  height: calc(100vh - 166px) !important; /* 하단 반응형 */
+  left: 0 !important;
+  width: 280px !important;
+  z-index: 1000 !important;
+  transition: left 0.3s ease !important;
+}
+
+/* 사이드바 접힌 상태 */
+#sidebar.collapsed {
+  width: 20px !important;
+  min-width: 20px !important;
+  max-width: 20px !important;
+}
+
+/* 메인 콘텐츠(지도) - 상단 고정, 하단 반응형 */
+#mainContent {
+  position: absolute !important;
+  top: 166px !important; /* 상단 고정 */
+  height: calc(100vh - 166px) !important; /* 하단 반응형 */
+  left: 280px !important; /* 1차 사이드바 옆 */
+  right: 0 !important;
+  z-index: 100 !important;
+  transition: left 0.3s ease !important;
+}
+
+/* 1차 사이드바 접힘 시 지도 영역 확장 */
+#sidebar.collapsed ~ #mainContent {
   left: 20px !important; /* 1차 사이드바 접힌 너비만큼 */
 }
 
-/* 1차 사이드바 펼침 시 2차 사이드바 위치 조정 */
-#sidebar:not(.collapsed) ~ #secondaryPanel {
+/* 1차 사이드바 펼침 시 지도 영역 조정 */
+#sidebar:not(.collapsed) ~ #mainContent {
   left: 280px !important; /* 1차 사이드바 펼친 너비만큼 */
-}
-
-/* 메인 콘텐츠(지도)는 오른쪽 고정 */
-#mainContent {
-  position: relative !important;
-  flex: 1 !important;
-  transition: width 0.3s ease !important;
-  margin-left: 0 !important;
-  width: auto !important;
-  left: auto !important;
-  transform: none !important;
-  /* 지도를 오른쪽에 고정 */
-  margin-right: 0 !important;
-  right: 0 !important;
-}
-
-/* 1차 사이드바 접힘 시 지도 영역 확장 */
-#sidebar.collapsed ~ #mainContent {
-  width: calc(100% + 260px) !important; /* 280px - 20px = 260px만큼 확장 */
-}
-
-/* 1차 사이드바 펼침 시 지도 영역 조정 */
-#sidebar:not(.collapsed) ~ #mainContent {
-  width: auto !important;
-}
-
-/* 1차 사이드바 접힘 시 지도 영역 확장 */
-#sidebar.collapsed ~ #mainContent {
-  margin-left: 0;
-}
-
-/* 1차 사이드바 펼침 시 지도 영역 조정 */
-#sidebar:not(.collapsed) ~ #mainContent {
-  margin-left: 0;
 }
 
   /* 모바일 환경에서 사이드바 높이 조정 */
@@ -2823,7 +2683,7 @@ html, body {
   #mainContent {
     flex: 1 !important;
     width: 100% !important;
-    height: calc(100vh - env(safe-area-inset-bottom)) !important; /* 하단바 고려 */
+    height: 100vh !important;
     position: relative !important;
     order: 1 !important;
     /* 사이드바와 완전히 독립적으로 동작 */
@@ -3064,10 +2924,10 @@ html, body {
   /* 2차 사이드바 위치 조정 */
   #secondaryPanel {
     position: fixed !important;
-    top: 0 !important;
+    top: 166px !important;
     right: 0 !important;
     width: 280px !important;
-    height: 100vh !important;
+    height: calc(100vh - 166px) !important;
     transform: translateX(100%) !important;
     transition: transform 0.3s ease !important;
     z-index: 999 !important;
@@ -3084,10 +2944,10 @@ html, body {
     #sidebar.collapsed + #secondaryPanel,
     #sidebar:not(.collapsed) ~ #secondaryPanel,
     #sidebar:not(.collapsed) + #secondaryPanel {
-      height: calc(100vh - env(safe-area-inset-bottom)) !important; /* 하단바 고려 */
-      max-height: calc(100vh - env(safe-area-inset-bottom)) !important; /* 하단바 고려 */
+      height: 100vh !important;
+      max-height: 100vh !important;
       top: 0 !important;
-      bottom: env(safe-area-inset-bottom) !important; /* 하단바 고려 */
+      bottom: 0 !important;
     }
   }
   @media (max-width: 768px) {

@@ -64,7 +64,7 @@ function placeMarkers(arr) {
             const marker = new naver.maps.Marker({
               position: pos,
               map: MAP,
-              icon: { content: createMarkerIcon(color, item.id === SELECTED_MARKER_ID, getBriefingStatus(item.id), window.isRecommended ? window.isRecommended(item.id) : false) }
+              icon: { content: createMarkerIcon(color, item.id === SELECTED_MARKER_ID, getBriefingStatus(item.id), (window.USER_RECOMMENDATIONS && window.USER_RECOMMENDATIONS.has) ? window.USER_RECOMMENDATIONS.has(item.id) : false) }
             });
             marker._listingId = item.id;
             
@@ -159,7 +159,7 @@ function placeMarkers(arr) {
     const marker = new naver.maps.Marker({
       position: pos,
       map: null,
-      icon: { content: createMarkerIcon(color, item.id === SELECTED_MARKER_ID, getBriefingStatus(item.id), window.isRecommended ? window.isRecommended(item.id) : false) }
+      icon: { content: createMarkerIcon(color, item.id === SELECTED_MARKER_ID, getBriefingStatus(item.id), (window.USER_RECOMMENDATIONS && window.USER_RECOMMENDATIONS.has) ? window.USER_RECOMMENDATIONS.has(item.id) : false) }
     });
     marker._listingId = item.id;
     validMarkers++;
@@ -200,6 +200,7 @@ function placeMarkers(arr) {
         bindClusterClickDelegation();
       }
     }, 500);
+    
   }
 
   // MarkerClustering이 로드될 때까지 대기
@@ -238,15 +239,15 @@ function placeMarkers(arr) {
             onhold: 0
           };
           
-          // 추천매물 개수 확인
+          // 🔥 최소개선: 추천매물 개수 확인 강화
           let recommendedCount = 0;
           
           clusterMembers.forEach(marker => {
             const status = getBriefingStatus(marker._listingId);
             briefingStats[status]++;
             
-            // 추천매물 확인
-            if (window.isRecommended && window.isRecommended(marker._listingId)) {
+            // 추천매물 확인 - 추천 데이터가 로드되어 있으면 즉시 확인
+            if (window.USER_RECOMMENDATIONS && window.USER_RECOMMENDATIONS.has && window.USER_RECOMMENDATIONS.has(marker._listingId)) {
               recommendedCount++;
             }
           });
@@ -312,7 +313,14 @@ function setActiveMarker(id){
     const color = STATUS_COLORS[LISTINGS.find(x => x.id === m._listingId)?.status_raw] || "#007AFF";
     const isActive = (m._listingId === id);
     const briefingStatus = getBriefingStatus(m._listingId);
-    m.setIcon({ content: createMarkerIcon(color, isActive, briefingStatus, window.isRecommended ? window.isRecommended(m._listingId) : false) });
+    
+    // 🔥 추천 상태 확인 강화
+    let isRecommended = false;
+    if (window.USER_RECOMMENDATIONS && window.USER_RECOMMENDATIONS.has) {
+      isRecommended = window.USER_RECOMMENDATIONS.has(m._listingId);
+    }
+    
+    m.setIcon({ content: createMarkerIcon(color, isActive, briefingStatus, isRecommended) });
     // UI 변동 방지를 위해 z-index 변경 최소화
     // m.setZIndex(isActive ? 9999 : 1);
     m.setZIndex(isActive ? 100 : 1); // 더 낮은 z-index 사용
@@ -337,7 +345,13 @@ function highlightMarkerTemp(id, on) {
         m.setZIndex(50); // 더 낮은 z-index 사용
       } else {
         // 마우스아웃 시 원래 상태로 복원 (브리핑 상태 포함)
-        m.setIcon({ content: createMarkerIcon(color, isActive, briefingStatus, window.isRecommended ? window.isRecommended(m._listingId) : false) });
+        // 🔥 추천 상태 확인 강화
+        let isRecommended = false;
+        if (window.USER_RECOMMENDATIONS && window.USER_RECOMMENDATIONS.has) {
+          isRecommended = window.USER_RECOMMENDATIONS.has(m._listingId);
+        }
+        
+        m.setIcon({ content: createMarkerIcon(color, isActive, briefingStatus, isRecommended) });
         // UI 변동 방지를 위해 z-index 변경 최소화
         // m.setZIndex(isActive ? 9999 : 1);
         m.setZIndex(isActive ? 100 : 1); // 더 낮은 z-index 사용
@@ -527,7 +541,7 @@ function updateMapMarkerRecommendation(listingId) {
   const color = STATUS_COLORS[LISTINGS.find(x => x.id === listingId)?.status_raw] || "#007AFF";
   const isActive = (marker._listingId === SELECTED_MARKER_ID);
   const briefingStatus = getBriefingStatus(listingId);
-  const isRecommended = window.isRecommended ? window.isRecommended(listingId) : false;
+  const isRecommended = (window.USER_RECOMMENDATIONS && window.USER_RECOMMENDATIONS.has) ? window.USER_RECOMMENDATIONS.has(listingId) : false;
   
   marker.setIcon({ content: createMarkerIcon(color, isActive, briefingStatus, isRecommended) });
 }
@@ -546,7 +560,7 @@ function updateAllMarkersRecommendationStatus() {
     const color = STATUS_COLORS[LISTINGS.find(x => x.id === marker._listingId)?.status_raw] || "#007AFF";
     const isActive = (marker._listingId === SELECTED_MARKER_ID);
     const briefingStatus = getBriefingStatus(marker._listingId);
-    const isRecommended = window.isRecommended ? window.isRecommended(marker._listingId) : false;
+    const isRecommended = (window.USER_RECOMMENDATIONS && window.USER_RECOMMENDATIONS.has) ? window.USER_RECOMMENDATIONS.has(marker._listingId) : false;
     
     try {
       marker.setIcon({ content: createMarkerIcon(color, isActive, briefingStatus, isRecommended) });
@@ -575,7 +589,7 @@ function updateClusterBubblesRecommendationStatus() {
     // 추천매물 개수 확인
     let recommendedCount = 0;
     clusterMembers.forEach(marker => {
-      if (window.isRecommended && window.isRecommended(marker._listingId)) {
+      if ((window.USER_RECOMMENDATIONS && window.USER_RECOMMENDATIONS.has) && window.USER_RECOMMENDATIONS.has(marker._listingId)) {
         recommendedCount++;
       }
     });

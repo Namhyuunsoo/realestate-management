@@ -28,7 +28,14 @@ async function loadRecommendations() {
     RECOMMENDATIONS = data.all_recommendations || {};
     USER_RECOMMENDATIONS = new Set(data.user_recommended_listings || []);
     
+    // 🔥 핵심 수정: 전역 변수 동기화
+    window.USER_RECOMMENDATIONS = USER_RECOMMENDATIONS;
+    window.RECOMMENDATIONS = RECOMMENDATIONS;
+    
     console.log(`✅ 추천매물 데이터 로드됨: ${Object.keys(RECOMMENDATIONS).length}개 매물`);
+    
+    // 전역 변수 동기화 완료를 보장
+    return Promise.resolve();
     
     // 추천 데이터 로드 완료 후 클러스터 버블 즉시 업데이트
     setTimeout(() => {
@@ -557,7 +564,7 @@ function getRecommendationData(listingId) {
   return RECOMMENDATIONS[listingId];
 }
 
-// 전역 함수로 export
+// 전역 함수 및 변수로 export
 window.loadRecommendations = loadRecommendations;
 window.toggleRecommendation = toggleRecommendation;
 window.createRecommendationStar = createRecommendationStar;
@@ -566,3 +573,5 @@ window.updateRecommendationUI = updateRecommendationUI;
 window.syncAllRecommendationUI = syncAllRecommendationUI;
 window.isRecommended = isRecommended;
 window.getRecommendationData = getRecommendationData;
+window.USER_RECOMMENDATIONS = USER_RECOMMENDATIONS;
+window.RECOMMENDATIONS = RECOMMENDATIONS;

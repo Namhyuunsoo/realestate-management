@@ -1,0 +1,30 @@
+warning: in the working copy of 'app/static/js/modules/core/globals.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'app/static/js/modules/data/recommendations.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'app/static/js/modules/map/map-clustering.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'app/static/js/modules/map/map-markers.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'app/static/js/modules/ui/initialization.js', LF will be replaced by CRLF the next time Git touches it
+.cursorrules
+app/models/proposal_schema.py
+app/services/briefing_store.py
+app/static/css/style.css
+app/static/css/style.css.bak
+app/static/css/style_old.css
+app/static/js/modules/core/globals.js
+app/static/js/modules/core/utils.js
+app/static/js/modules/data/listings.js
+app/static/js/modules/data/recommendations.js
+app/static/js/modules/map/map-clustering.js
+app/static/js/modules/map/map-core.js
+app/static/js/modules/map/map-markers.js
+app/static/js/modules/ui/initialization.js
+data/raw/all_customers.xlsx
+data/raw/darkbirth_customerList.xlsx
+"data/raw/\352\261\264\353\254\274\355\206\240\354\247\200\353\247\244\353\247\244.xlsx"
+"data/raw/\352\265\254\353\266\204\354\203\201\352\260\200\353\247\244\353\247\244.xlsx"
+"data/raw/\354\203\201\352\260\200\354\236\204\353\214\200\354\260\250.xlsx"
+"data/raw/\354\247\200\353\217\204\354\272\220\354\213\234.xlsx"
+data/users.json
+data/users.json.backup
+mkdir
+payload.json
+tatus --porcelain
