@@ -296,7 +296,10 @@ function hideLoginScreen() {
 
 function setCurrentUser(email) {
   currentUser = email;
+  window.currentUser = email; // 전역 변수 동기화 보장
   localStorage.setItem("X-USER", email);
+  
+  console.log('✅ setCurrentUser 호출됨:', email, 'currentUser:', currentUser, 'window.currentUser:', window.currentUser);
   
   // 사용자 역할 확인 (서버에서 최신 정보 가져오기)
   fetch('/api/me', {
@@ -736,7 +739,7 @@ function handleLogoutClick(e) {
   }
   
   // 모든 패널 숨기기
-  const panels = ["fullBriefingListPanel", "fullListPanel", "secondaryPanel"];
+  const panels = ["fullBriefingListPanel", "fullListPanel"];
   panels.forEach(panelId => {
     const panel = document.getElementById(panelId);
     if (panel) {
@@ -744,6 +747,12 @@ function handleLogoutClick(e) {
       panel.style.display = "none";
     }
   });
+  
+  // 2차 사이드바는 별도 처리 (closeSecondaryPanel 함수 사용)
+  const secondaryPanel = document.getElementById("secondaryPanel");
+  if (secondaryPanel && typeof closeSecondaryPanel === 'function') {
+    closeSecondaryPanel();
+  }
   
   // UI 상태 초기화
   if (typeof UI_STATE !== 'undefined') {

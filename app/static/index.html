@@ -5,9 +5,48 @@
   <title>매물 프로토타입 v0.3</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <link rel="icon" href="data:,">
-  <link rel="stylesheet" href="/static/css/style.css?v=20250803">
+  <script>
+    // 브라우저/앱 속성으로 모바일 감지 (CSS 로드 전에 실행)
+    function isMobileDevice() {
+      const ua = navigator.userAgent;
+      
+      // 모바일 기기 감지 (Android, iPhone, iPad 등)
+      const isMobileOS = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua);
+      
+      // 모바일 브라우저/앱 감지
+      const isMobileBrowser = ua.includes('Mobile') || ua.includes('NAVER(inapp');
+      
+      return isMobileOS || isMobileBrowser;
+    }
+    
+    // PC CSS 먼저 로드
+    const pcLink = document.createElement('link');
+    pcLink.rel = 'stylesheet';
+    pcLink.href = '/static/css/style.css?v=20250803';
+    document.head.appendChild(pcLink);
+    
+    // 모바일이면 모바일 CSS 추가 로드 (오버라이드용)
+    if (isMobileDevice()) {
+      const mobileLink = document.createElement('link');
+      mobileLink.rel = 'stylesheet';
+      mobileLink.href = '/static/css/style-mobile.css?v=20250803';
+      document.head.appendChild(mobileLink);
+      console.log('📱 모바일 디바이스 감지 - PC CSS + 모바일 CSS 로드');
+    } else {
+      console.log('💻 PC 디바이스 감지 - PC CSS만 로드');
+    }
+    
+    // 모바일 환경에서는 매물리스트 모달 버튼 사용
+    if (isMobileDevice()) {
+      console.log('📱 모바일 환경 감지 - 매물리스트 모달 버튼 사용');
+    }
+  </script>
   <script src="/static/js/main-new.js"></script>
   <script src="/static/js/listing-add.js"></script>
+  <script src="/static/js/customer-add.js"></script>
+  <script src="/static/js/modules/ui/mobile-buttons.js"></script>
+  <script src="/static/js/modules/ui/filter-modal.js"></script>
+  <script src="/static/js/customer-list-modal.js"></script>
   <script>
     async function loadNaverMapsAPI() {
       return new Promise(async (resolve, reject) => {
@@ -227,8 +266,8 @@
           <form id="listingAddForm">
             <div class="form-row">
               <div class="form-group">
-                <label for="접수날짜">접수날짜</label>
-                <input type="text" id="접수날짜" name="접수날짜" placeholder="자동입력" readonly>
+                <label for="접수일">접수일</label>
+                <input type="text" id="접수일" name="접수일" placeholder="자동입력" readonly>
               </div>
               <div class="form-group">
                 <label for="지역">지역</label>
@@ -340,6 +379,149 @@
       </div>
     </div>
 
+    <!-- 고객등록 모달 -->
+    <div id="customerAddModal" class="modal hidden">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>고객등록</h2>
+          <button class="modal-close" id="closeCustomerModal">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div id="customerFormContainer">
+            <!-- PC버전의 renderCustomerForm() 결과가 여기에 렌더링됩니다 -->
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" id="submitCustomer" class="btn-primary">등록</button>
+          <button type="button" id="cancelCustomer" class="btn-secondary">취소</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 매물리스트 모달 -->
+    <div id="listingListModal" class="modal hidden">
+      <div class="modal-content listing-list-modal">
+        <!-- 드래그 핸들 -->
+        <div class="drag-handle" id="listingListDragHandle">
+          <div class="drag-indicator"></div>
+        </div>
+        
+        <div class="modal-header">
+          <h2>매물리스트</h2>
+          <button class="modal-close" id="closeListingListModal">&times;</button>
+        </div>
+        
+        <div class="modal-body">
+          <div id="listingListContainer">
+            <!-- PC버전의 renderListingList() 결과가 여기에 렌더링됩니다 -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 필터 모달 -->
+    <div id="filterModal" class="modal hidden">
+      <div class="modal-content filter-modal">
+        <div class="modal-header">
+          <h2>매물 필터</h2>
+          <button class="modal-close" id="closeFilterModal">&times;</button>
+        </div>
+        <div class="modal-body">
+          <form id="filterForm">
+            <!-- 필터 입력 필드들 -->
+            <div class="filter-grid">
+              <div class="filter-row">
+                <div class="filter-group">
+                  <label for="modal_tf_region">지역</label>
+                  <input type="text" id="modal_tf_region" placeholder="쉼표로 복수검색">
+                </div>
+                <div class="filter-group">
+                  <label for="modal_tf_jibun">지번</label>
+                  <input type="text" id="modal_tf_jibun" placeholder="예: 123-45, 12-3">
+                </div>
+                <div class="filter-group">
+                  <label for="modal_tf_building">건물명</label>
+                  <input type="text" id="modal_tf_building" placeholder="건물명">
+                </div>
+              </div>
+              
+              <div class="filter-row">
+                <div class="filter-group">
+                  <label for="modal_tf_floor">층수</label>
+                  <input type="text" id="modal_tf_floor" placeholder="단일 또는 a-b">
+                </div>
+                <div class="filter-group">
+                  <label for="modal_tf_store">가게명</label>
+                  <input type="text" id="modal_tf_store" placeholder="가게명">
+                </div>
+                <div class="filter-group">
+                  <label for="modal_tf_area_sale">분양</label>
+                  <input type="text" id="modal_tf_area_sale" placeholder="분양평 (>=값 또는 a‑b)">
+                </div>
+              </div>
+              
+              <div class="filter-row">
+                <div class="filter-group">
+                  <label for="modal_tf_area_real">실평수</label>
+                  <input type="text" id="modal_tf_area_real" placeholder="실평수 (>=값 또는 a‑b)">
+                </div>
+                <div class="filter-group">
+                  <label for="modal_tf_deposit">보증금</label>
+                  <input type="text" id="modal_tf_deposit" placeholder="보증금 (<=값 또는 a‑b)">
+                </div>
+                <div class="filter-group">
+                  <label for="modal_tf_rent">월세</label>
+                  <input type="text" id="modal_tf_rent" placeholder="월세 (<=값 또는 a‑b)">
+                </div>
+              </div>
+              
+              <div class="filter-row">
+                <div class="filter-group">
+                  <label for="modal_tf_premium">권리금</label>
+                  <input type="text" id="modal_tf_premium" placeholder="권리금 (<=값 또는 a‑b)">
+                </div>
+                <div class="filter-group">
+                  <label for="modal_tf_note">비고</label>
+                  <input type="text" id="modal_tf_note" placeholder="비고">
+                </div>
+                <div class="filter-group">
+                  <label for="modal_tf_manager">담당자</label>
+                  <input type="text" id="modal_tf_manager" placeholder="담당자">
+                </div>
+              </div>
+              
+              <div class="filter-row">
+                <div class="filter-group">
+                  <label for="modal_tf_region2">지역2</label>
+                  <input type="text" id="modal_tf_region2" placeholder="지역2">
+                </div>
+                <div class="filter-group">
+                  <label for="modal_tf_phone">연락처</label>
+                  <input type="text" id="modal_tf_phone" placeholder="연락처">
+                </div>
+                <div class="filter-group">
+                  <label for="modal_tf_client">의뢰인</label>
+                  <input type="text" id="modal_tf_client" placeholder="의뢰인">
+                </div>
+              </div>
+              
+              <div class="filter-row">
+                <div class="filter-group">
+                  <label for="modal_tf_note3">비고3</label>
+                  <input type="text" id="modal_tf_note3" placeholder="비고3">
+                </div>
+              </div>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" id="applyFilterBtn" class="btn-primary">적용</button>
+          <button type="button" id="resetFilterBtn" class="btn-secondary">초기화</button>
+          <button type="button" id="cancelFilterBtn" class="btn-secondary">취소</button>
+        </div>
+      </div>
+    </div>
+
     <!-- 컨텍스트 메뉴 -->
     <div id="contextMenu" class="context-menu">
       <div class="context-menu-item" data-action="edit">
@@ -351,8 +533,8 @@
       </div>
     </div>
 
-    <!-- 상단 필터바 -->
-    <section id="topFilterBar" class="top-filter">
+    <!-- 상단 필터바 (모바일에서 숨김) -->
+    <section id="topFilterBar" class="top-filter mobile-hidden">
       <!-- 라벨 행 -->
       <div class="tf-row tf-labels">
         <div>지역</div><div>지번</div><div>건물명</div><div>층수</div><div>가게명</div>
@@ -529,8 +711,11 @@
               <button id="cadastralBtn" class="map-control-btn" title="위성지도">
                 <span class="control-icon">🛰️</span>
               </button>
-              <button id="distanceBtn" class="map-control-btn" title="거리제기">
-                <span class="control-icon">📏</span>
+              <button id="filterBtn" class="map-control-btn" title="필터">
+                <span class="control-icon">🔍</span>
+              </button>
+              <button id="clearCustomerFilterBtn" class="map-control-btn" title="고객필터해제" style="display: none;">
+                <span class="control-icon">❌</span>
               </button>
             </div>
           </div>

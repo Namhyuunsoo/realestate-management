@@ -6,8 +6,41 @@
  * ===== 상세 패널 UI =====
  **************************************/
 
-function renderDetailPanel(item) {
-  // showSecondaryPanel 함수 사용 (UI 변동 방지)
+async function renderDetailPanel(item) {
+  // 모바일 디바이스인지 확인
+  function isMobileDevice() {
+    const ua = navigator.userAgent;
+    const isMobileOS = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua);
+    const isMobileBrowser = ua.includes('Mobile') || ua.includes('NAVER(inapp');
+    return isMobileOS || isMobileBrowser;
+  }
+  
+  // 모바일 환경에서는 기존 매물리스트 모달 사용
+  if (isMobileDevice() || window.MOBILE_APP) {
+    console.log('📱 모바일 환경에서 매물리스트 모달 내 상세정보 표시');
+    
+    // 기존 매물리스트 모달 매니저 사용
+    if (window.listingListModalManager && typeof window.listingListModalManager.showListingDetail === 'function') {
+      // 모달이 열려있지 않으면 먼저 모달 열기
+      const listingListModal = document.getElementById('listingListModal');
+      const isModalOpen = listingListModal && !listingListModal.classList.contains('hidden');
+      
+      if (!isModalOpen) {
+        await window.listingListModalManager.openModal();
+        // 모달이 열린 후 상세정보 표시
+        setTimeout(() => {
+          window.listingListModalManager.showListingDetail(item);
+        }, 100);
+      } else {
+        window.listingListModalManager.showListingDetail(item);
+      }
+    } else {
+      console.error('listingListModalManager를 찾을 수 없습니다');
+    }
+    return;
+  }
+  
+  // PC버전: 2차 사이드바 열기
   showSecondaryPanel('viewListingDetail');
   
   const viewListingDetail = document.getElementById('viewListingDetail');
@@ -34,8 +67,8 @@ function renderDetailPanel(item) {
     
     <div style="background: white; border: 1px solid #e0e0e0; border-radius: 8px; padding: 12px; height: calc(100vh - 200px); overflow-y: auto;">
       <div class="detail-row" style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #f0f0f0;">
-        <span class="label" style="font-weight: 600; color: #333; min-width: 70px; font-size: 13px;">접수날짜</span>
-        <span class="value" style="color: #666; font-size: 13px;">${escapeHtml(fields['접수날짜'] || '접수날짜 없음')}</span>
+        <span class="label" style="font-weight: 600; color: #333; min-width: 70px; font-size: 13px;">접수일</span>
+        <span class="value" style="color: #666; font-size: 13px;">${escapeHtml(fields['접수일'] || '접수일 없음')}</span>
       </div>
       <div class="detail-row" style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #f0f0f0;">
         <span class="label" style="font-weight: 600; color: #333; min-width: 70px; font-size: 13px;">지역</span>
@@ -180,4 +213,5 @@ function toggleSensitiveField(fieldName) {
 
 // 상세 패널 UI 관련 함수들을 전역으로 export
 window.renderDetailPanel = renderDetailPanel;
+
 window.toggleSensitiveField = toggleSensitiveField; 

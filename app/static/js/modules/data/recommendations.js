@@ -16,6 +16,21 @@ let USER_RECOMMENDATIONS = new Set(); // 현재 사용자가 추천한 매물 ID
  */
 async function loadRecommendations() {
   try {
+    // 인증 상태 확인 및 강화
+    if (!currentUser) {
+      const savedUser = localStorage.getItem('X-USER');
+      if (savedUser) {
+        currentUser = savedUser;
+        window.currentUser = savedUser;
+        console.log('🔄 추천 데이터 로드: currentUser 복원:', savedUser);
+      } else {
+        console.log('❌ 추천 데이터 로드: 사용자 인증 정보가 없습니다');
+        return false;
+      }
+    }
+    
+    console.log('📱 추천 데이터 로드: currentUser 확인됨:', currentUser);
+    
     const response = await fetch('/api/recommendations', {
       headers: { "X-User": currentUser }
     });
@@ -34,10 +49,7 @@ async function loadRecommendations() {
     
     console.log(`✅ 추천매물 데이터 로드됨: ${Object.keys(RECOMMENDATIONS).length}개 매물`);
     
-    // 전역 변수 동기화 완료를 보장
-    return Promise.resolve();
-    
-    // 추천 데이터 로드 완료 후 클러스터 버블 즉시 업데이트
+    // 추천 데이터 로드 완료 후 클러스터 버블 업데이트
     setTimeout(() => {
       if (window.updateClusterBubblesRecommendationStatus) {
         window.updateClusterBubblesRecommendationStatus();
@@ -507,6 +519,11 @@ function updateRecommendationUI(listingId) {
   if (window.updateMapMarkerRecommendation) {
     window.updateMapMarkerRecommendation(listingId);
   }
+  
+  // 모바일 매물리스트 모달의 별표 업데이트
+  if (window.listingListModalManager && window.listingListModalManager.syncRecommendationUI) {
+    window.listingListModalManager.syncRecommendationUI();
+  }
 }
 
 /**
@@ -544,6 +561,11 @@ function syncAllRecommendationUI() {
   // 클러스터 버블의 추천 상태 업데이트
   if (window.updateClusterBubblesRecommendationStatus) {
     window.updateClusterBubblesRecommendationStatus();
+  }
+  
+  // 모바일 매물리스트 모달 동기화
+  if (window.listingListModalManager && window.listingListModalManager.syncRecommendationUI) {
+    window.listingListModalManager.syncRecommendationUI();
   }
   
   window._recommendationUISynced = true;

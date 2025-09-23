@@ -33,16 +33,26 @@ window.initializeApp = async function() {
   try {
     if (window.checkSessionAndAutoLogin) {
       await window.checkSessionAndAutoLogin();
-      console.log('✅ 세션 체크 및 자동 로그인 완료');
+      // console.log('✅ 세션 체크 및 자동 로그인 완료');
     } else if (window.syncUserFromSession) {
       await window.syncUserFromSession();
-      console.log('✅ 사용자 세션 동기화 완료');
+      // console.log('✅ 사용자 세션 동기화 완료');
     } else if (window.loadUserFromStorage) {
       window.loadUserFromStorage();
       console.log('ℹ️ localStorage에서 사용자 정보 로드');
     }
   } catch (error) {
     console.warn('⚠️ 사용자 세션 동기화 실패:', error);
+    
+    // 에러 발생 시에도 localStorage에서 사용자 정보 복원 시도
+    if (!currentUser) {
+      const savedUser = localStorage.getItem('X-USER');
+      if (savedUser) {
+        currentUser = savedUser;
+        window.currentUser = savedUser;
+        console.log('🔄 에러 후 localStorage에서 currentUser 복원:', savedUser);
+      }
+    }
   }
 
   // 고객 패널 관련 DOM 요소들
@@ -75,25 +85,47 @@ window.initializeApp = async function() {
 
   // 2) 일괄 뷰 전환 함수
   function showSecondaryPanel(viewId) {
+    console.log('🔍 showSecondaryPanel 호출됨 - viewId:', viewId);
+    
     hideAllSecondaryViews();
     const panel = document.getElementById('secondaryPanel');
     const view  = document.getElementById(viewId);
     
-    if (view) view.classList.remove('hidden');
+    if (!panel) {
+      console.error('❌ secondaryPanel 요소를 찾을 수 없습니다');
+      return;
+    }
+    
+    if (!view) {
+      console.error('❌ view 요소를 찾을 수 없습니다 - viewId:', viewId);
+      return;
+    }
+    
+    // 뷰 표시
+    view.classList.remove('hidden');
+    console.log('✅ 뷰 표시됨:', viewId);
     
     // 패널 열 때 히스토리 상태 추가
     window.history.pushState({ panel: 'secondaryPanel', view: viewId }, '', '/');
     console.log('📱 2차 사이드바 열기 - 히스토리 상태 추가:', viewId);
     
-    // CSS transform만 사용하여 표시 (UI 변동 방지)
-    // panel.style.display = 'block'; // UI 변동 방지를 위해 제거
+    // CSS 클래스 변경
     panel.classList.remove('hidden');
     panel.classList.add('visible');
+    
+    // 강제로 display와 transform 설정 (다른 스크립트가 방해하는 경우 대비)
+    panel.style.display = 'block';
+    panel.style.transform = 'translateX(280px)';
+    panel.style.visibility = 'visible';
+    panel.style.opacity = '1';
+    
+    console.log('✅ 패널 클래스 변경됨 - hidden 제거, visible 추가');
+    console.log('✅ 강제 스타일 설정됨 - display: block, transform: translateX(280px)');
     
     // 1차 사이드바는 그대로 유지 (크기나 위치 변경하지 않음)
     // 기존 UI 요소들의 크기나 위치는 절대 변경하지 않음
     
-    console.log('🔍 2차 사이드바 열기:', viewId);
+    console.log('🔍 2차 사이드바 열기 완료:', viewId);
   }
   
   // 전역 함수로 노출
@@ -107,29 +139,37 @@ window.initializeApp = async function() {
     
     const secondaryPanel = document.getElementById('secondaryPanel');
     
-    if (secondaryPanel) {
-      // CSS transform만 사용하여 숨김 (UI 변동 방지)
-      // secondaryPanel.style.display = 'none'; // UI 변동 방지를 위해 제거
-      secondaryPanel.classList.add('hidden');
-      secondaryPanel.classList.remove('visible');
-      
-      // transform 초기화
-      secondaryPanel.style.transform = 'translateX(100%)';
-      
-      hideAllSecondaryViews();
-      
-      // 1차 사이드바는 항상 보이도록 유지 (크기나 위치 변경하지 않음)
-      // 기존 UI 요소들의 크기나 위치는 절대 변경하지 않음
-      
-      const customerListButtonArea = document.getElementById('customerListButtonArea');
-      if (customerListButtonArea) {
-        customerListButtonArea.remove();
-      }
-      
-      console.log('✅ 2차 사이드바 닫기 완료');
-    } else {
-      console.error('❌ 2차 사이드바를 찾을 수 없습니다');
+    if (!secondaryPanel) {
+      console.error('❌ secondaryPanel 요소를 찾을 수 없습니다');
+      return;
     }
+    
+    // CSS 클래스 변경
+    secondaryPanel.classList.add('hidden');
+    secondaryPanel.classList.remove('visible');
+    
+    // 강제로 스타일 초기화 (다른 스크립트가 방해하는 경우 대비)
+    secondaryPanel.style.display = 'none';
+    secondaryPanel.style.transform = 'translateX(-100%)';
+    secondaryPanel.style.visibility = 'hidden';
+    secondaryPanel.style.opacity = '0';
+    
+    console.log('✅ 패널 클래스 변경됨 - hidden 추가, visible 제거');
+    console.log('✅ 강제 스타일 초기화됨 - display: none, transform: translateX(-100%)');
+    
+    hideAllSecondaryViews();
+    console.log('✅ 모든 뷰 숨김 처리됨');
+    
+    // 1차 사이드바는 항상 보이도록 유지 (크기나 위치 변경하지 않음)
+    // 기존 UI 요소들의 크기나 위치는 절대 변경하지 않음
+    
+    const customerListButtonArea = document.getElementById('customerListButtonArea');
+    if (customerListButtonArea) {
+      customerListButtonArea.remove();
+      console.log('✅ customerListButtonArea 제거됨');
+    }
+    
+    // console.log('✅ 2차 사이드바 닫기 완료');
   }
 
   // 문서 전체에 이벤트 위임 추가 (동적 요소 대응)
@@ -156,79 +196,69 @@ window.initializeApp = async function() {
   // 4) 고객목록/신규등록/매물상세 등 진입점에서 showSecondaryPanel만 사용하도록 리팩토링
   // 고객List 버튼
   if (customerListBtn) {
-    // 모듈 로딩 완료 후 이벤트 리스너 등록
-    const setupCustomerListButton = () => {
-      if (typeof window.loadCustomerList === 'function') {
-        customerListBtn.addEventListener('click', () => {
-          clearSelection();
-          hideClusterList();
-          // 1차 사이드바의 고객목록 컨테이너 숨기기
-          const customerListContainer = document.getElementById('customerListContainer');
-          if (customerListContainer) {
-            customerListContainer.classList.add('hidden');
-          }
-          showSecondaryPanel('viewCustomerList');
-          const detailTitleEl = document.getElementById('secondaryPanelTitle');
-          if (detailTitleEl) detailTitleEl.textContent = '내 고객 목록';
-          
-          console.log('✅ loadCustomerList 함수 호출 시작');
-          window.loadCustomerList(isUserAdmin() ? 'all' : 'own');
-        });
-        console.log('✅ 고객List 버튼 이벤트 리스너 등록 완료');
-      } else {
-        // 최대 5초(50회) 대기 후 에러 처리
-        if (!setupCustomerListButton.attempts) {
-          setupCustomerListButton.attempts = 0;
-        }
-        setupCustomerListButton.attempts++;
-        
-        if (setupCustomerListButton.attempts >= 50) {
-          console.error('❌ loadCustomerList 함수를 찾을 수 없습니다. 최대 대기 시간 초과');
-          return;
-        }
-        
-        console.log(`⏳ loadCustomerList 함수 대기 중... (${setupCustomerListButton.attempts}/50)`);
-        setTimeout(setupCustomerListButton, 100);
+    console.log('🔍 고객List 버튼 발견, 이벤트 리스너 등록 중...');
+    
+    // 즉시 이벤트 리스너 등록 (함수 로딩 대기 없이)
+    customerListBtn.addEventListener('click', () => {
+      console.log('🔍 고객List 버튼 클릭됨!');
+      
+      clearSelection();
+      hideClusterList();
+      
+      // 1차 사이드바의 고객목록 컨테이너 숨기기
+      const customerListContainer = document.getElementById('customerListContainer');
+      if (customerListContainer) {
+        customerListContainer.classList.add('hidden');
       }
-    };
-    setupCustomerListButton();
+      
+      // 2차 사이드바 열기
+      showSecondaryPanel('viewCustomerList');
+      const detailTitleEl = document.getElementById('secondaryPanelTitle');
+      if (detailTitleEl) detailTitleEl.textContent = '내 고객 목록';
+      
+      // 고객 목록 로드 (함수가 있으면 호출)
+      if (typeof window.loadCustomerList === 'function') {
+        console.log('✅ loadCustomerList 함수 호출 시작');
+        window.loadCustomerList(isUserAdmin() ? 'all' : 'own');
+      } else {
+        console.log('⚠️ loadCustomerList 함수가 아직 로드되지 않음');
+      }
+    });
+    
+    // console.log('✅ 고객List 버튼 이벤트 리스너 등록 완료');
   }
   // 신규등록 버튼
   if (newCustomerBtn) {
-    // 모듈 로딩 완료 후 이벤트 리스너 등록
-    const setupNewCustomerButton = () => {
-      if (typeof window.renderCustomerForm === 'function') {
-        newCustomerBtn.addEventListener('click', () => {
-          clearSelection();
-          hideClusterList();
-          // 1차 사이드바의 고객목록 컨테이너 숨기기
-          const customerListContainer = document.getElementById('customerListContainer');
-          if (customerListContainer) {
-            customerListContainer.classList.add('hidden');
-          }
-          showSecondaryPanel('viewCustomerForm');
-          const detailTitleEl = document.getElementById('secondaryPanelTitle');
-          if (detailTitleEl) detailTitleEl.textContent = '고객 신규등록';
-          window.renderCustomerForm();
-        });
-        console.log('✅ 신규등록 버튼 이벤트 리스너 등록 완료');
-      } else {
-        // 최대 5초(50회) 대기 후 에러 처리
-        if (!setupNewCustomerButton.attempts) {
-          setupNewCustomerButton.attempts = 0;
-        }
-        setupNewCustomerButton.attempts++;
-        
-        if (setupNewCustomerButton.attempts >= 50) {
-          console.error('❌ renderCustomerForm 함수를 찾을 수 없습니다. 최대 대기 시간 초과');
-          return;
-        }
-        
-        console.log(`⏳ renderCustomerForm 함수 대기 중... (${setupNewCustomerButton.attempts}/50)`);
-        setTimeout(setupNewCustomerButton, 100);
+    console.log('🔍 신규등록 버튼 발견, 이벤트 리스너 등록 중...');
+    
+    // 즉시 이벤트 리스너 등록 (함수 로딩 대기 없이)
+    newCustomerBtn.addEventListener('click', () => {
+      console.log('🔍 신규등록 버튼 클릭됨!');
+      
+      clearSelection();
+      hideClusterList();
+      
+      // 1차 사이드바의 고객목록 컨테이너 숨기기
+      const customerListContainer = document.getElementById('customerListContainer');
+      if (customerListContainer) {
+        customerListContainer.classList.add('hidden');
       }
-    };
-    setupNewCustomerButton();
+      
+      // 2차 사이드바 열기
+      showSecondaryPanel('viewCustomerForm');
+      const detailTitleEl = document.getElementById('secondaryPanelTitle');
+      if (detailTitleEl) detailTitleEl.textContent = '고객 신규등록';
+      
+      // 고객 폼 렌더링 (함수가 있으면 호출)
+      if (typeof window.renderCustomerForm === 'function') {
+        console.log('✅ renderCustomerForm 함수 호출 시작');
+        window.renderCustomerForm();
+      } else {
+        console.log('⚠️ renderCustomerForm 함수가 아직 로드되지 않음');
+      }
+    });
+    
+    // console.log('✅ 신규등록 버튼 이벤트 리스너 등록 완료');
   }
 
   // 버튼/입력 이벤트 바인딩
@@ -286,15 +316,15 @@ window.initializeApp = async function() {
   const fullListCloseBtn = document.getElementById("fullListCloseBtn");
   if (fullListCloseBtn) fullListCloseBtn.addEventListener("click", () => toggleFullList(false));
   
-  // 매물리스트/브리핑리스트 버튼 이벤트 리스너
+  // 매물리스트/브리핑리스트 버튼 이벤트 리스너 (PC에서만 실행)
   const propertyListBtn = document.getElementById("propertyListBtn");
   const briefingListBtn = document.getElementById("briefingListBtn");
   
-  if (propertyListBtn) {
+  if (propertyListBtn && !window.MOBILE_APP) {
     propertyListBtn.addEventListener("click", () => switchToListingMode('property'));
   }
   
-  if (briefingListBtn) {
+  if (briefingListBtn && !window.MOBILE_APP) {
     briefingListBtn.addEventListener("click", () => switchToListingMode('briefing'));
   }
   
@@ -348,15 +378,13 @@ window.initializeApp = async function() {
   const clusterListClose = document.getElementById("clusterListClose");
   if (clusterListClose) clusterListClose.addEventListener("click", hideClusterList);
 
-  // 3) 화면 상태 설정 (모바일에서는 실행하지 않음)
-  if (!window.MOBILE_APP) {
-    if (currentUser) {
-      hideLoginScreen();
-      console.log("✅ 사용자 로그인됨:", currentUser);
-    } else {
-      showLoginScreen("");
-      console.log("✅ 로그인 화면 표시");
-    }
+  // 3) 화면 상태 설정 (모바일/PC 공통)
+  if (currentUser) {
+    hideLoginScreen();
+    console.log("✅ 사용자 로그인됨:", currentUser);
+  } else {
+    showLoginScreen("");
+    console.log("✅ 로그인 화면 표시");
   }
 
   // 상단바 사용자 정보 설정
@@ -407,11 +435,27 @@ window.initializeApp = async function() {
       if (typeof window.loadRecommendations === 'function' && (!window.USER_RECOMMENDATIONS || window.USER_RECOMMENDATIONS.size === 0)) {
         console.log('🔄 추천 데이터가 없어서 로드 중...');
         await window.loadRecommendations();
-        console.log('✅ 추천 데이터 로드 완료, USER_RECOMMENDATIONS:', window.USER_RECOMMENDATIONS?.size);
+        // console.log('✅ 추천 데이터 로드 완료, USER_RECOMMENDATIONS:', window.USER_RECOMMENDATIONS?.size);
       }
       
       console.log('🚀 fetchListings 호출 시작');
       await fetchListings();
+      
+      // 모바일 환경에서도 지도 영역 필터링 적용
+      if (window.MOBILE_APP) {
+        // applyAllFilters가 실행되어 FILTERED_LISTINGS가 설정되었는지 확인
+        if (window.FILTERED_LISTINGS && window.FILTERED_LISTINGS.length > 0) {
+          console.log('📱 모바일 환경: FILTERED_LISTINGS 설정 완료, 개수:', window.FILTERED_LISTINGS.length);
+        } else if (window.LISTINGS && window.LISTINGS.length > 0) {
+          // FILTERED_LISTINGS가 없으면 LISTINGS 사용 (지도 영역 필터링 적용됨)
+          window.FILTERED_LISTINGS = [...window.LISTINGS];
+          console.log('📱 모바일 환경: LISTINGS에서 FILTERED_LISTINGS 설정 완료, 개수:', window.FILTERED_LISTINGS.length);
+        } else {
+          // LISTINGS가 없으면 빈 배열로 설정
+          window.FILTERED_LISTINGS = [];
+          console.log('📱 모바일 환경: LISTINGS 없음 - FILTERED_LISTINGS 빈 배열 설정');
+        }
+      }
       
       // 초기 로딩 완료 후 추천 상태 동기화 (한 번만)
       setTimeout(() => {
@@ -429,7 +473,7 @@ window.initializeApp = async function() {
     if (typeof window.loadRecommendations === 'function' && (!window.USER_RECOMMENDATIONS || window.USER_RECOMMENDATIONS.size === 0)) {
       console.log('🔄 추천 데이터가 없어서 로드 중...');
       await window.loadRecommendations();
-      console.log('✅ 추천 데이터 로드 완료, USER_RECOMMENDATIONS:', window.USER_RECOMMENDATIONS?.size);
+      // console.log('✅ 추천 데이터 로드 완료, USER_RECOMMENDATIONS:', window.USER_RECOMMENDATIONS?.size);
     }
     
     console.log('🚀 fetchListings 호출 시작 (MAP_READY)');
@@ -470,7 +514,7 @@ window.initializeApp = async function() {
   if (typeof initUserManagement === 'function') {
     try {
       await initUserManagement();
-      console.log('✅ 사용자 관리 기능 초기화 완료');
+      // console.log('✅ 사용자 관리 기능 초기화 완료');
     } catch (error) {
       console.error('사용자 관리 초기화 실패:', error);
     }
@@ -480,7 +524,7 @@ window.initializeApp = async function() {
   if (typeof initUserSheets === 'function') {
     try {
       await initUserSheets();
-      console.log('✅ 사용자별 개별매물장 기능 초기화 완료');
+      // console.log('✅ 사용자별 개별매물장 기능 초기화 완료');
     } catch (error) {
       console.error('사용자별 개별매물장 초기화 실패:', error);
     }
@@ -490,7 +534,7 @@ window.initializeApp = async function() {
   if (typeof initStatusBarSheets === 'function') {
     try {
       await initStatusBarSheets();
-      console.log('✅ 상태카운트바 매물장 컨트롤 초기화 완료');
+      // console.log('✅ 상태카운트바 매물장 컨트롤 초기화 완료');
     } catch (error) {
       console.error('상태카운트바 매물장 컨트롤 초기화 실패:', error);
     }
@@ -522,7 +566,7 @@ function initializeRefreshControls() {
     console.warn('⚠️ updateLastUpdateTime 함수를 찾을 수 없습니다.');
   }
   
-  console.log('✅ 새로고침 컨트롤 초기화 완료');
+  // console.log('✅ 새로고침 컨트롤 초기화 완료');
 }
 
 // 초기화 관련 함수들을 전역으로 export

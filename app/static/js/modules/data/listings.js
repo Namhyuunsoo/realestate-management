@@ -18,7 +18,18 @@ function updateCountsDisplay(total, filtered) {
  **************************************/
 
 async function fetchListings(force = false) {
-  if (!currentUser) return;
+  // currentUser가 없으면 localStorage에서 복원 시도
+  if (!currentUser) {
+    const savedUser = localStorage.getItem('X-USER');
+    if (savedUser) {
+      currentUser = savedUser;
+      window.currentUser = savedUser;
+      console.log('🔄 fetchListings에서 currentUser 복원:', savedUser);
+    } else {
+      console.warn('⚠️ fetchListings: currentUser가 없어서 실행 중단');
+      return;
+    }
+  }
 
   // 기존 마커들 제거
   if (MARKERS && MARKERS.length > 0) {
@@ -49,16 +60,45 @@ async function fetchListings(force = false) {
     
     if (!data) throw new Error("매물 데이터를 가져올 수 없습니다.");
 
-    ORIGINAL_LIST = data.items || [];
+    // 🔥 핵심 수정: API 응답 구조 확인 및 수정
+    console.log("🔍 fetchListings: API 응답 구조 확인:", data);
+    
+    // API 응답이 배열인 경우와 객체인 경우 모두 처리
+    let items = [];
+    if (Array.isArray(data)) {
+      items = data;
+      console.log("🔍 fetchListings: API 응답이 배열입니다");
+    } else if (data.items && Array.isArray(data.items)) {
+      items = data.items;
+      console.log("🔍 fetchListings: API 응답이 객체이고 items 배열을 포함합니다");
+    } else if (data.listings && Array.isArray(data.listings)) {
+      items = data.listings;
+      console.log("🔍 fetchListings: API 응답이 객체이고 listings 배열을 포함합니다");
+    } else {
+      console.error("❌ fetchListings: API 응답 구조를 파악할 수 없습니다:", data);
+      throw new Error("API 응답 구조가 예상과 다릅니다.");
+    }
+
+    ORIGINAL_LIST = items;
     LISTINGS = ORIGINAL_LIST.map(x => ({ ...x }));
+    
+    // 🔥 핵심 수정: 전역 변수 동기화 보장
+    window.LISTINGS = LISTINGS;
+    window.ORIGINAL_LIST = ORIGINAL_LIST;
+    
     console.log(`🔍 fetchListings: 매물 ${LISTINGS.length}개 로드됨`);
+    console.log(`🔍 fetchListings: window.LISTINGS 동기화 완료, 개수: ${window.LISTINGS.length}`);
 
     // 좌표 할당과 거리 계산을 동기적으로 처리
     await assignTempCoords();
     await computeDistancesIfNeeded();
     
-    // 필터 적용
-    applyAllFilters();
+  // 필터 적용
+  applyAllFilters();
+  
+  // 🔥 핵심 수정: FILTERED_LISTINGS도 전역 변수로 동기화
+  window.FILTERED_LISTINGS = FILTERED_LISTINGS;
+  console.log(`🔍 fetchListings: window.FILTERED_LISTINGS 동기화 완료, 개수: ${window.FILTERED_LISTINGS.length}`);
 
   } catch (e) {
     if (ul) ul.innerHTML = `<li style="color:red;">에러: ${escapeHtml(e.message)}</li>`;
@@ -74,22 +114,44 @@ async function fetchListings(force = false) {
 
 function readTopFilterInputs() {
   const gv = id => (document.getElementById(id)?.value.trim() || "");
-  TOP_FILTERS.region   = gv("tf_region");
-  TOP_FILTERS.jibun    = gv("tf_jibun");
-  TOP_FILTERS.building = gv("tf_building");
-  TOP_FILTERS.floor    = gv("tf_floor");
-  TOP_FILTERS.store    = gv("tf_store");
-  TOP_FILTERS.area_sale = gv("tf_area_sale");
-  TOP_FILTERS.area_real = gv("tf_area_real");
-  TOP_FILTERS.deposit   = gv("tf_deposit");
-  TOP_FILTERS.rent      = gv("tf_rent");
-  TOP_FILTERS.premium   = gv("tf_premium");
-  TOP_FILTERS.note      = gv("tf_note");
-  TOP_FILTERS.manager   = gv("tf_manager");
-  TOP_FILTERS.region2   = gv("tf_region2");
-  TOP_FILTERS.phone     = gv("tf_phone");
-  TOP_FILTERS.client    = gv("tf_client");
-  TOP_FILTERS.note3     = gv("tf_note3");
+  
+  // 모바일 환경에서는 모달 필터 입력을 우선 사용
+  if (window.MOBILE_APP) {
+    TOP_FILTERS.region   = gv("modal_tf_region") || gv("tf_region");
+    TOP_FILTERS.jibun    = gv("modal_tf_jibun") || gv("tf_jibun");
+    TOP_FILTERS.building = gv("modal_tf_building") || gv("tf_building");
+    TOP_FILTERS.floor    = gv("modal_tf_floor") || gv("tf_floor");
+    TOP_FILTERS.store    = gv("modal_tf_store") || gv("tf_store");
+    TOP_FILTERS.area_sale = gv("modal_tf_area_sale") || gv("tf_area_sale");
+    TOP_FILTERS.area_real = gv("modal_tf_area_real") || gv("tf_area_real");
+    TOP_FILTERS.deposit   = gv("modal_tf_deposit") || gv("tf_deposit");
+    TOP_FILTERS.rent      = gv("modal_tf_rent") || gv("tf_rent");
+    TOP_FILTERS.premium   = gv("modal_tf_premium") || gv("tf_premium");
+    TOP_FILTERS.note      = gv("modal_tf_note") || gv("tf_note");
+    TOP_FILTERS.manager   = gv("modal_tf_manager") || gv("tf_manager");
+    TOP_FILTERS.region2   = gv("modal_tf_region2") || gv("tf_region2");
+    TOP_FILTERS.phone     = gv("modal_tf_phone") || gv("tf_phone");
+    TOP_FILTERS.client    = gv("modal_tf_client") || gv("tf_client");
+    TOP_FILTERS.note3     = gv("modal_tf_note3") || gv("tf_note3");
+  } else {
+    // PC 환경에서는 기존 상단바 필터 입력 사용
+    TOP_FILTERS.region   = gv("tf_region");
+    TOP_FILTERS.jibun    = gv("tf_jibun");
+    TOP_FILTERS.building = gv("tf_building");
+    TOP_FILTERS.floor    = gv("tf_floor");
+    TOP_FILTERS.store    = gv("tf_store");
+    TOP_FILTERS.area_sale = gv("tf_area_sale");
+    TOP_FILTERS.area_real = gv("tf_area_real");
+    TOP_FILTERS.deposit   = gv("tf_deposit");
+    TOP_FILTERS.rent      = gv("tf_rent");
+    TOP_FILTERS.premium   = gv("tf_premium");
+    TOP_FILTERS.note      = gv("tf_note");
+    TOP_FILTERS.manager   = gv("tf_manager");
+    TOP_FILTERS.region2   = gv("tf_region2");
+    TOP_FILTERS.phone     = gv("tf_phone");
+    TOP_FILTERS.client    = gv("tf_client");
+    TOP_FILTERS.note3     = gv("tf_note3");
+  }
 }
 
 function buildEffectiveFilters() {
@@ -111,7 +173,7 @@ function buildEffectiveFilters() {
 
 function applyUserRoleFilter() {
   const userRole = localStorage.getItem("X-USER-ROLE") || "user";
-  console.log(`🔍 사용자 역할별 필터링 적용: ${userRole}`);
+  // console.log(`🔍 사용자 역할별 필터링 적용: ${userRole}`);
   
   if (userRole === "user") {
     // 일반 사용자는 서버에서 이미 필터링된 데이터를 받으므로 추가 필터링 불필요
@@ -216,7 +278,7 @@ function applyAllFilters() {
     return true;
   });
 
-  // 🔥 핵심 수정: 지도 영역 필터링 추가
+  // 🔥 핵심 수정: 지도 영역 필터링 추가 (모바일에서도 활성화)
   if (MAP_READY && MAP) {
     const bounds = MAP.getBounds();
     if (bounds) {
@@ -240,10 +302,15 @@ function applyAllFilters() {
       
       console.log(`🗺️ 지도 영역 필터링 적용: ${arr.length}개 매물`);
     }
+  } else {
+    console.log(`📱 지도가 준비되지 않음: MAP_READY=${MAP_READY}, MAP=${!!MAP}`);
   }
 
   sortListingsInPlace(arr);
   FILTERED_LISTINGS = arr;
+  
+  // 🔥 핵심 수정: 전역 변수 동기화 보장
+  window.FILTERED_LISTINGS = FILTERED_LISTINGS;
   
   // 디버깅: 필터링 결과 확인
   // console.log('필터링된 매물 수:', arr.length);
@@ -297,7 +364,7 @@ function applyAllFilters() {
 
   // 마커 표시
   if (MAP_READY && MAP && typeof placeMarkers === 'function') {
-    console.log(`🔍 applyAllFilters: 마커 표시 시작 - ${FILTERED_LISTINGS.length}개 매물`);
+    // console.log(`🔍 applyAllFilters: 마커 표시 시작 - ${FILTERED_LISTINGS.length}개 매물`);
     placeMarkers(FILTERED_LISTINGS);
   }
 

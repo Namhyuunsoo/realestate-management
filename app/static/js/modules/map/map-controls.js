@@ -63,6 +63,26 @@ function initMapControls() {
   
   // 거리제기 핸들러는 이미 initMap에서 추가됨
   
+  // 고객 필터 해제 버튼
+  const clearCustomerFilterBtn = document.getElementById('clearCustomerFilterBtn');
+  if (clearCustomerFilterBtn) {
+    clearCustomerFilterBtn.addEventListener('click', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      console.log('🔧 고객 필터 해제 버튼 클릭됨');
+      
+      // PC의 clearCustomerFilter 함수 호출
+      if (typeof window.clearCustomerFilter === 'function') {
+        window.clearCustomerFilter();
+        console.log('✅ 고객 필터 해제 완료');
+      } else {
+        console.error('❌ clearCustomerFilter 함수를 찾을 수 없습니다');
+      }
+    });
+  } else {
+    console.error('❌ clearCustomerFilterBtn을 찾을 수 없습니다.');
+  }
+  
   // ESC 키로 거리제기 모드 해제
   document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape' && window.IS_DISTANCE_MODE) {

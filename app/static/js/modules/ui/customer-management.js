@@ -589,6 +589,13 @@ function clearCustomerFilter() {
   }
   
   showToast('고객 필터가 해제되었습니다.', 'info');
+  
+  // 모바일에서 고객 필터 해제 버튼 숨기기
+  const clearCustomerFilterBtn = document.getElementById('clearCustomerFilterBtn');
+  if (clearCustomerFilterBtn) {
+    clearCustomerFilterBtn.style.display = 'none';
+    console.log('🔧 모바일 고객 필터 해제 버튼 숨김');
+  }
 }
 
 // 고객의 저장된 필터데이터로 매물 필터링 적용
@@ -620,6 +627,13 @@ function applyCustomerFilter(customer) {
     console.log('버튼들 표시됨:', modeButtons.className);
   } else {
     console.log('버튼 요소를 찾을 수 없음');
+  }
+  
+  // 모바일에서 고객 필터 해제 버튼 표시
+  const clearCustomerFilterBtn = document.getElementById('clearCustomerFilterBtn');
+  if (clearCustomerFilterBtn) {
+    clearCustomerFilterBtn.style.display = 'flex';
+    console.log('🔧 모바일 고객 필터 해제 버튼 표시');
   }
   
   // 고객 선택 시 매물리스트 모드로 기본 설정

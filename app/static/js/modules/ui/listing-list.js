@@ -158,8 +158,8 @@ function scrollToListing(id) {
   const li = ul.querySelector(`li[data-id="${id}"]`);
   if (!li) return;
 
-  // 매물카드로 스크롤 이동
-  li.scrollIntoView({ behavior: "smooth", block: "center" });
+  // 매물카드로 스크롤 이동 (즉시 스크롤로 변경하여 레이아웃 재계산 방지)
+  li.scrollIntoView({ behavior: "auto", block: "center" });
 
   if (CURRENT_SELECTED_LI_ID) {
     const prev = ul.querySelector(`li[data-id="${CURRENT_SELECTED_LI_ID}"] .listing-item`);

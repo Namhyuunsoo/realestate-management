@@ -100,13 +100,13 @@ function loadModuleLazy(modulePath, trigger = 'idle') {
 // 병렬 모듈 로딩 시스템
 async function loadModules() {
   try {
-    console.log('🚀 병렬 모듈 로딩 시작...');
+    // console.log('🚀 병렬 모듈 로딩 시작...');
     const startTime = performance.now();
     
     // 1단계: 핵심 모듈 (순차 로딩 - 의존성 있음)
-    console.log('📦 1단계: 핵심 모듈 로딩...');
+    // console.log('📦 1단계: 핵심 모듈 로딩...');
     await loadModule('/static/js/modules/core/globals.js');
-    console.log('✅ globals.js 로드 완료');
+    // console.log('✅ globals.js 로드 완료');
     
     // 모바일 앱 높이 조정
     if (window.adjustMobileAppHeight) {
@@ -114,7 +114,7 @@ async function loadModules() {
     }
     
     // 2단계: 독립적인 모듈들 (병렬 로딩)
-    console.log('📦 2단계: 독립 모듈 병렬 로딩...');
+    // console.log('📦 2단계: 독립 모듈 병렬 로딩...');
     const independentModules = [
       '/static/js/modules/core/user-utils.js',
       '/static/js/modules/core/api-cache.js',
@@ -126,7 +126,7 @@ async function loadModules() {
     
     await Promise.all(independentModules.map(async (modulePath) => {
       await loadModule(modulePath);
-      console.log(`✅ ${modulePath.split('/').pop()} 로드 완료`);
+      // console.log(`✅ ${modulePath.split('/').pop()} 로드 완료`);
     }));
     
     // 3단계: 인증 및 데이터 모듈 (병렬 로딩)
@@ -140,7 +140,7 @@ async function loadModules() {
     
     await Promise.all(authDataModules.map(async (modulePath) => {
       await loadModule(modulePath);
-      console.log(`✅ ${modulePath.split('/').pop()} 로드 완료`);
+      // console.log(`✅ ${modulePath.split('/').pop()} 로드 완료`);
     }));
     
     // 4단계: 지도 관련 모듈 (순차 로딩 - 의존성 있음)
@@ -154,7 +154,7 @@ async function loadModules() {
     
     for (const modulePath of mapModules) {
       await loadModule(modulePath);
-      console.log(`✅ ${modulePath.split('/').pop()} 로드 완료`);
+      // console.log(`✅ ${modulePath.split('/').pop()} 로드 완료`);
     }
     
     // 5단계: 핵심 UI 모듈들 (우선 로딩)
@@ -163,7 +163,8 @@ async function loadModules() {
       '/static/js/modules/ui/listing-list.js',
       '/static/js/modules/ui/panels.js',
       '/static/js/modules/ui/detail-panel.js',
-      '/static/js/modules/ui/event-handlers.js'
+      '/static/js/modules/ui/event-handlers.js',
+      '/static/js/listing-list-modal.js'
     ];
     
     await Promise.all(criticalUIModules.map(async (modulePath) => {
@@ -178,7 +179,8 @@ async function loadModules() {
       '/static/js/modules/ui/briefing-list.js',
       '/static/js/modules/ui/customer-forms.js',
       '/static/js/modules/ui/customer-management.js',
-      '/static/js/modules/ui/customer-list-detail.js'
+      '/static/js/modules/ui/customer-list-detail.js',
+      '/static/js/modules/ui/filter-modal.js'
     ];
     
     await Promise.all(normalUIModules.map(async (modulePath) => {
@@ -196,27 +198,30 @@ async function loadModules() {
     // 관리자 모듈들은 즉시 로드 (이벤트 리스너 등록을 위해)
     await Promise.all(adminModules.map(async (modulePath) => {
       await loadModule(modulePath);
-      console.log(`✅ ${modulePath.split('/').pop()} 로드 완료`);
+      // console.log(`✅ ${modulePath.split('/').pop()} 로드 완료`);
     }));
     
     // 8단계: 초기화 모듈 (마지막에 로드)
     console.log('📦 8단계: 초기화 모듈 로딩...');
     await loadModule('/static/js/modules/ui/initialization.js');
-    console.log('✅ initialization.js 로드 완료');
+    // console.log('✅ initialization.js 로드 완료');
+    
+    // 매물리스트 모달 초기화 (이미 즉시 초기화됨)
+    if (window.listingListModalManager) {
+        console.log('✅ 매물리스트 모달이 이미 초기화됨');
+    } else {
+        console.warn('⚠️ 매물리스트 모달이 초기화되지 않음');
+    }
     
     // 사이드바 토글 초기화
     setupSidebarToggles();
-    console.log('✅ 사이드바 토글 기능 초기화 완료');
+    // console.log('✅ 사이드바 토글 기능 초기화 완료');
     
-    // 추천 데이터를 먼저 로드 (매물 데이터 로딩 전에 완료 보장)
-    if (window.loadRecommendations) {
-      await window.loadRecommendations();
-      console.log('✅ 추천 데이터 로드 완료');
-    }
+    // 데이터 로딩은 initializeApplication()에서 통합 관리됨 (중복 제거)
     
     const endTime = performance.now();
     const loadTime = (endTime - startTime).toFixed(2);
-    console.log(`🎉 모든 모듈 로딩 완료! (총 ${loadTime}ms)`);
+    // console.log(`🎉 모든 모듈 로딩 완료! (총 ${loadTime}ms)`);
     
     // 성능 메트릭 수집
     const performanceMetrics = {
@@ -232,7 +237,7 @@ async function loadModules() {
       console.log('📊 성능 메트릭 저장됨:', performanceMetrics);
     }
     
-    // 모든 모듈 로드 완료 후 앱 초기화
+    // 모든 모듈 로드 완료 후 앱 초기화 (모바일/PC 통합)
     await initializeApplication();
     
     // 9단계: 선택적 모듈 지연 로딩 (성능 최적화)
@@ -256,6 +261,7 @@ async function loadModules() {
  * ===== 앱 초기화 =====
  *******************************/
 
+
 // 앱 초기화 함수
 async function initializeApplication() {
   try {
@@ -271,26 +277,132 @@ async function initializeApplication() {
     // 2. 네이버 지도 API 로드 확인
     await waitForNaverMaps();
     
-    // 3. 앱 초기화 실행 (모바일에서는 실행하지 않음)
-    if (!window.MOBILE_APP && window.initializeApp) {
-      await window.initializeApp();
-      console.log('✅ 앱 초기화 완료');
-    } else if (window.MOBILE_APP) {
-      console.log('📱 모바일 앱이므로 PC 초기화 건너뜀');
+    // 3. 모바일 감지 (안정화)
+    const isMobile = window.innerWidth <= 768 || /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    window.MOBILE_APP = isMobile;
+    console.log(`📱 모바일 감지: ${window.MOBILE_APP}`);
+    
+    // 4. 사용자 세션 동기화 (모바일/PC 공통) - 통합된 초기화 로직
+    try {
+      if (window.checkSessionAndAutoLogin) {
+        await window.checkSessionAndAutoLogin();
+        console.log('✅ 세션 체크 및 자동 로그인 완료, currentUser:', window.currentUser);
+      } else if (window.syncUserFromSession) {
+        await window.syncUserFromSession();
+        console.log('✅ 사용자 세션 동기화 완료, currentUser:', window.currentUser);
+      } else if (window.loadUserFromStorage) {
+        window.loadUserFromStorage();
+        console.log('ℹ️ localStorage에서 사용자 정보 로드, currentUser:', window.currentUser);
+      }
+      
+      // 모든 초기화 방법이 실패한 경우 localStorage에서 직접 복원
+      if (!window.currentUser) {
+        const savedUser = localStorage.getItem('X-USER');
+        if (savedUser) {
+          window.currentUser = savedUser;
+          currentUser = savedUser;
+          console.log('🔄 localStorage에서 currentUser 복원:', savedUser);
+        }
+      }
+      
+      // 전역 변수 동기화 보장
+      if (window.currentUser && !currentUser) {
+        currentUser = window.currentUser;
+        console.log('🔄 currentUser 전역 변수 동기화:', currentUser);
+      }
+      
+    } catch (error) {
+      console.warn('⚠️ 사용자 세션 동기화 실패:', error);
+      
+      // 에러 발생 시에도 localStorage에서 사용자 정보 복원 시도
+      const savedUser = localStorage.getItem('X-USER');
+      if (savedUser) {
+        window.currentUser = savedUser;
+        currentUser = savedUser;
+        console.log('🔄 에러 후 localStorage에서 currentUser 복원:', savedUser);
+      }
+    }
+    
+    // 5. 지도 초기화 (모바일/PC 공통)
+    if (typeof window.initMap === 'function') {
+      window.initMap();
+      console.log('✅ 지도 초기화 완료');
     } else {
-      console.error('❌ initializeApp 함수를 찾을 수 없습니다.');
+      console.error('❌ initMap 함수를 찾을 수 없습니다');
     }
     
-    // 4. 터치 제스처 초기화 (모바일 환경)
-    if (window.initTouchGestures) {
-      window.initTouchGestures();
-      console.log('✅ 터치 제스처 초기화 완료');
+    // 6. 앱 초기화 (모바일/PC 공통)
+    if (window.initializeApp) {
+      await window.initializeApp();
+      console.log('✅ 앱 초기화 완료 (모바일/PC 공통)');
     }
     
-    // 5. 히스토리 관리 초기화 (모바일 뒤로가기 방지)
-    if (window.initializeHistory) {
-      window.initializeHistory();
-      console.log('✅ 히스토리 관리 초기화 완료');
+    // 7. 모바일 전용 추가 초기화
+    if (window.MOBILE_APP) {
+      console.log('📱 모바일 전용 추가 초기화');
+      
+      // 모바일 버튼 초기화
+      if (window.addMobileButtons) {
+        window.addMobileButtons();
+        console.log('✅ 모바일 버튼 초기화 완료');
+      }
+    }
+    
+    // 7. 모바일 필터 모달 초기화
+    if (window.MOBILE_APP) {
+      console.log('📱 모바일 환경: 필터 모달 초기화');
+      if (typeof window.initializeFilterModal === 'function') {
+        window.initializeFilterModal();
+        console.log('✅ 모바일 필터 모달 초기화 완료');
+      }
+      if (typeof window.setupMobileFilterReplacement === 'function') {
+        window.setupMobileFilterReplacement();
+        console.log('✅ 모바일 필터 대체 설정 완료');
+      }
+    }
+    
+    // 8. 데이터 로드 (모바일/PC 공통)
+    console.log('📊 데이터 로드 시작, currentUser:', window.currentUser);
+    
+    if (window.currentUser) {
+      // 추천 데이터 먼저 로드
+      if (typeof window.loadRecommendations === 'function') {
+        await window.loadRecommendations();
+        console.log('✅ 추천 데이터 로드 완료');
+      }
+      
+      // 매물 데이터 로드
+      if (typeof window.fetchListings === 'function') {
+        await window.fetchListings();
+        console.log('✅ 매물 데이터 로드 완료, FILTERED_LISTINGS:', window.FILTERED_LISTINGS?.length);
+        
+        // 모바일 환경에서 applyAllFilters 직접 호출
+        if (window.MOBILE_APP && typeof window.applyAllFilters === 'function') {
+          window.applyAllFilters();
+          console.log('📱 모바일 환경: applyAllFilters 직접 호출 완료, FILTERED_LISTINGS:', window.FILTERED_LISTINGS?.length);
+        }
+      }
+      
+      // 마커 배치
+      if (typeof window.placeMarkers === 'function' && window.FILTERED_LISTINGS && window.FILTERED_LISTINGS.length > 0) {
+        window.placeMarkers(window.FILTERED_LISTINGS);
+        console.log('✅ 마커 배치 완료, MARKERS:', window.MARKERS?.length);
+      }
+    } else {
+      console.warn('⚠️ currentUser가 없어서 데이터 로드 건너뜀');
+    }
+    
+    // 8. 터치 제스처 및 히스토리 초기화 (모바일 환경)
+    if (window.MOBILE_APP) {
+      if (window.initTouchGestures) {
+        window.initTouchGestures();
+        console.log('✅ 터치 제스처 초기화 완료');
+      }
+      
+      if (window.initializeHistory) {
+        window.initializeHistory();
+        console.log('✅ 히스토리 관리 초기화 완료');
+      }
     }
     
     // 6. 화면 크기 변경 이벤트 리스너 설정
@@ -450,25 +562,7 @@ function togglePrimarySidebar() {
   }, 300);
 }
 
-// 2차 사이드바 토글
-function toggleSecondarySidebar() {
-  const secondaryPanel = document.getElementById('secondaryPanel');
-  const toggleBtn = document.getElementById('secondaryPanelToggleBtn');
-  
-  if (secondaryPanel.classList.contains('collapsed')) {
-    // 펼치기
-    secondaryPanel.classList.remove('collapsed');
-    toggleBtn.textContent = '◀';
-    sidebarState.secondaryCollapsed = false;
-    localStorage.setItem('sidebar-secondary-collapsed', 'false');
-  } else {
-    // 접기
-    secondaryPanel.classList.add('collapsed');
-    toggleBtn.textContent = '▶';
-    sidebarState.secondaryCollapsed = true;
-    localStorage.setItem('sidebar-secondary-collapsed', 'true');
-  }
-}
+// 2차 사이드바 토글 - 제거됨 (showSecondaryPanel/closeSecondaryPanel 함수 사용)
 
 // 지도 크기 변경 후 리사이즈 및 마커 재표시
 function resizeMapAndRefreshMarkers() {
@@ -495,15 +589,14 @@ function resizeMapAndRefreshMarkers() {
         console.log('✅ 마커 클러스터링 재계산 완료');
       }
       
-      // 마커들 재표시 (모바일 환경에서 더 긴 지연시간)
+      // 마커들 재표시 (모바일 환경에서는 마커 재생성하지 않음)
       if (window.placeMarkers && typeof window.placeMarkers === 'function') {
-        const delay = window.innerWidth <= 768 ? 200 : 100; // 모바일에서는 더 긴 지연시간
-        
-        // 모바일 환경에서 리사이즈 플래그 설정
         if (window.innerWidth <= 768) {
-          window.isMobileResizeFlag = true;
-          console.log('📱 모바일 리사이즈 플래그 설정됨');
+          console.log('📱 모바일 환경: 마커 재생성 건너뛰기 - 기존 마커 유지');
+          return; // 모바일에서는 마커 재생성하지 않음
         }
+        
+        const delay = 100;
         
         setTimeout(() => {
           // 현재 필터링된 매물로 마커 재표시
@@ -515,12 +608,6 @@ function resizeMapAndRefreshMarkers() {
             console.warn('⚠️ 마커 재표시: 매물 데이터를 찾을 수 없습니다.');
           }
           console.log('✅ 마커 재표시 완료');
-          
-          // 플래그 제거
-          if (window.isMobileResizeFlag) {
-            window.isMobileResizeFlag = false;
-            console.log('📱 모바일 리사이즈 플래그 제거됨');
-          }
         }, delay);
       }
       
@@ -632,7 +719,8 @@ function setupSidebarToggles() {
   // 2차 사이드바 토글
   const secondaryToggleBtn = document.getElementById('secondaryPanelToggleBtn');
   if (secondaryToggleBtn) {
-    secondaryToggleBtn.addEventListener('click', toggleSecondarySidebar);
+    // toggleSecondarySidebar 함수는 제거됨 (showSecondaryPanel/closeSecondaryPanel 사용)
+    // secondaryToggleBtn.addEventListener('click', toggleSecondarySidebar);
   }
   
   // 상태 복원
@@ -645,12 +733,12 @@ function setupSidebarToggles() {
 
 // 사이드바 토글 함수를 전역으로 노출 (터치 제스처에서 사용)
 window.togglePrimarySidebar = togglePrimarySidebar;
-window.toggleSecondarySidebar = toggleSecondarySidebar;
+// toggleSecondarySidebar 함수는 제거됨 (showSecondaryPanel/closeSecondaryPanel 사용)
 
 // 전역으로 export
 window.showToast = showToast;
 window.togglePrimarySidebar = togglePrimarySidebar;
-window.toggleSecondarySidebar = toggleSecondarySidebar;
+// window.toggleSecondarySidebar = toggleSecondarySidebar; // 함수 제거됨
 window.setupSidebarToggles = setupSidebarToggles;
 window.resizeMapAndRefreshMarkers = resizeMapAndRefreshMarkers;
 
