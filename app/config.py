@@ -30,7 +30,7 @@ class AppConfig:
     ALLOWED_IPS: List[str] = field(default_factory=lambda: parse_csv_env(os.getenv("ALLOWED_IPS", "")))
     BLOCKED_IPS: List[str] = field(default_factory=lambda: parse_csv_env(os.getenv("BLOCKED_IPS", "")))
     REQUIRE_HTTPS: bool = os.getenv("REQUIRE_HTTPS", "false").lower() == "true"
-    CSRF_PROTECTION: bool = os.getenv("CSRF_PROTECTION", "false").lower() == "true"
+    CSRF_PROTECTION: bool = os.getenv("CSRF_PROTECTION", "true").lower() == "true"
     
     # 데이터 경로 설정
     DATA_DIR: str = os.getenv("DATA_DIR", "./data")
@@ -43,7 +43,7 @@ class AppConfig:
     
     # Google Sheets 설정
     SPREADSHEET_NAME: str = os.getenv("SPREADSHEET_NAME", "")
-    SERVICE_ACCOUNT_FILE: str = os.getenv("SERVICE_ACCOUNT_FILE", "service_account.json")
+    SERVICE_ACCOUNT_FILE: str = os.getenv("SERVICE_ACCOUNT_FILE", "../config/service_account.json")
     SPREADSHEET_ID: str = os.getenv("SPREADSHEET_ID", "1D14iWPeTuHAMf9m_LrtsILYEd2Z8dpjAbIfpx-WR8eY")
     SHEET_DOWNLOAD_DIR: str = os.getenv("SHEET_DOWNLOAD_DIR", "./data/raw")
     SHEET_DOWNLOAD_INTERVAL: int = int(os.getenv("SHEET_DOWNLOAD_INTERVAL", "5"))

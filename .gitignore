@@ -74,6 +74,12 @@ data/state/
 !package-lock.json
 !requirements.txt
 
+# 엑셀 파일 (수시로 최신화되므로 커밋 제외)
+*.xlsx
+*.xls
+data/raw/*.xlsx
+data/raw/*.xls
+
 # 백업 파일
 *.backup
 *.bak

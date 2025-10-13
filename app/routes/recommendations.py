@@ -1,13 +1,15 @@
 from flask import Blueprint, request, jsonify, current_app, session
+from ..core.decorators import require_user, validate_csrf_token
 import json
 
 bp = Blueprint("recommendations", __name__)
 
 @bp.route("/api/recommendations", methods=["GET"])
+@require_user()
+@validate_csrf_token()
 def get_recommendations():
-    user_email = request.headers.get("X-User") or session.get("user_email")
-    if not user_email:
-        return jsonify({"error": "로그인이 필요합니다."}), 401
+    user = request.current_user
+    user_email = user.email
 
     try:
         # RecommendationService 지연 초기화 확인
@@ -31,10 +33,11 @@ def get_recommendations():
         return jsonify({"error": "추천매물 조회 실패"}), 500
 
 @bp.route("/api/recommendations/<string:listing_id>", methods=["POST"])
+@require_user()
+@validate_csrf_token()
 def add_recommendation(listing_id):
-    user_email = request.headers.get("X-User") or session.get("user_email")
-    if not user_email:
-        return jsonify({"error": "로그인이 필요합니다."}), 401
+    user = request.current_user
+    user_email = user.email
 
     try:
         data = request.get_json()
@@ -53,10 +56,11 @@ def add_recommendation(listing_id):
         return jsonify({"error": "매물 추천 추가 실패"}), 500
 
 @bp.route("/api/recommendations/<string:listing_id>", methods=["DELETE"])
+@require_user()
+@validate_csrf_token()
 def remove_recommendation(listing_id):
-    user_email = request.headers.get("X-User") or session.get("user_email")
-    if not user_email:
-        return jsonify({"error": "로그인이 필요합니다."}), 401
+    user = request.current_user
+    user_email = user.email
 
     try:
         recommendation_service = current_app.data_manager.recommendation_service
@@ -69,10 +73,11 @@ def remove_recommendation(listing_id):
         return jsonify({"error": "매물 추천 제거 실패"}), 500
 
 @bp.route("/api/recommendations/<string:listing_id>/comments", methods=["POST"])
+@require_user()
+@validate_csrf_token()
 def add_comment(listing_id):
-    user_email = request.headers.get("X-User") or session.get("user_email")
-    if not user_email:
-        return jsonify({"error": "로그인이 필요합니다."}), 401
+    user = request.current_user
+    user_email = user.email
 
     try:
         data = request.get_json()
@@ -91,10 +96,11 @@ def add_comment(listing_id):
         return jsonify({"error": "의견 추가 실패"}), 500
 
 @bp.route("/api/recommendations/<string:listing_id>/comments", methods=["GET"])
+@require_user()
+@validate_csrf_token()
 def get_comments(listing_id):
-    user_email = request.headers.get("X-User") or session.get("user_email")
-    if not user_email:
-        return jsonify({"error": "로그인이 필요합니다."}), 401
+    user = request.current_user
+    user_email = user.email
 
     try:
         recommendation_service = current_app.data_manager.recommendation_service

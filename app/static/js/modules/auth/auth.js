@@ -299,7 +299,8 @@ function setCurrentUser(email) {
   window.currentUser = email; // 전역 변수 동기화 보장
   localStorage.setItem("X-USER", email);
   
-  console.log('✅ setCurrentUser 호출됨:', email, 'currentUser:', currentUser, 'window.currentUser:', window.currentUser);
+  // 보안 강화: 사용자 정보 로깅 제거
+  // console.log('✅ setCurrentUser 호출됨:', email, 'currentUser:', currentUser, 'window.currentUser:', window.currentUser);
   
   // 사용자 역할 확인 (서버에서 최신 정보 가져오기)
   fetch('/api/me', {
@@ -386,7 +387,8 @@ function setCurrentUser(email) {
       // X-User 헤더가 없거나 현재 사용자와 다른 경우 업데이트
       if (email && (!options.headers['X-User'] || options.headers['X-User'] !== email)) {
         options.headers['X-User'] = email;
-        console.log('🔐 X-User 헤더 추가:', email);
+        // 보안 강화: X-User 헤더 로깅 제거
+        // console.log('🔐 X-User 헤더 추가:', email);
       }
       
       return originalFetch(url, options);
@@ -414,10 +416,28 @@ function loadUserFromStorage() {
 
 function toggleLoginLogoutUI(isLoggedIn) {
   const logoutBtn = document.getElementById("logoutBtn");
+  const mobileLogoutBtn = document.getElementById("mobileLogoutBtn");
   const manualWrap = document.getElementById("manualUserWrap");
 
   if (logoutBtn) logoutBtn.classList.toggle("hidden", !isLoggedIn);
+  if (mobileLogoutBtn) mobileLogoutBtn.classList.toggle("hidden", !isLoggedIn);
   if (manualWrap) manualWrap.classList.toggle("hidden", isLoggedIn);
+  
+  // 모바일 환경에서 로그아웃 버튼 표시 처리
+  if (isLoggedIn && mobileLogoutBtn) {
+    const isMobile = window.MOBILE_APP || window.innerWidth <= 768 || 
+                     /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    
+    if (isMobile) {
+      console.log("📱 모바일 환경에서 로그아웃 버튼 표시");
+      mobileLogoutBtn.style.display = "inline-block";
+      mobileLogoutBtn.classList.remove("hidden");
+    } else {
+      console.log("💻 PC 환경에서 모바일 로그아웃 버튼 숨김");
+      mobileLogoutBtn.style.display = "none";
+      mobileLogoutBtn.classList.add("hidden");
+    }
+  }
 }
 
 function toggleAdminUI(isAdmin) {
@@ -522,19 +542,23 @@ async function applyUser() {
     
     if (response.ok) {
       const userInfo = await response.json();
-      console.log("🔍 사용자 정보:", userInfo);
+      // 보안 강화: 사용자 정보 로깅 제거
+      // console.log("🔍 사용자 정보:", userInfo);
       
       // 사용자 역할에 따른 권한 설정
       if (userInfo.is_admin || userInfo.role === 'admin') {
-        console.log("✅ 어드민 권한 확인됨:", email);
+        // 보안 강화: 어드민 권한 로깅 제거
+        // console.log("✅ 어드민 권한 확인됨:", email);
         localStorage.setItem("X-USER-ADMIN", "true");
         localStorage.setItem("X-USER-ROLE", "admin");
       } else if (userInfo.role === 'manager') {
-        console.log("ℹ️ 매니저 권한:", email);
+        // 보안 강화: 매니저 권한 로깅 제거
+        // console.log("ℹ️ 매니저 권한:", email);
         localStorage.removeItem("X-USER-ADMIN");
         localStorage.setItem("X-USER-ROLE", "manager");
       } else {
-        console.log("ℹ️ 일반 사용자:", email);
+        // 보안 강화: 일반 사용자 로깅 제거
+        // console.log("ℹ️ 일반 사용자:", email);
         localStorage.removeItem("X-USER-ADMIN");
         localStorage.setItem("X-USER-ROLE", "user");
       }
@@ -542,7 +566,8 @@ async function applyUser() {
       // 사용자 정보를 전역 변수에 저장
       window.currentUserInfo = userInfo;
     } else {
-      console.log("⚠️ 사용자 정보 확인 실패, 일반 사용자로 처리");
+      // 보안 강화: 사용자 정보 확인 실패 로깅 제거
+      // console.log("⚠️ 사용자 정보 확인 실패, 일반 사용자로 처리");
       localStorage.removeItem("X-USER-ADMIN");
       localStorage.setItem("X-USER-ROLE", "user");
     }
@@ -592,6 +617,11 @@ async function applyUser() {
   }
   
   console.log("✅ 로그인 완료:", email);
+  
+  // 모바일 로그아웃 버튼 표시 상태 업데이트
+  setTimeout(() => {
+    updateMobileLogoutButtonVisibility();
+  }, 100);
 }
 
 // 세션 체크 및 자동 로그인 처리
@@ -642,7 +672,8 @@ async function checkSessionAndAutoLogin() {
   // 서버 세션이 없으면 localStorage에서 확인
   const savedUser = localStorage.getItem('X-USER');
   if (savedUser) {
-    console.log("🔄 localStorage에서 사용자 정보 복원:", savedUser);
+    // 보안 강화: 사용자 정보 로깅 제거
+    // console.log("🔄 localStorage에서 사용자 정보 복원:", savedUser);
     
     // 서버에 자동 로그인 요청
     try {
@@ -657,7 +688,8 @@ async function checkSessionAndAutoLogin() {
       
       if (response.ok) {
         const data = await response.json();
-        console.log("✅ 자동 로그인 성공");
+        // 보안 강화: 로그인 성공 로깅 제거
+        // console.log("✅ 자동 로그인 성공");
         
         setCurrentUser(savedUser);
         hideLoginScreen();
@@ -771,6 +803,31 @@ function handleLogoutClick(e) {
       console.log("✅ 로그아웃 완료");
     });
 }
+
+// 모바일 환경에서 로그아웃 버튼 표시 상태 업데이트
+function updateMobileLogoutButtonVisibility() {
+  const mobileLogoutBtn = document.getElementById("mobileLogoutBtn");
+  if (!mobileLogoutBtn) return;
+  
+  const isLoggedIn = !!currentUser || !!localStorage.getItem('X-USER');
+  if (!isLoggedIn) return;
+  
+  const isMobile = window.MOBILE_APP || window.innerWidth <= 768 || 
+                   /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  
+  if (isMobile) {
+    console.log("📱 모바일 환경 감지 - 로그아웃 버튼 표시");
+    mobileLogoutBtn.style.display = "inline-block";
+    mobileLogoutBtn.classList.remove("hidden");
+  } else {
+    console.log("💻 PC 환경 감지 - 모바일 로그아웃 버튼 숨김");
+    mobileLogoutBtn.style.display = "none";
+    mobileLogoutBtn.classList.add("hidden");
+  }
+}
+
+// 화면 크기 변경 시 로그아웃 버튼 상태 업데이트
+window.addEventListener('resize', updateMobileLogoutButtonVisibility);
 
 function applyCustomerInputs() {
   const nameInp = document.getElementById("customerName");

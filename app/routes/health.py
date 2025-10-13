@@ -2,7 +2,7 @@
 
 from flask import Blueprint, jsonify, request
 from app.core.decorators import handle_errors
-from app.core.auth import require_user
+from app.core.decorators import require_user
 import os
 import time
 
@@ -19,7 +19,7 @@ def health_check():
     })
 
 @bp.get("/api/health/sheets")
-@require_user
+@require_user()
 @handle_errors()
 def sheets_health_check():
     """Google Sheets 동기화 상태 확인"""
@@ -55,7 +55,7 @@ def sheets_health_check():
         }), 500
 
 @bp.post("/api/health/sheets/force-download")
-@require_user
+@require_user()
 @handle_errors()
 def force_sheet_download():
     """강제로 시트 다운로드 실행"""

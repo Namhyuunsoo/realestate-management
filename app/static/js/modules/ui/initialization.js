@@ -276,6 +276,10 @@ window.initializeApp = async function() {
   const logoutBtn = document.getElementById("logoutBtn");
   if (logoutBtn) logoutBtn.addEventListener("click", handleLogoutClick);
 
+  // 모바일 로그아웃 버튼 이벤트 리스너 추가
+  const mobileLogoutBtn = document.getElementById("mobileLogoutBtn");
+  if (mobileLogoutBtn) mobileLogoutBtn.addEventListener("click", handleLogoutClick);
+
   ["customerName", "customerPhone"].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.addEventListener("change", applyCustomerInputs);
@@ -381,7 +385,8 @@ window.initializeApp = async function() {
   // 3) 화면 상태 설정 (모바일/PC 공통)
   if (currentUser) {
     hideLoginScreen();
-    console.log("✅ 사용자 로그인됨:", currentUser);
+    // 보안 강화: 사용자 정보 로깅 제거
+    // console.log("✅ 사용자 로그인됨:", currentUser);
   } else {
     showLoginScreen("");
     console.log("✅ 로그인 화면 표시");
@@ -427,7 +432,8 @@ window.initializeApp = async function() {
   let FETCH_CALLED_ONCE = false; // 변수 정의 추가
   
   document.addEventListener('map-ready', async () => {
-    console.log('🗺️ map-ready 이벤트 발생, currentUser:', currentUser, 'FETCH_CALLED_ONCE:', FETCH_CALLED_ONCE);
+    // 보안 강화: 사용자 정보 로깅 제거
+    // console.log('🗺️ map-ready 이벤트 발생, currentUser:', currentUser, 'FETCH_CALLED_ONCE:', FETCH_CALLED_ONCE);
     if (currentUser && !FETCH_CALLED_ONCE) {
       FETCH_CALLED_ONCE = true;
       

@@ -395,15 +395,27 @@ def list_customers(user_email: str, filter_type: str = 'own', manager: str = '')
                 user_role = getattr(user, 'role', 'unknown')
                 print(f"{user_role.title()} {user.email} accessing all customers ({len(df)} items)")
             else:
-                # 역할이 명확하지 않은 경우 모든 고객 조회 (기본값)
-                print(f"User {user.email} with unknown role accessing all customers ({len(df)} items)")
+                # 보안 강화: 역할이 명확하지 않은 경우 빈 결과 반환
+                from app.services.user_service import mask_email
+                from app.core.security import log_security_event
+                log_security_event('UNKNOWN_ROLE_ERROR', f'User {mask_email(user.email)} with unknown role attempted data access')
+                print(f"보안 강화: 역할 불명으로 인해 빈 결과 반환")
+                return []  # 빈 결과 반환으로 보안 강화
         else:
-            # 사용자 객체가 없거나 메서드가 없는 경우 모든 고객 조회
-            print(f"User object or role methods not available, accessing all customers ({len(df)} items)")
+            # 보안 강화: 사용자 객체가 없거나 메서드가 없는 경우 빈 결과 반환
+            from app.services.user_service import mask_email
+            from app.core.security import log_security_event
+            log_security_event('USER_OBJECT_ERROR', f'User object or role methods not available for {mask_email(user_email)}')
+            print(f"보안 강화: 사용자 객체 오류로 인해 빈 결과 반환")
+            return []  # 빈 결과 반환으로 보안 강화
     except Exception as e:
         print(f"필터링 오류: {e}")
-        # 필터링 실패 시 모든 고객 조회 (안전한 기본값)
-        print(f"Fallback: accessing all customers due to filter error ({len(df)} items)")
+        # 보안 강화: 필터링 실패 시 빈 결과 반환
+        from app.services.user_service import mask_email
+        from app.core.security import log_security_event
+        log_security_event('FILTERING_ERROR', f'Filtering error for user {mask_email(user_email)}: {str(e)}')
+        print(f"보안 강화: 필터링 실패로 인해 빈 결과 반환")
+        return []  # 빈 결과 반환으로 보안 강화
     
     result = df.to_dict(orient="records")
     

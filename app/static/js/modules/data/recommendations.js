@@ -16,23 +16,12 @@ let USER_RECOMMENDATIONS = new Set(); // 현재 사용자가 추천한 매물 ID
  */
 async function loadRecommendations() {
   try {
-    // 인증 상태 확인 및 강화
-    if (!currentUser) {
-      const savedUser = localStorage.getItem('X-USER');
-      if (savedUser) {
-        currentUser = savedUser;
-        window.currentUser = savedUser;
-        console.log('🔄 추천 데이터 로드: currentUser 복원:', savedUser);
-      } else {
-        console.log('❌ 추천 데이터 로드: 사용자 인증 정보가 없습니다');
-        return false;
-      }
-    }
-    
-    console.log('📱 추천 데이터 로드: currentUser 확인됨:', currentUser);
-    
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
     const response = await fetch('/api/recommendations', {
-      headers: { "X-User": currentUser }
+      headers: { 
+        "X-User": currentUser,
+        "X-CSRF-Token": csrfToken
+      }
     });
     
     if (!response.ok) {
@@ -72,9 +61,13 @@ async function toggleRecommendation(listingId) {
     
     if (isCurrentlyRecommended) {
       // 추천 해제
+      const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
       const response = await fetch(`/api/recommendations/${listingId}`, {
         method: 'DELETE',
-        headers: { "X-User": currentUser }
+        headers: { 
+          "X-User": currentUser,
+          "X-CSRF-Token": csrfToken
+        }
       });
       
       if (!response.ok) {
@@ -185,11 +178,13 @@ function openRecommendationModal(listingId) {
     
     try {
       // 추천 추가
+      const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
       const response = await fetch(`/api/recommendations/${listingId}`, {
         method: 'POST',
         headers: {
           "X-User": currentUser,
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
+          "X-CSRF-Token": csrfToken
         },
         body: JSON.stringify({ reason })
       });
@@ -204,7 +199,8 @@ function openRecommendationModal(listingId) {
           method: 'POST',
           headers: {
             "X-User": currentUser,
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
+            "X-CSRF-Token": csrfToken
           },
           body: JSON.stringify({ comment })
         });
@@ -295,9 +291,13 @@ function openRecommendationCancelModal(listingId) {
   // 추천 취소 확인
   confirmBtn.addEventListener('click', async () => {
     try {
+      const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
       const response = await fetch(`/api/recommendations/${listingId}`, {
         method: 'DELETE',
-        headers: { "X-User": currentUser }
+        headers: { 
+          "X-User": currentUser,
+          "X-CSRF-Token": csrfToken
+        }
       });
       
       if (!response.ok) {
@@ -430,11 +430,13 @@ function openRecommendationDetailModal(listingId) {
     }
     
     try {
+      const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
       const response = await fetch(`/api/recommendations/${listingId}/comments`, {
         method: 'POST',
         headers: {
           "X-User": currentUser,
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
+          "X-CSRF-Token": csrfToken
         },
         body: JSON.stringify({ comment })
       });
@@ -519,11 +521,6 @@ function updateRecommendationUI(listingId) {
   if (window.updateMapMarkerRecommendation) {
     window.updateMapMarkerRecommendation(listingId);
   }
-  
-  // 모바일 매물리스트 모달의 별표 업데이트
-  if (window.listingListModalManager && window.listingListModalManager.syncRecommendationUI) {
-    window.listingListModalManager.syncRecommendationUI();
-  }
 }
 
 /**
@@ -561,11 +558,6 @@ function syncAllRecommendationUI() {
   // 클러스터 버블의 추천 상태 업데이트
   if (window.updateClusterBubblesRecommendationStatus) {
     window.updateClusterBubblesRecommendationStatus();
-  }
-  
-  // 모바일 매물리스트 모달 동기화
-  if (window.listingListModalManager && window.listingListModalManager.syncRecommendationUI) {
-    window.listingListModalManager.syncRecommendationUI();
   }
   
   window._recommendationUISynced = true;

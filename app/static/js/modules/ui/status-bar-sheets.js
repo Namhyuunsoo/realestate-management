@@ -423,7 +423,8 @@ window.deleteSheetFromStatusBar = deleteSheetFromStatusBar;
 // 디버깅용 함수들
 window.debugStatusBarSheets = function() {
   console.log("🔍 상태바 시트 디버깅 시작");
-  console.log("currentUser:", currentUser);
+  // 보안 강화: 사용자 정보 로깅 제거
+  // console.log("currentUser:", currentUser);
   console.log("USER_SHEETS_FOR_STATUS_BAR:", USER_SHEETS_FOR_STATUS_BAR);
   console.log("CURRENT_SELECTED_SHEET:", CURRENT_SELECTED_SHEET);
   

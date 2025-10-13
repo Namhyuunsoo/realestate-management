@@ -4,6 +4,7 @@
   <meta charset="utf-8" />
   <title>매물 프로토타입 v0.3</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="csrf-token" content="">
   <link rel="icon" href="data:,">
   <script>
     // 브라우저/앱 속성으로 모바일 감지 (CSS 로드 전에 실행)
@@ -22,14 +23,14 @@
     // PC CSS 먼저 로드
     const pcLink = document.createElement('link');
     pcLink.rel = 'stylesheet';
-    pcLink.href = '/static/css/style.css?v=20250803';
+    pcLink.href = '/static/css/style.css?v=20250924';
     document.head.appendChild(pcLink);
     
     // 모바일이면 모바일 CSS 추가 로드 (오버라이드용)
     if (isMobileDevice()) {
       const mobileLink = document.createElement('link');
       mobileLink.rel = 'stylesheet';
-      mobileLink.href = '/static/css/style-mobile.css?v=20250803';
+      mobileLink.href = '/static/css/style-mobile.css?v=20250924';
       document.head.appendChild(mobileLink);
       console.log('📱 모바일 디바이스 감지 - PC CSS + 모바일 CSS 로드');
     } else {
@@ -45,7 +46,6 @@
   <script src="/static/js/listing-add.js"></script>
   <script src="/static/js/customer-add.js"></script>
   <script src="/static/js/modules/ui/mobile-buttons.js"></script>
-  <script src="/static/js/modules/ui/filter-modal.js"></script>
   <script src="/static/js/customer-list-modal.js"></script>
   <script>
     async function loadNaverMapsAPI() {
@@ -227,6 +227,10 @@
           <button id="adminStatsBtn" class="admin-btn" type="button">통계</button>
         </div>
 
+        <!-- 모바일 로그아웃 버튼 -->
+        <button id="mobileLogoutBtn" class="mobile-logout-btn hidden" type="button">로그아웃</button>
+        
+        <!-- PC 로그아웃 버튼 -->
         <a id="logoutBtn" href="/auth/logout" class="hidden">로그아웃</a>
       </div>
     </header>

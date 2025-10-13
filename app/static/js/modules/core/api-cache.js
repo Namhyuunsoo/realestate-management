@@ -5,8 +5,44 @@
  * ----------------------------------------- */
 
 /*******************************
- * ===== API 캐시 시스템 =====
+ * ===== CSRF 토큰 관리 =====
  *******************************/
+
+// CSRF 토큰 가져오기
+function getCsrfToken() {
+  // 메타 태그에서 토큰 가져오기
+  const metaToken = document.querySelector('meta[name="csrf-token"]');
+  if (metaToken) {
+    const token = metaToken.getAttribute('content');
+    // 보안 강화: CSRF 토큰 로깅 제거
+    // console.log('🔑 CSRF 토큰 발견 (메타 태그):', token);
+    return token;
+  }
+  
+  // 세션 스토리지에서 토큰 가져오기
+  const sessionToken = sessionStorage.getItem('csrf_token');
+  if (sessionToken) {
+    // 보안 강화: CSRF 토큰 로깅 제거
+    // console.log('🔑 CSRF 토큰 발견 (세션 스토리지):', sessionToken);
+    return sessionToken;
+  }
+  
+  console.warn('⚠️ CSRF 토큰을 찾을 수 없습니다');
+  return null;
+}
+
+// CSRF 토큰이 포함된 헤더 생성
+function getCsrfHeaders() {
+  const token = getCsrfToken();
+  if (!token) {
+    console.warn('⚠️ CSRF 토큰이 없어서 요청이 실패할 수 있습니다');
+    return {};
+  }
+  
+  return {
+    'X-CSRF-Token': token
+  };
+}
 
 // API 응답 캐시 (메모리 기반)
 const API_CACHE = new Map();
@@ -36,8 +72,18 @@ async function cachedFetch(url, options = {}) {
     }
   }
   
+  // CSRF 토큰 자동 포함
+  const csrfHeaders = getCsrfHeaders();
+  const mergedOptions = {
+    ...options,
+    headers: {
+      ...csrfHeaders,
+      ...options.headers
+    }
+  };
+  
   // API 호출
-  const response = await fetch(url, options);
+  const response = await fetch(url, mergedOptions);
   
   if (!response.ok) {
     throw new Error(`API 실패: ${response.status}`);
@@ -63,11 +109,11 @@ function invalidateCache(pattern = null) {
         API_CACHE.delete(key);
       }
     }
-    console.log(`🗑️ 캐시 무효화: ${pattern}`);
+    // console.log(`🗑️ 캐시 무효화: ${pattern}`);
   } else {
     // 모든 캐시 무효화
     API_CACHE.clear();
-    console.log('🗑️ 모든 캐시 무효화');
+    // console.log('🗑️ 모든 캐시 무효화');
   }
 }
 
@@ -89,7 +135,6 @@ async function getCurrentUserInfo() {
   
   try {
     const data = await cachedFetch('/api/me', {
-      headers: { 'X-User': currentUser },
       credentials: 'include'
     });
     
@@ -123,7 +168,7 @@ async function getCachedListings(force = false) {
     const url = force ? '/api/listings?force=1&limit=100000' : '/api/listings?limit=100000';
     console.log("🌐 API 호출:", url);
     const data = await cachedFetch(url, {
-      headers: { 'X-User': currentUser }
+      credentials: 'include'
     });
     
     listingsCache = data;
@@ -244,5 +289,7 @@ window.clearListingsCache = clearListingsCache;
 window.clearCustomersCache = clearCustomersCache;
 window.clearRecommendationsCache = clearRecommendationsCache;
 window.invalidateCache = invalidateCache;
+window.getCsrfToken = getCsrfToken;
+window.getCsrfHeaders = getCsrfHeaders;
 
 console.log("✅ api-cache.js 모듈 로드 완료");

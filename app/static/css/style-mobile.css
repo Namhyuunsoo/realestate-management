@@ -64,16 +64,64 @@
   overflow: visible !important; /* 하단바 배경이 보이도록 */
 }
 
+/* 모바일 로그아웃 버튼 스타일 */
+.mobile-logout-btn {
+  background: #dc3545;
+  color: white;
+  border: 1px solid #dc3545;
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  margin-left: 8px;
+}
+
+.mobile-logout-btn:hover {
+  background: #c82333;
+  border-color: #bd2130;
+}
+
+.mobile-logout-btn:active {
+  background: #bd2130;
+  border-color: #b21f2d;
+}
+
+
+#topbar .user-role-name {
+  font-size: 11px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 120px;
+}
+
+/* 모바일 환경에서 어드민 버튼들 숨김 */
+#topbar .admin-only {
+  display: none !important;
+}
+
+/* 모바일 환경에서 PC 로그아웃 버튼 숨김 */
+#topbar #logoutBtn {
+  display: none !important;
+}
+
+/* 모바일 환경에서 모바일 로그아웃 버튼 표시 */
+#topbar .mobile-logout-btn {
+  display: inline-block !important;
+}
+
 /* 레이아웃 영역 전체화면 - 모바일에서 강제 적용 */
 #layout {
   position: absolute !important;
-  top: 0 !important; /* 상단부터 시작 - PC CSS의 166px 오버라이드 */
+  top: 0 !important; /* 상단부터 시작 - PC CSS의 166px 완전 오버라이드 */
   left: 0 !important;
   right: 0 !important;
   bottom: 0 !important;
   height: 100vh !important; /* 전체 화면 높이 */
   width: 100% !important;
-  /* overflow: hidden 제거 - 배경이 제대로 보이도록 */
+  overflow: hidden !important; /* 지도 영역 제한 */
 }
 
 /* 메인 콘텐츠 영역 조정 (지도 전체화면) - 모바일에서 강제 적용 */
@@ -306,9 +354,16 @@
 #topbar .admin-only.hidden,
 #topbar .admin-btn,
 #topbar #userManagementBtn,
-#topbar #adminStatsBtn,
-#topbar .auth-links {
+#topbar #adminStatsBtn {
   display: none;
+}
+
+/* 모바일 환경에서 auth-links는 표시하되 내부 요소만 조정 */
+#topbar .auth-links {
+  display: flex !important;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: nowrap;
 }
 
 /* 상태카운트바에서 숨길 요소들 */

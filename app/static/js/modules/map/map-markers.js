@@ -7,7 +7,7 @@
  **************************************/
 
 function placeMarkers(arr) {
-  console.log("🔍 placeMarkers 호출됨, 매물 수:", arr?.length);
+  // console.log("🔍 placeMarkers 호출됨, 매물 수:", arr?.length);
   
   if (!MAP) {
     console.error("❌ MAP 객체가 없습니다.");
@@ -27,75 +27,11 @@ function placeMarkers(arr) {
     return;
   }
 
-  console.log("🔍 placeMarkers: API 확인 완료, 마커 생성 시작");
+  // console.log("🔍 placeMarkers: API 확인 완료, 마커 생성 시작");
 
-  // 모바일 환경에서는 기존 마커 제거만 차단 (새 마커 생성은 허용)
-  // 단, 사이드바 토글 후 리사이즈 시에는 기존 마커 제거 허용
-  const isMobileResize = window.innerWidth <= 768 && window.MARKERS && window.MARKERS.length > 0 && window.isMobileResizeFlag;
-  
-  if (window.isMobileView && window.MARKERS && window.MARKERS.length > 0 && !isMobileResize) {
-    console.log('📱 모바일 환경: 기존 마커 제거 차단됨 - 새 마커 생성 허용');
-    
-    // 기존 마커는 제거하지 않고, 새 마커만 추가
-    if (arr && arr.length > 0) {
-      console.log('📱 모바일 환경: 새 마커 생성 시작');
-      
-      // 기존 마커와 새 데이터 비교하여 추가할 마커만 생성
-      const existingIds = new Set(window.MARKERS.map(m => m._listingId));
-      const newItems = arr.filter(item => !existingIds.has(item.id));
-      
-      if (newItems.length > 0) {
-        console.log(`📱 모바일 환경: ${newItems.length}개 새 마커 생성`);
-        
-        newItems.forEach(item => {
-          const { lat, lng } = item.coords || {};
-          if (lat == null || lng == null) return;
-          
-          try {
-            const latNum = parseFloat(lat);
-            const lngNum = parseFloat(lng);
-            
-            if (isNaN(latNum) || isNaN(lngNum)) return;
-            if (latNum < 33 || latNum > 39 || lngNum < 124 || lngNum > 132) return;
-            
-            const pos = new naver.maps.LatLng(latNum, lngNum);
-            const color = STATUS_COLORS[item.status_raw] || "#007AFF";
-            
-            const marker = new naver.maps.Marker({
-              position: pos,
-              map: MAP,
-              icon: { content: createMarkerIcon(color, item.id === SELECTED_MARKER_ID, getBriefingStatus(item.id), (window.USER_RECOMMENDATIONS && window.USER_RECOMMENDATIONS.has) ? window.USER_RECOMMENDATIONS.has(item.id) : false) }
-            });
-            marker._listingId = item.id;
-            
-            naver.maps.Event.addListener(marker, "click", () => {
-              setActiveMarker(item.id);
-              scrollToListing(item.id);
-              renderDetailPanel(item);
-            });
-            
-            window.MARKERS.push(marker);
-          } catch (error) {
-            console.error(`📱 마커 생성 실패:`, error);
-          }
-        });
-        
-        console.log(`📱 모바일 환경: 총 ${window.MARKERS.length}개 마커 유지`);
-        return; // 새 마커 생성 완료 후 함수 종료
-      } else {
-        console.log('📱 모바일 환경: 새 마커 없음 - 기존 마커 유지');
-        return; // 새 마커가 없으면 함수 종료
-      }
-    }
-    
-    return; // 기존 마커가 있으면 함수 종료
-  }
-
-  // 모바일 환경에서 마커가 없을 때만 기존 마커 제거 허용
+  // 기존 마커 제거
   if (MARKERS && MARKERS.length) {
-    if (window.isMobileView) {
-      console.log('📱 모바일 환경: 기존 마커 제거 허용 (마커가 없음)');
-    }
+    console.log('🗑️ 기존 마커 제거 중...');
     MARKERS.forEach(m => m.setMap && m.setMap(null));
     MARKERS = [];
   }
@@ -108,7 +44,7 @@ function placeMarkers(arr) {
   let validMarkers = 0;
   let invalidCoords = 0;
 
-  console.log("🔍 placeMarkers: 마커 생성 루프 시작");
+  // console.log("🔍 placeMarkers: 마커 생성 루프 시작");
 
   arr.forEach(item => {
     const { lat, lng } = item.coords || {};
@@ -180,15 +116,16 @@ function placeMarkers(arr) {
   // 클러스터 변경 이벤트 리스너 추가
   if (CLUSTERER) {
     CLUSTERER.addListener('cluster_changed', () => {
-      // 클러스터 변경 후 추천 상태 업데이트
-      setTimeout(() => {
-        if (window.updateClusterBubblesRecommendationStatus) {
-          window.updateClusterBubblesRecommendationStatus();
-        }
-        if (typeof bindClusterClickDelegation === 'function') {
-          bindClusterClickDelegation();
-        }
-      }, 100);
+      console.log('🔥 클러스터 변경 이벤트 발생 - 추천 상태 강제 업데이트');
+      
+      // 클러스터 변경 후 즉시 추천 상태 업데이트 (지연 없음)
+      if (window.updateClusterBubblesRecommendationStatus) {
+        window.updateClusterBubblesRecommendationStatus();
+      }
+      if (typeof bindClusterClickDelegation === 'function') {
+        bindClusterClickDelegation();
+      }
+      
     });
     
     // 초기 클러스터 생성 후에도 이벤트 바인딩
@@ -218,75 +155,10 @@ function placeMarkers(arr) {
         if (count >= 50)      cls = "cluster-big";
         else if (count >= 10) cls = "cluster-mid";
 
-        // 클러스터 객체 찾기 (안전하게 처리)
-        let clusterObj = null;
-        if (CLUSTERER && CLUSTERER._clusters) {
-          clusterObj = CLUSTERER._clusters.find(
-            c => c._clusterMarker === clusterMarker
-          );
-        }
-        
-        // 브리핑 상태 분석
-        let bubbleStyle = "";
-        let bubbleContent = count;
-        
-        if (clusterObj && clusterObj.getClusterMember) {
-          const clusterMembers = clusterObj.getClusterMember();
-          const briefingStats = {
-            normal: 0,
-            pending: 0,
-            completed: 0,
-            onhold: 0
-          };
-          
-          // 🔥 최소개선: 추천매물 개수 확인 강화
-          let recommendedCount = 0;
-          
-          clusterMembers.forEach(marker => {
-            const status = getBriefingStatus(marker._listingId);
-            briefingStats[status]++;
-            
-            // 추천매물 확인 - 추천 데이터가 로드되어 있으면 즉시 확인
-            if (window.USER_RECOMMENDATIONS && window.USER_RECOMMENDATIONS.has && window.USER_RECOMMENDATIONS.has(marker._listingId)) {
-              recommendedCount++;
-            }
-          });
-          
-          // 추천매물이 있으면 빨간색으로 표시 (최우선)
-          if (recommendedCount > 0) {
-            bubbleStyle = `background-color: #FF3B30 !important; border: 2px solid white; box-shadow: 0 2px 8px rgba(255,59,48,0.3);`;
-          }
-          // 브리핑 상태가 있는 매물이 있으면 색상 변경
-          else {
-            const hasBriefingItems = briefingStats.pending > 0 || briefingStats.completed > 0 || briefingStats.onhold > 0;
-            
-            if (hasBriefingItems) {
-              // 주요 브리핑 상태 결정 (우선순위: 완료 > 예정 > 보류)
-              let primaryStatus = BRIEFING_STATUS.NORMAL;
-              if (briefingStats.completed > 0) {
-                primaryStatus = BRIEFING_STATUS.COMPLETED;
-              } else if (briefingStats.pending > 0) {
-                primaryStatus = BRIEFING_STATUS.PENDING;
-              } else if (briefingStats.onhold > 0) {
-                primaryStatus = BRIEFING_STATUS.ONHOLD;
-              }
-              
-              // 브리핑 상태별 색상
-              const statusColors = {
-                [BRIEFING_STATUS.NORMAL]: '#007AFF',
-                [BRIEFING_STATUS.PENDING]: '#FF3B30',
-                [BRIEFING_STATUS.COMPLETED]: '#34C759',
-                [BRIEFING_STATUS.ONHOLD]: '#AF52DE'
-              };
-              
-              bubbleStyle = `background-color: ${statusColors[primaryStatus]} !important; border: 2px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.3);`;
-            }
-          }
-        }
-
-        const bubbleHtml = `<div class="cluster-bubble ${cls}" style="${bubbleStyle}">${bubbleContent}</div>`;
+        const bubbleHtml = `<div class="cluster-bubble ${cls}">${count}</div>`;
         const wrapper = clusterMarker.getElement();
         wrapper.innerHTML = bubbleHtml;
+        
 
         try { clusterMarker.setZIndex(8000 + count); } catch (e) {}
       }
@@ -298,13 +170,32 @@ function placeMarkers(arr) {
         bindClusterClickDelegation();
       }
     }, 500);
+    
+    // 🔥 클러스터 생성 후 전역 변수로 할당
+    window.CLUSTERER = CLUSTERER;
+    // console.log('✅ CLUSTERER 전역 변수로 할당됨:', window.CLUSTERER);
+    
+    // 🔥 클러스터 생성 완료 후 상태 업데이트
+    // MarkerClustering의 내부 이벤트 대신 직접 확인
+    const checkAndUpdateClusters = () => {
+      if (CLUSTERER && CLUSTERER._clusters && CLUSTERER._clusters.length > 0) {
+        if (typeof window.updateClusterBubbles === 'function') {
+          window.updateClusterBubbles();
+        }
+      } else {
+        // 클러스터가 아직 생성되지 않았으면 다시 확인
+        setTimeout(checkAndUpdateClusters, 50);
+      }
+    };
+    checkAndUpdateClusters();
+    
   } else {
     // MarkerClustering이 로드되지 않은 경우 개별 마커로 표시
     console.log('⚠️ MarkerClustering이 로드되지 않아 개별 마커로 표시합니다.');
     MARKERS.forEach(m => m.setMap(MAP));
   }
   
-  console.log(`✅ placeMarkers 완료: 유효한 마커 ${validMarkers}개, 좌표 없는 매물 ${invalidCoords}개`);
+  // console.log(`✅ placeMarkers 완료: 유효한 마커 ${validMarkers}개, 좌표 없는 매물 ${invalidCoords}개`);
 }
 
 function setActiveMarker(id){
@@ -552,7 +443,7 @@ function updateMapMarkerRecommendation(listingId) {
 function updateAllMarkersRecommendationStatus() {
   if (!MARKERS || MARKERS.length === 0) return;
   
-  console.log('🔄 모든 마커의 추천 상태 업데이트 시작...');
+  // console.log('🔄 모든 마커의 추천 상태 업데이트 시작...');
   
   MARKERS.forEach(marker => {
     if (!marker || !marker._listingId) return;
@@ -569,18 +460,28 @@ function updateAllMarkersRecommendationStatus() {
     }
   });
   
-  console.log('✅ 모든 마커의 추천 상태 업데이트 완료');
+  // console.log('✅ 모든 마커의 추천 상태 업데이트 완료');
 }
 
 /**
  * 클러스터 버블의 추천 상태 업데이트 (추천 데이터 로드 후 호출)
  */
 function updateClusterBubblesRecommendationStatus() {
-  if (!CLUSTERER || !CLUSTERER._clusters) return;
+  const clusterer = window.CLUSTERER || CLUSTERER;
+  if (!clusterer || !clusterer._clusters) {
+    console.log('⚠️ CLUSTERER 또는 _clusters가 없습니다:', { clusterer, clusters: clusterer?._clusters });
+    return;
+  }
   
-  console.log('🔄 클러스터 버블 추천 상태 업데이트 시작...');
+  // 🔥 추천 데이터 로드 상태 확인 (더 관대하게)
+  if (!window.USER_RECOMMENDATIONS) {
+    console.log('⚠️ 추천 데이터가 아직 로드되지 않음, 업데이트 건너뜀');
+    return;
+  }
   
-  CLUSTERER._clusters.forEach(cluster => {
+  // console.log('🔄 클러스터 버블 추천 상태 업데이트 시작...');
+  
+  clusterer._clusters.forEach(cluster => {
     if (!cluster || !cluster._clusterMarker) return;
     
     const clusterMembers = cluster.getClusterMember();
@@ -589,23 +490,41 @@ function updateClusterBubblesRecommendationStatus() {
     // 추천매물 개수 확인
     let recommendedCount = 0;
     clusterMembers.forEach(marker => {
-      if ((window.USER_RECOMMENDATIONS && window.USER_RECOMMENDATIONS.has) && window.USER_RECOMMENDATIONS.has(marker._listingId)) {
+      if (window.USER_RECOMMENDATIONS.has && window.USER_RECOMMENDATIONS.has(marker._listingId)) {
         recommendedCount++;
       }
     });
     
     // 추천매물이 있으면 빨간색으로 업데이트
     if (recommendedCount > 0) {
-      const bubble = cluster._clusterMarker.getElement().querySelector('.cluster-bubble');
+      const clusterElement = cluster._clusterMarker.getElement();
+      
+      // 클러스터 요소 자체가 버블인지 확인
+      let bubble = clusterElement.classList.contains('cluster-bubble') ? clusterElement : null;
+      
+      // 클러스터 요소 내부에서 버블 찾기
+      if (!bubble) {
+        bubble = clusterElement.querySelector('.cluster-bubble');
+      }
+      
       if (bubble) {
-        bubble.style.backgroundColor = '#FF3B30';
-        bubble.style.border = '2px solid white';
-        bubble.style.boxShadow = '0 2px 8px rgba(255,59,48,0.3)';
+        // 🔥 이중 보안: 속성과 클래스 모두 설정
+        bubble.setAttribute('data-recommended', 'true');
+        bubble.classList.add('recommended');
+        
+        // 🔥 강제 스타일 적용 (CSS 로딩 지연 대비)
+        bubble.style.setProperty('background-color', '#FF3B30', 'important');
+        bubble.style.setProperty('border', '2px solid white', 'important');
+        bubble.style.setProperty('box-shadow', '0 2px 8px rgba(255,59,48,0.3)', 'important');
+        
+        console.log(`✅ 클러스터 버블 색상 업데이트됨: ${recommendedCount}개 추천매물`, bubble);
+      } else {
+        console.log(`❌ 클러스터 버블을 찾을 수 없음:`, clusterElement);
       }
     }
   });
   
-  console.log('✅ 클러스터 버블 추천 상태 업데이트 완료');
+  // console.log('✅ 클러스터 버블 추천 상태 업데이트 완료');
 }
 
 // 전역 함수로 export
@@ -616,4 +535,5 @@ window.fixMapLayoutAfterShow = fixMapLayoutAfterShow;
 window.calcHaversineMeters = calcHaversineMeters;
 window.getDistanceMeters = getDistanceMeters;
 window.computeDistancesIfNeeded = computeDistancesIfNeeded;
-window.assignTempCoords = assignTempCoords; 
+window.assignTempCoords = assignTempCoords;
+window.CLUSTERER = CLUSTERER; // 클러스터 객체 전역 노출 

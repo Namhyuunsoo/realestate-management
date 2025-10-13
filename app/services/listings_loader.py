@@ -14,7 +14,7 @@ from ..models.listing_schema import Listing
 
 # 헤더 기대 (최소)
 EXPECTED_HEADERS = [
-    "접수날짜","지역","지번","건물명","층수","가게명","분양","실평수",
+    "접수일","지역","지번","건물명","층수","가게명","분양","실평수",
     "보증금","월세","권리금","비고","담당자","현황","지역2","연락처",
     "의뢰인","비고3","위반여부","현수막번호"
 ]
@@ -125,12 +125,12 @@ def normalize_listing(row_idx: int, row: list[str], hdr: Dict[str,int]) -> Listi
         current_app.logger.error(f"Row {row_idx}: 현황 읽기 실패 - {e}")
         status_raw = ""
 
+    def gv(col):  # get value
+        return row[hdr[col]] if col in hdr else ""
+
     address_full = build_address(row, hdr)
     if address_full.strip() == "":
         return None
-
-    def gv(col):  # get value
-        return row[hdr[col]] if col in hdr else ""
 
     fields = { col: gv(col) for col in hdr.keys() }
 

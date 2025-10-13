@@ -45,7 +45,7 @@ class GeocodingService:
         # API 키 상태 즉시 확인 및 로깅 (logger 초기화 후)
         print(f"=== API 키 상태 확인 (__init__) ===")
         print(f"Client ID: {'*' * len(self.naver_client_id) if self.naver_client_id else 'None'}")
-        print(f"Client Secret: {'*' * len(self.naver_client_secret) if self.naver_client_secret else 'None'}")
+        print(f"Client Secret: {'*' * 8 if self.naver_client_secret else 'None'}")  # 고정 길이로 마스킹
         
         if not self.naver_client_id or not self.naver_client_secret:
             print("❌ 네이버 지오코딩 API 키가 설정되지 않았습니다!")

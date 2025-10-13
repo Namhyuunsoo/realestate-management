@@ -3,10 +3,35 @@
 from flask import Blueprint, request, jsonify, session, current_app
 from app.services.user_service import UserService
 from app.core.decorators import validate_json, handle_errors, log_access, require_user
-from app.core.security import log_security_event
+from app.core.security import log_security_event, generate_csrf_token
 import re
+import os
 
 bp = Blueprint("auth", __name__, url_prefix="/api/auth")
+
+@bp.route("/")
+def index():
+    """메인 페이지 - CSRF 토큰 포함"""
+    from flask import render_template_string
+    
+    # CSRF 토큰 생성
+    csrf_token = session.get('csrf_token')
+    if not csrf_token:
+        csrf_token = generate_csrf_token()
+        session['csrf_token'] = csrf_token
+    
+    # HTML 파일 읽기
+    html_path = os.path.join(current_app.static_folder, 'index.html')
+    with open(html_path, 'r', encoding='utf-8') as f:
+        html_content = f.read()
+    
+    # CSRF 토큰을 메타 태그에 주입
+    html_content = html_content.replace(
+        '<meta name="csrf-token" content="">',
+        f'<meta name="csrf-token" content="{csrf_token}">'
+    )
+    
+    return html_content
 
 def get_user_service() -> UserService:
     """사용자 서비스 인스턴스 반환"""
@@ -82,8 +107,9 @@ def login():
         email = data["email"].lower().strip()
         password = data["password"]
         
-        current_app.logger.info(f"로그인 시도: {email}")
-        current_app.logger.info(f"비밀번호 길이: {len(password) if password else 0}")
+        from app.services.user_service import mask_email
+        current_app.logger.info(f"로그인 시도: {mask_email(email)}")
+        # 보안 강화: 비밀번호 관련 정보 로깅 제거
         
         # 강화된 입력 검증
         if not email or not email.strip():
@@ -91,13 +117,13 @@ def login():
             return jsonify({"error": "이메일을 입력해주세요."}), 400
             
         if not password or len(password.strip()) == 0:
-            current_app.logger.warning(f"로그인 실패 - 빈 비밀번호: {email}")
+            current_app.logger.warning(f"로그인 실패 - 빈 비밀번호: {mask_email(email)}")
             return jsonify({"error": "비밀번호를 입력해주세요."}), 400
         
         # 이메일 형식 검증
         email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
         if not re.match(email_pattern, email):
-            current_app.logger.warning(f"로그인 실패 - 잘못된 이메일 형식: {email}")
+            current_app.logger.warning(f"로그인 실패 - 잘못된 이메일 형식: {mask_email(email)}")
             return jsonify({"error": "올바른 이메일 형식이 아닙니다."}), 400
         
         # 사용자 서비스 가져오기
@@ -109,47 +135,47 @@ def login():
         # 사용자 조회
         user = user_service.get_user_by_email(email)
         if not user:
-            current_app.logger.warning(f"로그인 실패 - 사용자 없음: {email}")
-            log_security_event('LOGIN_FAILED', f'User not found: {email}')
+            current_app.logger.warning(f"로그인 실패 - 사용자 없음: {mask_email(email)}")
+            log_security_event('LOGIN_FAILED', f'User not found: {mask_email(email)}')
             return jsonify({"error": "이메일 또는 비밀번호가 올바르지 않습니다."}), 401
         
-        current_app.logger.info(f"사용자 찾음: {email} (상태: {user.status}, 역할: {user.role})")
-        current_app.logger.info(f"사용자 비밀번호 해시 존재: {bool(user.password_hash)}")
+        current_app.logger.info(f"사용자 찾음: {mask_email(email)} (상태: {user.status}, 역할: {user.role})")
+        # 보안 강화: 비밀번호 해시 존재 여부 로깅 제거
         
         # 계정 상태 확인
         if user.status == "pending":
-            current_app.logger.info(f"로그인 실패 - 승인 대기: {email}")
+            current_app.logger.info(f"로그인 실패 - 승인 대기: {mask_email(email)}")
             return jsonify({"error": "관리자 승인 대기 중입니다."}), 403
         
         if user.status == "rejected":
-            current_app.logger.info(f"로그인 실패 - 가입 거부: {email}")
+            current_app.logger.info(f"로그인 실패 - 가입 거부: {mask_email(email)}")
             return jsonify({"error": "가입이 거부되었습니다."}), 403
         
         if user.status == "inactive":
-            current_app.logger.info(f"로그인 실패 - 비활성화: {email}")
+            current_app.logger.info(f"로그인 실패 - 비활성화: {mask_email(email)}")
             return jsonify({"error": "비활성화된 계정입니다."}), 403
         
         # 계정 잠금 확인
         if user.is_locked():
-            current_app.logger.warning(f"로그인 실패 - 계정 잠금: {email}")
+            current_app.logger.warning(f"로그인 실패 - 계정 잠금: {mask_email(email)}")
             return jsonify({"error": "계정이 잠겨있습니다. 잠시 후 다시 시도해주세요."}), 423
         
         # 비밀번호 확인
-        current_app.logger.info(f"비밀번호 확인 시작: {email}")
+        current_app.logger.info(f"비밀번호 확인 시작: {mask_email(email)}")
         try:
             password_check_result = user.check_password(password)
             current_app.logger.info(f"비밀번호 확인 결과: {password_check_result}")
             
             if not password_check_result:
-                current_app.logger.warning(f"로그인 실패 - 잘못된 비밀번호: {email}")
-                log_security_event('LOGIN_FAILED', f'Invalid password for: {email}')
+                current_app.logger.warning(f"로그인 실패 - 잘못된 비밀번호: {mask_email(email)}")
+                log_security_event('LOGIN_FAILED', f'Invalid password for: {mask_email(email)}')
                 return jsonify({"error": "이메일 또는 비밀번호가 올바르지 않습니다."}), 401
                 
         except Exception as e:
             current_app.logger.error(f"비밀번호 확인 중 오류 발생: {str(e)}")
             return jsonify({"error": "로그인 처리 중 오류가 발생했습니다."}), 500
         
-        current_app.logger.info(f"비밀번호 확인 성공: {email}")
+        current_app.logger.info(f"비밀번호 확인 성공: {mask_email(email)}")
         
         # 로그인 성공
         user.record_login_attempt(True)
@@ -165,8 +191,8 @@ def login():
         session["user_name"] = user.name
         session["user_role"] = user.role
         
-        current_app.logger.info(f"로그인 성공: {email} (역할: {user.role})")
-        log_security_event('LOGIN_SUCCESS', f'User logged in: {email}')
+        current_app.logger.info(f"로그인 성공: {mask_email(email)} (역할: {user.role})")
+        log_security_event('LOGIN_SUCCESS', f'User logged in: {mask_email(email)}')
         
         return jsonify({
             "message": "로그인되었습니다.",
@@ -274,29 +300,18 @@ def logout():
 @bp.get("/me")
 @handle_errors()
 def get_current_user():
-    """현재 로그인한 사용자 정보 조회"""
+    """현재 로그인한 사용자 정보 조회 (세션 기반)"""
     user_id = session.get("user_id")
-    user_email = request.headers.get("X-User")
+    
+    if not user_id:
+        return jsonify({"error": "로그인이 필요합니다."}), 401
     
     user_service = get_user_service()
-    user = None
+    user = user_service.get_user_by_id(user_id)
     
-    # 세션 기반 인증 확인
-    if user_id:
-        user = user_service.get_user_by_id(user_id)
-        if not user or not user.is_active():
-            session.clear()
-            return jsonify({"error": "유효하지 않은 세션입니다."}), 401
-    
-    # X-User 헤더 기반 인증 확인
-    elif user_email:
-        user = user_service.get_user_by_email(user_email)
-        if not user or not user.is_active():
-            return jsonify({"error": "유효하지 않은 사용자입니다."}), 401
-    
-    # 인증되지 않은 경우
-    if not user:
-        return jsonify({"error": "로그인이 필요합니다."}), 401
+    if not user or not user.is_active():
+        session.clear()
+        return jsonify({"error": "유효하지 않은 세션입니다."}), 401
     
     return jsonify({
         "user": {
@@ -396,7 +411,7 @@ def reset_password_temp():
         
         # 비밀번호 재설정
         if user_service.reset_password(user.id, temp_password, "system"):
-            current_app.logger.info(f"임시 비밀번호 설정 완료: {email} (임시 비밀번호: {temp_password})")
+            current_app.logger.info(f"임시 비밀번호 설정 완료: {email} (임시 비밀번호: {'*' * len(temp_password)})")
             return jsonify({
                 "message": "임시 비밀번호가 설정되었습니다.",
                 "temp_password": temp_password

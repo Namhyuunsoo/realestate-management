@@ -286,13 +286,16 @@ async function initializeApplication() {
     try {
       if (window.checkSessionAndAutoLogin) {
         await window.checkSessionAndAutoLogin();
-        console.log('✅ 세션 체크 및 자동 로그인 완료, currentUser:', window.currentUser);
+        // 보안 강화: 사용자 정보 로깅 제거
+        // console.log('✅ 세션 체크 및 자동 로그인 완료, currentUser:', window.currentUser);
       } else if (window.syncUserFromSession) {
         await window.syncUserFromSession();
-        console.log('✅ 사용자 세션 동기화 완료, currentUser:', window.currentUser);
+        // 보안 강화: 사용자 정보 로깅 제거
+        // console.log('✅ 사용자 세션 동기화 완료, currentUser:', window.currentUser);
       } else if (window.loadUserFromStorage) {
         window.loadUserFromStorage();
-        console.log('ℹ️ localStorage에서 사용자 정보 로드, currentUser:', window.currentUser);
+        // 보안 강화: 사용자 정보 로깅 제거
+        // console.log('ℹ️ localStorage에서 사용자 정보 로드, currentUser:', window.currentUser);
       }
       
       // 모든 초기화 방법이 실패한 경우 localStorage에서 직접 복원
@@ -362,7 +365,8 @@ async function initializeApplication() {
     }
     
     // 8. 데이터 로드 (모바일/PC 공통)
-    console.log('📊 데이터 로드 시작, currentUser:', window.currentUser);
+    // 보안 강화: 사용자 정보 로깅 제거
+    // console.log('📊 데이터 로드 시작, currentUser:', window.currentUser);
     
     if (window.currentUser) {
       // 추천 데이터 먼저 로드
@@ -589,12 +593,9 @@ function resizeMapAndRefreshMarkers() {
         console.log('✅ 마커 클러스터링 재계산 완료');
       }
       
-      // 마커들 재표시 (모바일 환경에서는 마커 재생성하지 않음)
+      // 마커들 재표시 (모바일 환경에서도 마커 재생성 허용)
       if (window.placeMarkers && typeof window.placeMarkers === 'function') {
-        if (window.innerWidth <= 768) {
-          console.log('📱 모바일 환경: 마커 재생성 건너뛰기 - 기존 마커 유지');
-          return; // 모바일에서는 마커 재생성하지 않음
-        }
+        console.log('🔄 마커 재표시 시작');
         
         const delay = 100;
         

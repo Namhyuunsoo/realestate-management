@@ -163,7 +163,7 @@ function renderFullList() {
       <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
         <thead style="position: sticky; top: 0; background: #f8f9fa; z-index: 10;">
           <tr style="border-bottom: 2px solid #dee2e6;">
-            <th style="padding:8px;min-width:60px;">접수날짜</th>
+            <th style="padding:8px;min-width:60px;">접수일</th>
             <th style="padding:8px;min-width:50px;">지역</th>
             <th style="padding:8px;min-width:50px;">지번</th>
             <th style="padding:8px;min-width:60px;">건물명</th>
@@ -200,7 +200,7 @@ function renderFullList() {
                   onclick="selectFullListItem('${item.id}')"
                   onmouseenter="highlightFullListItem('${item.id}', true); this.style.backgroundColor='#f8f9fa';"
                   onmouseleave="highlightFullListItem('${item.id}', false); this.style.backgroundColor='white';">
-                <td style="padding:6px 8px;">${escapeHtml(fields['접수날짜'] || '-')}</td>
+                <td style="padding:6px 8px;">${escapeHtml(fields['접수일'] || '-')}</td>
                 <td style="padding:6px 8px;">${escapeHtml(fields['지역'] || '-')}</td>
                 <td style="padding:6px 8px;">${escapeHtml(fields['지번'] || '-')}</td>
                 <td style="padding:6px 8px;">${escapeHtml(fields['건물명'] || '-')}</td>

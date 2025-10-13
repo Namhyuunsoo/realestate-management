@@ -180,7 +180,8 @@ function updateMarkerBriefingStatus(listingId, status) {
   updateClusterBubbles();
 }
 
-function updateClusterBubbles() {
+// 🔥 전역 함수로 노출
+window.updateClusterBubbles = function updateClusterBubbles() {
   if (!CLUSTERER || !CLUSTERER._clusters) return;
   
   CLUSTERER._clusters.forEach(cluster => {
@@ -195,48 +196,62 @@ function updateClusterBubbles() {
     if (count >= 50)      cls = "cluster-big";
     else if (count >= 10) cls = "cluster-mid";
 
-    // 클러스터 내 매물들의 브리핑 상태 분석
+    // 클러스터 내 매물들의 상태 분석
     const briefingStats = {
       normal: 0,
       pending: 0,
       completed: 0,
       onhold: 0
     };
+    let recommendedCount = 0;
     
     clusterMembers.forEach(marker => {
       if (marker && marker._listingId) {
+        // 브리핑 상태 확인
         const status = getBriefingStatus(marker._listingId);
         briefingStats[status]++;
+        
+        // 추천 상태 확인
+        if (window.USER_RECOMMENDATIONS && window.USER_RECOMMENDATIONS.has && 
+            window.USER_RECOMMENDATIONS.has(marker._listingId)) {
+          recommendedCount++;
+        }
       }
     });
     
-    // 브리핑 상태에 따른 버블 스타일 결정
+    // 상태에 따른 버블 스타일 결정
     let bubbleStyle = "";
     let bubbleContent = count;
     
+    // 🔥 추천매물이 있으면 빨간색으로 표시 (최우선)
+    if (recommendedCount > 0) {
+      bubbleStyle = `background-color: #FF3B30 !important; border: 2px solid white; box-shadow: 0 2px 8px rgba(255,59,48,0.3);`;
+    }
     // 브리핑 상태가 있는 매물이 있으면 색상 변경
-    const hasBriefingItems = briefingStats.pending > 0 || briefingStats.completed > 0 || briefingStats.onhold > 0;
+    else {
+      const hasBriefingItems = briefingStats.pending > 0 || briefingStats.completed > 0 || briefingStats.onhold > 0;
     
-    if (hasBriefingItems) {
-      // 주요 브리핑 상태 결정 (우선순위: 완료 > 예정 > 보류)
-      let primaryStatus = BRIEFING_STATUS.NORMAL;
-      if (briefingStats.completed > 0) {
-        primaryStatus = BRIEFING_STATUS.COMPLETED;
-      } else if (briefingStats.pending > 0) {
-        primaryStatus = BRIEFING_STATUS.PENDING;
-      } else if (briefingStats.onhold > 0) {
-        primaryStatus = BRIEFING_STATUS.ONHOLD;
+      if (hasBriefingItems) {
+        // 주요 브리핑 상태 결정 (우선순위: 완료 > 예정 > 보류)
+        let primaryStatus = BRIEFING_STATUS.NORMAL;
+        if (briefingStats.completed > 0) {
+          primaryStatus = BRIEFING_STATUS.COMPLETED;
+        } else if (briefingStats.pending > 0) {
+          primaryStatus = BRIEFING_STATUS.PENDING;
+        } else if (briefingStats.onhold > 0) {
+          primaryStatus = BRIEFING_STATUS.ONHOLD;
+        }
+        
+        // 브리핑 상태별 색상
+        const statusColors = {
+          [BRIEFING_STATUS.NORMAL]: '#007AFF',
+          [BRIEFING_STATUS.PENDING]: '#FF3B30',
+          [BRIEFING_STATUS.COMPLETED]: '#34C759',
+          [BRIEFING_STATUS.ONHOLD]: '#AF52DE'
+        };
+        
+        bubbleStyle = `background-color: ${statusColors[primaryStatus]} !important; border: 2px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.3);`;
       }
-      
-      // 브리핑 상태별 색상
-      const statusColors = {
-        [BRIEFING_STATUS.NORMAL]: '#007AFF',
-        [BRIEFING_STATUS.PENDING]: '#FF3B30',
-        [BRIEFING_STATUS.COMPLETED]: '#34C759',
-        [BRIEFING_STATUS.ONHOLD]: '#AF52DE'
-      };
-      
-      bubbleStyle = `background-color: ${statusColors[primaryStatus]} !important; border: 2px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.3);`;
     }
 
     const bubbleHtml = `<div class="cluster-bubble ${cls}" style="${bubbleStyle}">${bubbleContent}</div>`;
@@ -245,7 +260,7 @@ function updateClusterBubbles() {
       wrapper.innerHTML = bubbleHtml;
     }
   });
-}
+};
 
 function cycleBriefingStatus(listingId) {
   const currentStatus = getBriefingStatus(listingId);

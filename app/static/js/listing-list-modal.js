@@ -178,7 +178,8 @@ class ListingListModalManager {
                 console.log('🔄 모달에서 currentUser 전역 변수 동기화:', currentUser);
             }
             
-            console.log('📱 매물리스트 모달: 사용자 인증 확인됨, currentUser:', window.currentUser);
+            // 보안 강화: 사용자 정보 로깅 제거
+            // console.log('📱 매물리스트 모달: 사용자 인증 확인됨, currentUser:', window.currentUser);
             
             // 모바일에서 데이터가 없으면 강제로 로드
             if (!window.LISTINGS || window.LISTINGS.length === 0) {

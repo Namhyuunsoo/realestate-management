@@ -12,7 +12,8 @@ bp = Blueprint("customers", __name__, url_prefix="/api/customers")
 @validate_json("name", "phone")
 @handle_errors()
 def create_customer_api():
-    user = request.headers.get("X-User")
+    # 데코레이터에서 이미 사용자 인증 완료, request.current_user 사용
+    user = request.current_user.email
     
     # 디버깅을 위한 상세 로그 추가
     print('create_customer_api called! user:', user)
@@ -59,7 +60,8 @@ def create_customer_api():
 @require_user()
 @handle_errors()
 def list_customers_api():
-    user_email = request.headers.get("X-User")
+    # 데코레이터에서 이미 사용자 인증 완료, request.current_user 사용
+    user_email = request.current_user.email
     
     # 사용자 객체 가져오기
     try:
@@ -93,7 +95,8 @@ def get_customer_api(customer_id):
     print(f"🔍 request.method: {request.method}")
     print(f"🔍 request.url: {request.url}")
     
-    user = request.headers.get("X-User")
+    # 데코레이터에서 이미 사용자 인증 완료, request.current_user 사용
+    user = request.current_user.email
     print(f"🔍 사용자: {user}")
     
     # 어드민 권한 확인

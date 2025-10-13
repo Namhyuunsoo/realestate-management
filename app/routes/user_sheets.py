@@ -1,19 +1,18 @@
 # app/routes/user_sheets.py
 
 from flask import Blueprint, request, jsonify, current_app
-from ..core.auth import require_user
+from ..core.decorators import require_user
 from ..services.user_sheet_service import UserSheetService
 
 bp = Blueprint("user_sheets", __name__)
 
 @bp.route("/api/user-sheets", methods=["GET"])
-@require_user
+@require_user()
 def get_user_sheets():
     """사용자의 모든 시트 조회"""
     try:
-        user_email = request.headers.get("X-User", "").strip()
-        if not user_email:
-            return jsonify({"error": "사용자 정보가 필요합니다."}), 400
+        # 데코레이터에서 이미 사용자 인증 완료, request.current_user 사용
+        user_email = request.current_user.email
         
         # 사용자 서비스로 사용자 확인
         user_service = current_app.data_manager.user_service
@@ -39,7 +38,7 @@ def get_user_sheets():
         return jsonify({"error": f"시트 조회 실패: {str(e)}"}), 500
 
 @bp.route("/api/user-sheets", methods=["POST"])
-@require_user
+@require_user()
 def create_user_sheet():
     """새로운 사용자 시트 생성"""
     try:
@@ -97,7 +96,7 @@ def create_user_sheet():
         return jsonify({"error": f"시트 생성 실패: {str(e)}"}), 500
 
 @bp.route("/api/user-sheets/<sheet_id>", methods=["GET"])
-@require_user
+@require_user()
 def get_user_sheet(sheet_id):
     """특정 사용자 시트 조회"""
     try:
@@ -132,7 +131,7 @@ def get_user_sheet(sheet_id):
         return jsonify({"error": f"시트 조회 실패: {str(e)}"}), 500
 
 @bp.route("/api/user-sheets/<sheet_id>", methods=["PUT"])
-@require_user
+@require_user()
 def update_user_sheet(sheet_id):
     """사용자 시트 업데이트"""
     try:
@@ -178,7 +177,7 @@ def update_user_sheet(sheet_id):
         return jsonify({"error": f"시트 업데이트 실패: {str(e)}"}), 500
 
 @bp.route("/api/user-sheets/<sheet_id>", methods=["DELETE"])
-@require_user
+@require_user()
 def delete_user_sheet(sheet_id):
     """사용자 시트 삭제"""
     try:
@@ -217,7 +216,7 @@ def delete_user_sheet(sheet_id):
         return jsonify({"error": f"시트 삭제 실패: {str(e)}"}), 500
 
 @bp.route("/api/user-sheets/<sheet_id>/toggle-active", methods=["POST"])
-@require_user
+@require_user()
 def toggle_sheet_active(sheet_id):
     """시트 활성화/비활성화 토글"""
     try:
@@ -257,7 +256,7 @@ def toggle_sheet_active(sheet_id):
         return jsonify({"error": f"시트 상태 변경 실패: {str(e)}"}), 500
 
 @bp.route("/api/user-sheets/<sheet_id>/toggle-sync", methods=["POST"])
-@require_user
+@require_user()
 def toggle_sync_enabled(sheet_id):
     """동기화 활성화/비활성화 토글"""
     try:
@@ -297,7 +296,7 @@ def toggle_sync_enabled(sheet_id):
         return jsonify({"error": f"동기화 상태 변경 실패: {str(e)}"}), 500
 
 @bp.route("/api/user-sheets/<sheet_id>/sync-interval", methods=["PUT"])
-@require_user
+@require_user()
 def update_sync_interval(sheet_id):
     """동기화 간격 업데이트"""
     try:
@@ -345,7 +344,7 @@ def update_sync_interval(sheet_id):
         return jsonify({"error": f"동기화 간격 업데이트 실패: {str(e)}"}), 500
 
 @bp.route("/api/user-sheets/<sheet_id>/test-api", methods=["POST"])
-@require_user
+@require_user()
 def test_api_connection(sheet_id):
     """API 연결 테스트"""
     try:

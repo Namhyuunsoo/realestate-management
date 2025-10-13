@@ -218,10 +218,20 @@ def validate_csrf_token():
             if not current_app.config.get('CSRF_PROTECTION', True):
                 return f(*args, **kwargs)
             
-            if request.method in ['POST', 'PUT', 'DELETE']:
+            if request.method in ['GET', 'POST', 'PUT', 'DELETE']:
                 token = request.headers.get('X-CSRF-Token') or request.form.get('csrf_token')
-                if not token or token != session.get('csrf_token'):
-                    log_security_event('CSRF_ATTEMPT', f'Invalid token: {token}')
+                session_token = session.get('csrf_token')
+                
+                if not token:
+                    log_security_event('CSRF_ATTEMPT', 'No token provided')
+                    return jsonify({"error": "CSRF token required"}), 403
+                
+                if not session_token:
+                    log_security_event('CSRF_ATTEMPT', 'No session token')
+                    return jsonify({"error": "Session token missing"}), 403
+                
+                if token != session_token:
+                    log_security_event('CSRF_ATTEMPT', 'Token mismatch')
                     return jsonify({"error": "Invalid CSRF token"}), 403
             
             return f(*args, **kwargs)

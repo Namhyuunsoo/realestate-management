@@ -8,7 +8,7 @@ let editingUserId = null;
 
 // 사용자 관리 초기화
 async function initUserManagement() {
-  console.log('🔍 initUserManagement 시작, currentUser:', currentUser);
+  // console.log('🔍 initUserManagement 시작, currentUser:', currentUser);
   
   // 어드민 권한 확인
   if (!currentUser) {
@@ -18,7 +18,7 @@ async function initUserManagement() {
 
   // 서버에서 사용자 정보 가져오기
   try {
-    console.log('🔍 /api/me 요청 시작...');
+    // console.log('🔍 /api/me 요청 시작...');
     const response = await fetch('/api/me', {
       headers: {
         'X-User': currentUser
@@ -40,7 +40,7 @@ async function initUserManagement() {
         // 어드민 UI 표시 (모든 기능)
         showAdminUI(true);
         setupUserManagementEvents();
-        console.log('✅ 어드민 사용자 관리 기능 초기화 완료');
+        // console.log('✅ 어드민 사용자 관리 기능 초기화 완료');
       } else if (userInfo.role === 'manager') {
         console.log('ℹ️ 매니저 권한 확인됨');
         localStorage.removeItem("X-USER-ADMIN");
@@ -49,7 +49,7 @@ async function initUserManagement() {
         // 매니저 UI 표시 (사용자관리/통계 제외)
         showAdminUI(false);
         setupUserManagementEvents();
-        console.log('✅ 매니저 사용자 관리 기능 초기화 완료');
+        // console.log('✅ 매니저 사용자 관리 기능 초기화 완료');
       } else {
         console.log('ℹ️ 일반 사용자 - 사용자 관리 기능 비활성화');
         localStorage.removeItem("X-USER-ADMIN");
@@ -93,7 +93,7 @@ function showAdminUI(showAllFeatures = true) {
     }
   });
   
-  console.log('✅ showAdminUI 완료');
+  // console.log('✅ showAdminUI 완료');
 }
 
 // 사용자 관리 이벤트 설정
@@ -103,7 +103,7 @@ function setupUserManagementEvents() {
   if (userManagementBtn && window.currentUserInfo && 
       (window.currentUserInfo.is_admin || window.currentUserInfo.role === 'admin')) {
     userManagementBtn.addEventListener('click', openUserManagementModal);
-    console.log('✅ 사용자 관리 버튼 이벤트 리스너 등록 완료');
+    // console.log('✅ 사용자 관리 버튼 이벤트 리스너 등록 완료');
   } else {
     console.log('⚠️ 사용자 관리 버튼 이벤트 리스너 등록 건너뜀 (권한 없음)');
   }
@@ -181,7 +181,7 @@ async function openUserManagementModal() {
           tableContainer.style.overflowX = 'hidden';
         }
         
-        console.log('✅ 모달 크기 강제 변경 완료');
+        // console.log('✅ 모달 크기 강제 변경 완료');
       }
       
       // 사용자 목록 로드
@@ -287,7 +287,7 @@ async function loadUserList() {
       tbody.appendChild(row);
     });
     
-    console.log(`✅ 사용자 목록 로드 완료: ${users.length}명`);
+    // console.log(`✅ 사용자 목록 로드 완료: ${users.length}명`);
     
   } catch (error) {
     console.error('❌ 사용자 목록 로드 실패:', error);

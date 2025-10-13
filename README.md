@@ -447,10 +447,11 @@ POST /api/security/clear-stats
 
 #### 기본 관리자 계정
 ```
-이메일: admin@example.com
-비밀번호: admin123
+이메일: 환경변수 ADMIN_EMAIL에서 확인
+비밀번호: 환경변수 ADMIN_PASSWORD에서 확인
 ```
 ⚠️ 보안을 위해 로그인 후 반드시 비밀번호를 변경하세요!
+⚠️ 기본 관리자 계정 정보는 환경변수에서 확인하세요!
 
 ### API 엔드포인트
 

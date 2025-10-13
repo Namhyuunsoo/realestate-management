@@ -10,7 +10,9 @@ bp = Blueprint("briefings", __name__, url_prefix="/api")
 @require_user()
 @handle_errors()
 def list_briefings_api():
-    user_email = request.headers.get("X-User")
+    # 데코레이터에서 이미 사용자 인증 완료, request.current_user 사용
+    user = request.current_user
+    user_email = user.email
     
     # 사용자 객체 가져오기
     try:
@@ -93,7 +95,9 @@ def create_briefing_api():
 @require_user()
 @handle_errors()
 def get_briefing_api(bid):
-    user = request.headers.get("X-User")
+    # 데코레이터에서 이미 사용자 인증 완료, request.current_user 사용
+    user = request.current_user
+    user_email = user.email
     
     # BriefingService를 통해 브리핑과 매물 정보 조회
     briefing_service = current_app.data_manager.briefing_service

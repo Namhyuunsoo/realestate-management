@@ -68,8 +68,8 @@ function initMap() {
     }
     
     MAP = new naver.maps.Map('map', {
-      center: new naver.maps.LatLng(37.4933485, 126.7225676),
-      zoom: 18,
+      center: new naver.maps.LatLng(37.4931458, 126.7227149), // 사용자 요청 좌표
+      zoom: 19, // 사용자 요청 줌 레벨
       mapTypeControl: false
     });
     console.log('✅ 지도 객체 생성 완료:', MAP);
@@ -82,6 +82,16 @@ function initMap() {
     if (!MAP) {
       throw new Error('지도 객체 생성 실패');
     }
+    
+    // MAP_READY 플래그 설정
+    MAP_READY = true;
+    window.MAP_READY = true;
+    console.log('✅ MAP_READY 플래그 설정 완료');
+    
+    // map-ready 이벤트 발생
+    const mapReadyEvent = new CustomEvent('map-ready');
+    document.dispatchEvent(mapReadyEvent);
+    console.log('✅ map-ready 이벤트 발생');
     
     // MAP 객체 생성 완료 후 initMapControls 호출 (함수가 준비될 때까지 기다림)
     
@@ -210,8 +220,8 @@ function initMap() {
     
     // 🔥 핵심 수정: 지도 이동/줌 시 새로운 매물 로딩
     if (typeof applyAllFilters === 'function') {
-      console.log('🗺️ 지도 영역 변경 감지 - 새로운 매물 로딩 시작');
-      applyAllFilters(); // 새로운 매물 로딩 및 필터링
+      // console.log('🗺️ 지도 영역 변경 감지 - 새로운 매물 로딩 시작');
+      applyAllFilters();
     } else if (typeof FILTERED_LISTINGS !== 'undefined' && FILTERED_LISTINGS) {
       // 기존 방식 (백업용)
       const visibleItems = FILTERED_LISTINGS.filter(item => {
@@ -297,17 +307,7 @@ async function syncUserFromSession() {
   try {
     console.log("🔄 사용자 세션 동기화 시작...");
     
-    // 현재 사용자 정보 가져오기
-    const currentUserEmail = localStorage.getItem("X-USER");
-    
-    const headers = { "Accept": "application/json" };
-    if (currentUserEmail) {
-      headers["X-User"] = currentUserEmail;
-      console.log("🔐 X-User 헤더 설정:", currentUserEmail);
-    }
-    
     const res = await fetch("/api/me", { 
-      headers: headers, 
       credentials: 'include' 
     });
     
@@ -315,31 +315,16 @@ async function syncUserFromSession() {
     
     if (!res.ok) {
       console.warn("⚠️ /api/me 응답 실패:", res.status);
-      // 세션이 없지만 localStorage에 사용자 정보가 있는 경우
-      if (currentUserEmail) {
-        console.log("ℹ️ 세션 없음, localStorage 사용자 정보 사용:", currentUserEmail);
-        if (typeof setCurrentUser === 'function') {
-          setCurrentUser(currentUserEmail);
-        }
-        return true;
-      }
       return false;
     }
     
     const data = await res.json();
     console.log("📦 /api/me 응답 데이터 로드됨");
 
-    // /api/me 응답은 두 가지 케이스를 지원한다:
-    // 1) { user: { email, role, ... } }
-    // 2) { logged_in: true, email: "...", is_admin: bool }
+    // /api/me 응답은 { user: { email, role, ... } } 형식
     let userPayload = null;
     if (data && data.user) {
       userPayload = data.user;
-    } else if (data && (data.email || data.logged_in)) {
-      userPayload = {
-        email: data.email || "",
-        role: data.is_admin ? "admin" : "user"
-      };
     }
     
     if (userPayload && userPayload.email) {
@@ -349,17 +334,17 @@ async function syncUserFromSession() {
         setCurrentUser(userPayload.email);
       }
 
-      // 사용자 역할 정보 저장
-      localStorage.setItem("X-USER-ROLE", userPayload.role || "user");
+      // 사용자 역할 정보는 서버에서만 관리 (클라이언트 저장 제거)
+      // localStorage.setItem("X-USER-ROLE", userPayload.role || "user");
       
-      // 어드민 권한 정보 저장
-      if (userPayload.role === 'admin') {
-        localStorage.setItem("X-USER-ADMIN", "true");
-        console.log("✅ 어드민 권한 확인됨:", userPayload.email);
-      } else {
-        localStorage.removeItem("X-USER-ADMIN");
-        console.log("ℹ️ 일반 사용자:", userPayload.email);
-      }
+      // 어드민 권한 정보도 서버에서만 관리
+      // if (userPayload.role === 'admin') {
+      //   localStorage.setItem("X-USER-ADMIN", "true");
+      //   console.log("✅ 어드민 권한 확인됨:", userPayload.email);
+      // } else {
+      //   localStorage.removeItem("X-USER-ADMIN");
+      //   console.log("ℹ️ 일반 사용자:", userPayload.email);
+      // }
 
       const usEl = document.getElementById('userStatus');
       if (usEl) {
@@ -386,30 +371,12 @@ async function syncUserFromSession() {
       return true;
     } else {
       console.warn("⚠️ 사용자 정보가 없음");
-      // 세션이 없지만 localStorage에 사용자 정보가 있는 경우
-      if (currentUserEmail) {
-        console.log("ℹ️ 세션 없음, localStorage 사용자 정보 사용:", currentUserEmail);
-        if (typeof setCurrentUser === 'function') {
-          setCurrentUser(currentUserEmail);
-        }
-        return true;
-      }
+      return false;
     }
   } catch (e) {
-    console.error("❌ 사용자 세션 로드 실패", e);
-    // 에러 발생 시 localStorage 사용자 정보 사용
-    const currentUserEmail = localStorage.getItem("X-USER");
-    if (currentUserEmail) {
-      console.log("ℹ️ 에러 발생, localStorage 사용자 정보 사용:", currentUserEmail);
-      if (typeof setCurrentUser === 'function') {
-        setCurrentUser(currentUserEmail);
-      }
-      return true;
-    }
+    console.error("❌ 사용자 세션 동기화 실패:", e);
+    return false;
   }
-  
-  console.log("❌ 사용자 세션 동기화 실패");
-  return false;
 }
 
 // 지도 핵심 함수들을 전역으로 export

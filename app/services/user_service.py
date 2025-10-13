@@ -7,6 +7,27 @@ from typing import List, Optional, Dict, Any
 from app.models.user import User
 from app.core.ids import generate_id
 
+def mask_ip(ip: str) -> str:
+    """IP 주소 마스킹 함수"""
+    if '.' in ip:  # IPv4
+        parts = ip.split('.')
+        return f"{parts[0]}.{parts[1]}.***.***"
+    elif ':' in ip:  # IPv6
+        parts = ip.split(':')
+        return f"{parts[0]}:{parts[1]}:***:***"
+    return "***.***.***.***"
+
+def mask_email(email: str) -> str:
+    """이메일 마스킹 함수 (4자리 + 마스킹)"""
+    if '@' in email:
+        local, domain = email.split('@', 1)
+        if len(local) > 4:
+            masked_local = local[:4] + '*' * (len(local) - 4)
+        else:
+            masked_local = local
+        return f"{masked_local}@{domain}"
+    return email
+
 class UserService:
     """사용자 관리 서비스"""
     
@@ -20,7 +41,8 @@ class UserService:
         """사용자 데이터 로드"""
         if os.path.exists(self.users_file):
             try:
-                print(f"사용자 데이터 파일 로드 중: {self.users_file}")
+                # 보안 강화: 사용자 데이터 파일 로드 로깅 제거
+        # print(f"사용자 데이터 파일 로드 중: {self.users_file}")
                 with open(self.users_file, 'r', encoding='utf-8') as f:
                     data = json.load(f)
                     
@@ -28,7 +50,8 @@ class UserService:
                     if "users" in data:
                         # 새로운 형식
                         self.users = {}
-                        print(f"새로운 형식 사용자 데이터 발견: {len(data.get('users', []))}명")
+                # 보안 강화: 새 사용자 형식 로깅 제거
+        # print(f"새로운 형식 사용자 데이터 발견: {len(data.get('users', []))}명")
                         for user_data in data.get("users", []):
                             try:
                                 # is_active 필드가 있으면 status로 변환
@@ -45,22 +68,28 @@ class UserService:
                                 
                                 user = User.from_dict(user_data)
                                 self.users[user.id] = user
-                                print(f"사용자 로드됨: {user.email} (상태: {user.status})")
+                                # 보안 강화: 사용자 정보 로깅 제거
+        # print(f"사용자 로드됨: {mask_email(user.email)} (상태: {user.status})")
                             except Exception as e:
-                                print(f"사용자 데이터 로드 실패 (개별): {e}")
+        # 보안 강화: 개별 사용자 로드 실패 로깅 제거
+        # print(f"사용자 데이터 로드 실패 (개별): {e}")
                                 continue
                     else:
                         # 기존 형식 - 마이그레이션 필요
-                        print("기존 형식 사용자 데이터 발견, 마이그레이션 시작...")
+        # 보안 강화: 마이그레이션 로깅 제거
+        # print("기존 형식 사용자 데이터 발견, 마이그레이션 시작...")
                         self._migrate_old_format(data)
                         
-                print(f"총 {len(self.users)}명의 사용자가 로드됨")
+                # 보안 강화: 총 사용자 수만 로깅
+        # print(f"총 {len(self.users)}명의 사용자가 로드됨")
                         
             except Exception as e:
-                print(f"사용자 데이터 로드 실패: {e}")
+        # 보안 강화: 사용자 데이터 로드 실패 로깅 제거
+        # print(f"사용자 데이터 로드 실패: {e}")
                 self.users = {}
         else:
-            print("사용자 데이터 파일이 없음, 기본 관리자 계정 생성...")
+        # 보안 강화: 기본 관리자 계정 생성 로깅 제거
+        # print("사용자 데이터 파일이 없음, 기본 관리자 계정 생성...")
             # 기본 관리자 계정 생성
             self._create_default_admin()
     
@@ -117,7 +146,7 @@ class UserService:
             )
             admin.set_password(admin_password)
             self.users[admin.id] = admin
-            print(f"✅ 환경변수 기반 관리자 계정 생성: {admin_email}")
+            print(f"✅ 환경변수 기반 관리자 계정 생성: {mask_email(admin_email)}")
         
         # 새로운 형식으로 저장
         self._save_users_new_format()
@@ -179,10 +208,10 @@ class UserService:
         self.users[admin.id] = admin
         self._save_users_new_format()
         print("✅ 기본 관리자 계정이 생성되었습니다.")
-        print(f"   이메일: {admin_email}")
-        print(f"   비밀번호: {admin_password}")
+        print(f"   이메일: {mask_email(admin_email)}")
         print(f"   이름: {admin_name}")
         print("   ⚠️ 보안을 위해 로그인 후 비밀번호를 변경하세요!")
+        print("   ⚠️ 비밀번호는 환경변수 ADMIN_PASSWORD에서 확인하세요.")
     
     def register_user(self, email: str, password: str, name: str) -> Optional[User]:
         """새 사용자 등록"""
@@ -210,12 +239,14 @@ class UserService:
         try:
             user = self.get_user_by_email(email)
             if not user:
-                print(f"인증 실패 - 사용자 없음: {email}")
+            # 보안 강화: 인증 실패 로깅 제거
+        # print(f"인증 실패 - 사용자 없음: {mask_email(email)}")
                 return None
             
             # 계정 잠금 확인
             if user.is_locked():
-                print(f"인증 실패 - 계정 잠금: {email}")
+                # 보안 강화: 계정 잠금 로깅 제거
+                # print(f"인증 실패 - 계정 잠금: {mask_email(email)}")
                 return None
             
             # 비밀번호 확인
@@ -223,16 +254,19 @@ class UserService:
                 user.record_login_attempt(True)
                 # 해시가 마이그레이션되었을 수 있으므로 항상 저장
                 self._save_users()
-                print(f"인증 성공: {email}")
+                # 보안 강화: 인증 성공 로깅 제거
+                # print(f"인증 성공: {mask_email(email)}")
                 return user if user.is_active() else None
             else:
                 user.record_login_attempt(False)
                 self._save_users()
-                print(f"인증 실패 - 잘못된 비밀번호: {email}")
+                # 보안 강화: 비밀번호 실패 로깅 제거
+                # print(f"인증 실패 - 잘못된 비밀번호: {mask_email(email)}")
                 return None
                 
         except Exception as e:
-            print(f"인증 처리 중 오류 발생: {str(e)}")
+        # 보안 강화: 인증 처리 오류 로깅 제거
+        # print(f"인증 처리 중 오류 발생: {str(e)}")
             return None
     
     def get_user_by_email(self, email: str) -> Optional[User]:
@@ -366,7 +400,7 @@ class UserService:
             # 변경 사항 저장
             self._save_users()
             
-            print(f"사용자 역할 변경: {user.email} ({old_role} → {new_role})")
+            print(f"사용자 역할 변경: {mask_email(user.email)} ({old_role} → {new_role})")
             return True
             
         except Exception as e:
@@ -386,7 +420,7 @@ class UserService:
             # 변경 사항 저장
             self._save_users()
             
-            print(f"사용자 직책 변경: {user.email} ({old_job_title} → {new_job_title})")
+            print(f"사용자 직책 변경: {mask_email(user.email)} ({old_job_title} → {new_job_title})")
             return True
             
         except Exception as e:
@@ -406,7 +440,7 @@ class UserService:
             # 변경 사항 저장
             self._save_users()
             
-            print(f"사용자 시트 URL 설정: {user.email} ({old_sheet_url} → {user.sheet_url})")
+            print(f"사용자 시트 URL 설정: {mask_email(user.email)} ({old_sheet_url} → {user.sheet_url})")
             return True
             
         except Exception as e:

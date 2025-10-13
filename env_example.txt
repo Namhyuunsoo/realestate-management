@@ -1,0 +1,50 @@
+# 부동산 관리 시스템 환경변수 설정 예시
+# 이 파일을 .env로 복사하고 실제 값으로 수정하세요
+
+# 서버 설정
+PORT=5000
+HOST=0.0.0.0
+FLASK_DEBUG=False
+
+# 보안 설정
+SECRET_KEY=your-secret-key-here-change-this-to-random-string
+
+# 사용자 권한 설정 (쉼표로 구분)
+ALLOWED_USERS=user1,user2,user3
+ADMIN_USERS=admin1,admin2
+
+# 보안 옵션
+MAX_LOGIN_ATTEMPTS=5
+LOCKOUT_DURATION=300
+SESSION_TIMEOUT=28800
+MAX_REQUESTS_PER_MINUTE=100
+
+# Google Sheets 설정
+SPREADSHEET_ID=1D14iWPeTuHAMf9m_LrtsILYEd2Z8dpjAbIfpx-WR8eY
+SERVICE_ACCOUNT_FILE=../config/service_account.json
+SHEET_DOWNLOAD_INTERVAL=5
+
+# Naver 지도 API 설정
+NAVER_MAPS_NCP_CLIENT_ID=your_naver_maps_client_id
+NAVER_MAPS_NCP_CLIENT_SECRET=your_naver_maps_client_secret
+
+# Naver 로그인 API 설정
+NAVER_LOGIN_CLIENT_ID=your_naver_login_client_id
+NAVER_LOGIN_CLIENT_SECRET=your_naver_login_client_secret
+NAVER_LOGIN_REDIRECT_URI=http://localhost:5000/auth/naver/callback
+
+# 데이터 경로 설정
+DATA_DIR=./data
+LISTING_SHEET_FILENAME=상가임대차.xlsx
+MAP_CACHE_FILENAME=지도캐시.xlsx
+
+# 캐시 파일 설정
+LISTING_CACHE_FILE=./data/cache/listings_normalized.json
+GEOCODE_CACHE_FILE=./data/cache/geocode_cache.json
+
+# DuckDNS 설정 (선택사항)
+DUCKDNS_DOMAIN=your-domain.duckdns.org
+DUCKDNS_TOKEN=your-duckdns-token
+DUCKDNS_UPDATE_INTERVAL=300
+
+

@@ -11,6 +11,10 @@ import zipfile
 import tempfile
 from typing import Optional, Tuple, Dict, Any
 
+class SecurityError(Exception):
+    """보안 관련 오류"""
+    pass
+
 # 전역 락 - 동시 파일 접근 방지
 _file_lock = threading.Lock()
 
@@ -30,10 +34,23 @@ def read_local_listing_sheet(force_reload: bool = False) -> list[list[str]]:
         if not os.path.exists(cache_dir):
             os.makedirs(cache_dir)
         
-        # 소스 파일 경로
+        # 소스 파일 경로 (보안 강화: 경로 검증)
         filename = os.getenv("LISTING_SHEET_FILENAME", "상가임대차.xlsx")
         data_dir = os.getenv("DATA_DIR", "./data")
+        
+        # 파일명 보안 검증 (경로 순회 공격 방지)
+        if ".." in filename or "/" in filename or "\\" in filename:
+            raise SecurityError(f"잘못된 파일명: {filename}")
+        
         source_path = os.path.join(data_dir, "raw", filename)
+        
+        # 절대 경로로 변환하여 보안 강화
+        source_path = os.path.abspath(source_path)
+        data_dir_abs = os.path.abspath(data_dir)
+        
+        # 경로가 허용된 디렉토리 내부인지 확인
+        if not source_path.startswith(data_dir_abs):
+            raise SecurityError(f"허용되지 않은 파일 경로: {source_path}")
         
         if not os.path.exists(source_path):
             raise FileNotFoundError(f"Listing sheet not found: {source_path}")

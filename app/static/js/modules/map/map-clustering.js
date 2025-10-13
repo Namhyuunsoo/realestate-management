@@ -19,52 +19,7 @@ async function renderClusterGroupList(cluster) {
   const ids     = markers.map(m => m._listingId);
   const arr     = LISTINGS.filter(x => ids.includes(x.id));
 
-  // 모바일 모달이 열려있는지 확인
-  const listingListModal = document.getElementById('listingListModal');
-  const isModalOpen = listingListModal && !listingListModal.classList.contains('hidden');
-  
-  if (isModalOpen) {
-    // 모바일 모달이 열려있을 때는 모달 내에서 클러스터 목록 표시
-    console.log('모바일 모달 내에서 클러스터 목록 표시');
-    
-    if (window.listingListModalManager && typeof window.listingListModalManager.showClusterList === 'function') {
-      window.listingListModalManager.showClusterList(arr);
-    } else {
-      console.error('listingListModalManager.showClusterList 함수를 찾을 수 없습니다');
-    }
-    return; // 기존 클러스터 리스트 표시하지 않고 함수 종료
-  }
-  
-  // 모바일 디바이스인지 확인
-  function isMobileDevice() {
-    const ua = navigator.userAgent;
-    const isMobileOS = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua);
-    const isMobileBrowser = ua.includes('Mobile') || ua.includes('NAVER(inapp');
-    return isMobileOS || isMobileBrowser;
-  }
-  
-  // 모바일 디바이스에서는 모달로 클러스터 목록 표시
-  if (isMobileDevice()) {
-    console.log('모바일 디바이스에서 클러스터 목록을 모달로 표시');
-    
-    if (window.listingListModalManager && typeof window.listingListModalManager.showClusterList === 'function') {
-      // 모달이 열려있지 않으면 먼저 모달 열기
-      if (!isModalOpen) {
-        await window.listingListModalManager.openModal();
-        // 모달이 열린 후 클러스터 목록 표시
-        setTimeout(() => {
-          window.listingListModalManager.showClusterList(arr);
-        }, 100);
-      } else {
-        window.listingListModalManager.showClusterList(arr);
-      }
-    } else {
-      console.error('listingListModalManager를 찾을 수 없습니다');
-    }
-    return;
-  }
-
-  // PC버전: 모바일 모달이 열려있지 않을 때만 기존 클러스터 리스트 표시
+  // PC버전: 클러스터 리스트 표시
   const wrap = document.getElementById("clusterList");
   const ul   = document.getElementById("clusterItemList");
   const listingList = document.getElementById("listingList");

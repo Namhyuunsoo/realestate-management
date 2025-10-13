@@ -227,23 +227,25 @@ class UserSheetService:
             raise
     
     def create_api_client_with_service_account(self, service_account_json: str) -> gspread.Client:
-        """서비스어카운트로 클라이언트 생성"""
+        """서비스어카운트로 클라이언트 생성 (메모리 기반 - 보안 강화)"""
         try:
-            # 임시 파일에 서비스어카운트 JSON 저장
-            with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
-                f.write(service_account_json)
-                temp_file_path = f.name
+            import json
+            from google.oauth2.service_account import Credentials
             
-            try:
-                # 서비스어카운트로 클라이언트 생성
-                client = gspread.service_account(filename=temp_file_path)
-                current_app.logger.info("서비스어카운트로 클라이언트 생성 성공")
-                return client
-            finally:
-                # 임시 파일 삭제
-                if os.path.exists(temp_file_path):
-                    os.unlink(temp_file_path)
-                    
+            # JSON 문자열을 딕셔너리로 파싱
+            service_account_info = json.loads(service_account_json)
+            
+            # 메모리에서 직접 인증 정보 생성
+            credentials = Credentials.from_service_account_info(
+                service_account_info,
+                scopes=['https://www.googleapis.com/auth/spreadsheets']
+            )
+            
+            # gspread 클라이언트 생성
+            client = gspread.Client(credentials)
+            current_app.logger.info("서비스어카운트로 클라이언트 생성 성공 (메모리 기반)")
+            return client
+            
         except Exception as e:
             current_app.logger.error(f"서비스어카운트로 클라이언트 생성 실패: {e}")
             raise
@@ -252,8 +254,9 @@ class UserSheetService:
         """기본 API 클라이언트 반환"""
         try:
             # 시스템 기본 서비스어카운트 사용
-            if os.path.exists('service_account.json'):
-                client = gspread.service_account(filename='service_account.json')
+            service_account_path = os.getenv("SERVICE_ACCOUNT_FILE", "../config/service_account.json")
+            if os.path.exists(service_account_path):
+                client = gspread.service_account(filename=service_account_path)
                 current_app.logger.info("기본 서비스어카운트로 클라이언트 생성 성공")
                 return client
             else:

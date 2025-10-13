@@ -177,10 +177,12 @@ function applyUserRoleFilter() {
   
   if (userRole === "user") {
     // 일반 사용자는 서버에서 이미 필터링된 데이터를 받으므로 추가 필터링 불필요
-    console.log(`✅ 일반 사용자: 서버에서 이미 필터링된 데이터 수신 (${LISTINGS.length}개)`);
+    // 보안 강화: 일반 사용자 로깅 제거
+    // console.log(`✅ 일반 사용자: 서버에서 이미 필터링된 데이터 수신 (${LISTINGS.length}개)`);
   } else {
     // 어드민과 매니저는 모든 매물 표시 (필터링 없음)
-    console.log(`✅ ${userRole} 역할: 모든 매물 표시`);
+    // 보안 강화: 사용자 역할 로깅 제거
+    // console.log(`✅ ${userRole} 역할: 모든 매물 표시`);
   }
 }
 

@@ -12,7 +12,7 @@ class ListingAddService:
     """매물등록 서비스"""
     
     def __init__(self, service_account_file: str = None):
-        self.service_account_file = service_account_file or os.getenv("SERVICE_ACCOUNT_FILE", "service_account.json")
+        self.service_account_file = service_account_file or os.getenv("SERVICE_ACCOUNT_FILE", "../config/service_account.json")
         self.credentials = None
         self.sheets_service = None
         self._authenticate()
@@ -132,7 +132,7 @@ class ListingAddService:
         # A열은 비우고 B열부터 데이터 시작
         # 헤더 순서 (정확히 맞춤) - 지역2 제외
         header_order = [
-            '접수날짜', '지역', '지번', '건물명', '층수', '가게명', '분양', '실평수',
+            '접수일', '지역', '지번', '건물명', '층수', '가게명', '분양', '실평수',
             '보증금', '월세', '권리금', '비고', '담당자', '현황', '연락처',
             '의뢰인', '비고3', '위반여부', '현수막번호', '간략한위치'
         ]

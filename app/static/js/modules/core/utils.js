@@ -278,53 +278,11 @@ function cleanObject(obj) {
   return cleaned;
 }
 
-// 동적 높이 계산 시스템 - 모든 요소 고정 위치 유지
+// 동적 높이 계산 시스템 - CSS에서 이미 모든 위치가 고정되어 있으므로 비활성화
 function calculateSecondaryPanelPosition() {
-  const topbar = document.getElementById('topbar');
-  const statusCounts = document.getElementById('statusCounts');
-  const topFilterBar = document.getElementById('topFilterBar');
-  const secondaryPanel = document.getElementById('secondaryPanel');
-  const sidebar = document.getElementById('sidebar');
-  const mainContent = document.getElementById('mainContent');
-  
-  if (!topbar || !statusCounts || !topFilterBar) return;
-  
-  // 모든 요소를 고정 위치로 설정
-  topbar.style.position = 'absolute';
-  topbar.style.top = '0px';
-  topbar.style.height = '40px';
-  
-  statusCounts.style.position = 'absolute';
-  statusCounts.style.top = '40px';
-  statusCounts.style.height = '34px';
-  
-  topFilterBar.style.position = 'absolute';
-  topFilterBar.style.top = '74px';
-  topFilterBar.style.height = '92px';
-  
-  if (sidebar) {
-    sidebar.style.position = 'absolute';
-    sidebar.style.top = '166px';
-    sidebar.style.height = 'calc(100vh - 166px)';
-    sidebar.style.left = '0px';
-    sidebar.style.width = '280px';
-  }
-  
-  if (secondaryPanel) {
-    secondaryPanel.style.position = 'absolute';
-    secondaryPanel.style.top = '166px';
-    secondaryPanel.style.height = 'calc(100vh - 166px)';
-    secondaryPanel.style.left = '280px';
-    secondaryPanel.style.width = '300px';
-  }
-  
-  if (mainContent) {
-    mainContent.style.position = 'absolute';
-    mainContent.style.top = '166px';
-    mainContent.style.height = 'calc(100vh - 166px)';
-    mainContent.style.left = '280px';
-    mainContent.style.right = '0px';
-  }
+  // CSS에서 이미 모든 요소의 위치가 올바르게 설정되어 있으므로
+  // JavaScript로 재설정하지 않음 (레이아웃 충돌 방지)
+  return;
 }
 
 // ResizeObserver를 사용하여 레이아웃 변경 시 자동으로 위치 재계산
@@ -420,14 +378,8 @@ function adjustMobileAppHeight() {
       map.style.padding = '0';
     }
     
-    // 사이드바에 화면 높이 적용
-    const sidebar = document.getElementById('sidebar');
-    if (sidebar) {
-      sidebar.style.bottom = '0';
-      sidebar.style.height = `${availableHeight * 0.5}px`;
-      sidebar.style.maxHeight = `${availableHeight * 0.5}px`;
-      sidebar.style.transform = 'translateY(calc(100% - 40px))';
-    }
+    // 사이드바는 CSS에서 이미 올바르게 설정되어 있으므로 JavaScript로 재설정하지 않음
+    // PC 환경에서는 사이드바 높이를 변경하면 안 됨
     
     // 모바일 노치에 화면 높이 적용
     const mobileNotch = document.querySelector('.mobile-notch');

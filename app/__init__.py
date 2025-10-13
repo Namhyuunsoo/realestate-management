@@ -1,29 +1,27 @@
 # app/__init__.py
 
-from flask import Flask, jsonify, request, make_response
+from flask import Flask, jsonify, request, make_response, g
 from dotenv import load_dotenv
 import os
 from datetime import timedelta
 from flask_compress import Compress
+from app.services.user_service import mask_ip
 
 # 환경변수 로드 (반드시 Flask 앱 생성 전에)
 print("🔍 환경변수 로딩 시작...")
-print(f"현재 작업 디렉토리: {os.getcwd()}")
-print(f".env 파일 존재 여부: {os.path.exists('.env')}")
 
 # .env 파일 경로를 명시적으로 지정
 env_path = os.path.join(os.getcwd(), '.env')
-print(f".env 파일 경로: {env_path}")
-print(f".env 파일 존재 여부 (절대 경로): {os.path.exists(env_path)}")
 
 # 환경변수 로드 시도
 load_dotenv(env_path)
 
-# 로드된 환경변수 확인
+# 로드된 환경변수 확인 (보안을 위해 마스킹 처리)
 naver_client_id = os.getenv("NAVER_MAPS_NCP_CLIENT_ID")
 naver_client_secret = os.getenv("NAVER_MAPS_NCP_CLIENT_SECRET")
-print(f"로드된 NAVER_MAPS_NCP_CLIENT_ID: {'설정됨' if naver_client_id else 'None'}")
-print(f"로드된 NAVER_MAPS_NCP_CLIENT_SECRET: {'설정됨' if naver_client_secret else 'None'}")
+# 보안 강화: 환경변수 로깅 제거
+# print(f"로드된 NAVER_MAPS_NCP_CLIENT_ID: {'설정됨' if naver_client_id else 'None'}")
+# print(f"로드된 NAVER_MAPS_NCP_CLIENT_SECRET: {'설정됨' if naver_client_secret else 'None'}")
 print("🔍 환경변수 로딩 완료")
 
 def create_app(config_object=None):
@@ -43,11 +41,21 @@ def create_app(config_object=None):
         from .config import load_config
         load_config(app)
 
-    # 세션 설정 (다른 컴퓨터에서 접속 가능하도록)
+    # 세션 설정 (보안 강화)
     app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=8)  # 8시간
-    app.config['SESSION_COOKIE_SECURE'] = False  # HTTP 허용
-    app.config['SESSION_COOKIE_HTTPONLY'] = True
-    app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+    
+    # HTTPS 설정 (환경변수로 제어)
+    require_https = os.getenv("REQUIRE_HTTPS", "false").lower() == "true"
+    app.config['SESSION_COOKIE_SECURE'] = require_https  # HTTPS 환경에서만 Secure 쿠키
+    app.config['SESSION_COOKIE_HTTPONLY'] = True  # XSS 방지
+    app.config['SESSION_COOKIE_SAMESITE'] = 'Strict'  # CSRF 방지 강화
+    
+    if require_https:
+        print("🔒 HTTPS 모드 활성화 - Secure 쿠키 사용")
+        print("⚠️ 주의: HTTPS 인증서가 설정되어 있는지 확인하세요!")
+    else:
+        print("🌐 HTTP 모드 - 개발환경용")
+        print("💡 프로덕션 배포 시 HTTPS 인증서 설정 후 REQUIRE_HTTPS=true 권장")
 
     # Gzip 압축 활성화
     Compress(app)
@@ -79,13 +87,32 @@ def create_app(config_object=None):
     # 백그라운드 서비스들은 첫 요청 시 지연 초기화됨
     print("⏳ 백그라운드 서비스들은 첫 요청 시 지연 초기화됩니다.")
 
+    # 보안 헤더 추가
+    @app.after_request
+    def add_security_headers(response):
+        """보안 헤더 추가"""
+        response.headers['X-Content-Type-Options'] = 'nosniff'
+        response.headers['X-Frame-Options'] = 'DENY'
+        response.headers['X-XSS-Protection'] = '1; mode=block'
+        response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
+        
+        # HTTPS 환경에서만 HSTS 헤더 추가
+        if require_https:
+            response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
+        
+        return response
+
     # Blueprint 등록
     register_blueprints(app)
 
-    # 모바일 디바이스 감지 및 최적화
+    # 모바일 디바이스 감지 및 최적화 (한 번만 실행)
     @app.before_request
     def detect_mobile_and_optimize():
         """모바일 디바이스 감지 및 압축 최적화"""
+        # 이미 감지된 경우 중복 실행 방지
+        if hasattr(g, 'mobile_detected'):
+            return
+            
         user_agent = request.headers.get('User-Agent', '').lower()
         
         # 모바일 디바이스 감지
@@ -96,14 +123,36 @@ def create_app(config_object=None):
         if is_mobile:
             app.config['COMPRESS_LEVEL'] = 8  # 최대 압축
             app.config['COMPRESS_MIN_SIZE'] = 100  # 더 작은 파일도 압축
-            print(f"📱 모바일 디바이스 감지: {user_agent[:50]}...")
+            # 보안 강화: 사용자 에이전트 로깅 제거
+            # print(f"📱 모바일 디바이스 감지: {user_agent[:50]}...")
+        
+        # 중복 실행 방지 플래그 설정
+        g.mobile_detected = True
+
+    # 보안: 민감한 경로 접근 차단
+    @app.before_request
+    def block_sensitive_paths():
+        """민감한 데이터 파일 접근 차단"""
+        blocked_paths = [
+            '/data/cache/',
+            '/data/store.json',
+            '/data/users.json', 
+            '/data/user_sheets.json',
+            '/data/state/',
+            '/data/users.json.backup'
+        ]
+        
+        for path in blocked_paths:
+            if request.path.startswith(path):
+                app.logger.warning(f"🚨 차단된 경로 접근 시도: {request.path} from {mask_ip(request.remote_addr)}")
+                return "Access Denied", 403
 
     # CORS 헤더 추가 (다른 컴퓨터에서 접속 가능하도록)
     @app.after_request
     def after_request(response):
         # CORS 헤더 설정
         response.headers.add('Access-Control-Allow-Origin', '*')
-        response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization,X-User')
+        response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization,X-User,X-CSRF-Token')
         response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
         response.headers.add('Access-Control-Allow-Credentials', 'true')
         
@@ -119,8 +168,26 @@ def create_app(config_object=None):
     @app.route("/")
     def index():
         from flask import session
-        # 로그인 상태 확인 - 항상 메인 페이지 서빙 (인라인 로그인 사용)
-        return app.send_static_file("index.html")
+        from app.core.security import generate_csrf_token
+        import os
+        
+        # CSRF 토큰 생성 (세션 기반)
+        if 'csrf_token' not in session:
+            session['csrf_token'] = generate_csrf_token()
+        
+        # HTML 파일 읽기
+        html_path = os.path.join(app.static_folder, 'index.html')
+        with open(html_path, 'r', encoding='utf-8') as f:
+            html_content = f.read()
+        
+        # CSRF 토큰을 메타 태그에 주입
+        csrf_token = session.get('csrf_token', '')
+        html_content = html_content.replace(
+            '<meta name="csrf-token" content="">',
+            f'<meta name="csrf-token" content="{csrf_token}">'
+        )
+        
+        return html_content
     
     # 로그인 페이지 서빙
     @app.route("/login")

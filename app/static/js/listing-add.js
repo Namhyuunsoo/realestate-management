@@ -50,7 +50,7 @@ class ListingAddManager {
     }
     
     setDefaultDate() {
-        // 접수날짜를 오늘 날짜를 250821 형식으로 설정
+        // 접수일을 오늘 날짜를 250821 형식으로 설정
         const today = new Date();
         const year = today.getFullYear().toString().slice(-2); // 연도 뒤 2자리
         const month = String(today.getMonth() + 1).padStart(2, '0'); // 월 2자리
@@ -58,7 +58,7 @@ class ListingAddManager {
         
         const dateString = `${year}${month}${day}`; // 예: 250821
         
-        const dateInput = document.getElementById('접수날짜');
+        const dateInput = document.getElementById('접수일');
         if (dateInput) {
             dateInput.value = dateString;
         }

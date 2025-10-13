@@ -40,7 +40,7 @@ def update_duckdns():
     if not token:
         logging.error("DUCKDNS_TOKEN 환경변수가 설정되지 않았습니다.")
         print("❌ DUCKDNS_TOKEN 환경변수가 설정되지 않았습니다.")
-        return
+        return False
     
     url = f"https://www.duckdns.org/update?domains={domain}&token={token}"
     
@@ -49,12 +49,15 @@ def update_duckdns():
         if response.text == "OK":
             logging.info("DuckDNS IP 업데이트 성공")
             print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] ✅ DuckDNS IP 업데이트 성공")
+            return True
         else:
             logging.error(f"DuckDNS IP 업데이트 실패: {response.text}")
             print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] ❌ DuckDNS IP 업데이트 실패: {response.text}")
+            return False
     except Exception as e:
         logging.error(f"오류 발생: {e}")
         print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] ❌ 오류 발생: {e}")
+        return False
 
 def main():
     domain = os.getenv("DUCKDNS_DOMAIN", "skrealestate")
@@ -71,7 +74,19 @@ def main():
     while True:
         try:
             time.sleep(300)  # 5분 대기
-            update_duckdns()
+            success = update_duckdns()
+            
+            # SSL 인증서 갱신이 필요한 경우 (IP 변경 시)
+            if success and os.getenv("USE_HTTPS", "false").lower() == "true":
+                # SSL 자동 갱신 스크립트 실행 (백그라운드)
+                try:
+                    import subprocess
+                    subprocess.Popen(["python", "ssl_auto_renew.py"], 
+                                   stdout=subprocess.DEVNULL, 
+                                   stderr=subprocess.DEVNULL)
+                except Exception as ssl_error:
+                    logging.warning(f"SSL 갱신 스크립트 실행 실패: {ssl_error}")
+                    
         except KeyboardInterrupt:
             print("\n🛑 사용자에 의해 중단됨")
             logging.info("사용자에 의해 스크립트 중단")

@@ -13,6 +13,7 @@ import requests
 from urllib.parse import urlencode
 
 from flask import Blueprint, current_app, redirect, request, session, jsonify, make_response
+from ..core.decorators import require_user, require_admin
 
 bp = Blueprint("auth_naver", __name__)
 
@@ -162,68 +163,27 @@ def logout():
     return redirect("/static/index.html")
 
 @bp.route("/api/me")
+@require_user()
 def api_me():
-    # 1. 세션 기반 사용자 확인
-    u = session.get("user")
-    if u:
-        return jsonify({
-            "logged_in": True,
-            "email": u.get("email"),
-            "name": u.get("name"),
-            "provider": u.get("provider", "naver"),
-            "id": u.get("id"),
-            "is_admin": bool(u.get("is_admin")),
-            "role": "admin" if u.get("is_admin") else "user",
-            "job_title": u.get("job_title", "")
-        })
+    """현재 사용자 정보 반환 (세션 기반)"""
+    user = request.current_user
     
-    # 2. X-User 헤더 기반 사용자 확인 (임시 로그인)
-    user_email = request.headers.get("X-User", "").strip()
-    if user_email:
-        # 사용자 서비스에서 실제 사용자 정보 가져오기
-        try:
-            user_service = current_app.data_manager.user_service
-            user = user_service.get_user_by_email(user_email)
-            
-            if user and user.is_active():
-                # 사용자 정보 조회 성공
-                response_data = {
-                    "logged_in": True,
-                    "email": user.email,
-                    "name": user.name,
-                    "provider": "manual",
-                    "id": user.id,
-                    "is_admin": user.is_admin(),
-                    "role": user.role,
-                    "job_title": user.job_title or "",
-                    "manager_name": getattr(user, 'manager_name', '') or ""
-                }
-                return jsonify(response_data)
-            else:
-                current_app.logger.warning(f"사용자를 찾을 수 없거나 비활성: {user_email}")
-        except Exception as e:
-            current_app.logger.error(f"사용자 정보 조회 실패: {e}")
-        
-        # 어드민 권한 확인 (fallback)
-        admin_users = current_app.config.get("ADMIN_USERS", [])
-        is_admin = user_email.lower() in admin_users
-        
-        return jsonify({
-            "logged_in": True,
-            "email": user_email,
-            "name": "",
-            "provider": "manual",
-            "id": "",
-            "is_admin": is_admin,
-            "role": "admin" if is_admin else "user",
-            "job_title": ""
-        })
-    
-    # 3. 로그인되지 않음
-    return jsonify({"logged_in": False})
+    return jsonify({
+        "logged_in": True,
+        "email": user.email,
+        "name": user.name,
+        "provider": "session",
+        "id": user.id,
+        "is_admin": user.is_admin(),
+        "role": user.role,
+        "job_title": user.job_title or "",
+        "manager_name": getattr(user, 'manager_name', '') or ""
+    })
 
 @bp.route("/auth/debug_config")
+@require_admin()
 def debug_config():
+    """디버그 설정 정보 (관리자만 접근 가능)"""
     allowed = current_app.config.get("ALLOWED_USERS", [])
     admins = current_app.config.get("ADMIN_USERS", [])
     return jsonify({"allowed_users": allowed, "admin_users": admins})

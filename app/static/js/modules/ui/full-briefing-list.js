@@ -170,7 +170,7 @@ function renderFullBriefingList() {
       <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
         <thead style="position: sticky; top: 0; background: #f8f9fa; z-index: 10;">
           <tr style="border-bottom: 2px solid #dee2e6;">
-            <th style="padding:8px;min-width:60px;">접수날짜</th>
+            <th style="padding:8px;min-width:60px;">접수일</th>
             <th style="padding:8px;min-width:50px;">지역</th>
             <th style="padding:8px;min-width:50px;">지번</th>
             <th style="padding:8px;min-width:60px;">건물명</th>
@@ -217,7 +217,7 @@ function renderFullBriefingList() {
                   onclick="selectFullBriefingListItem('${item.id}')"
                   onmouseenter="highlightFullBriefingListItem('${item.id}', true); this.style.backgroundColor='#f8f9fa';"
                   onmouseleave="highlightFullBriefingListItem('${item.id}', false); this.style.backgroundColor='white';">
-                <td data-field="접수날짜" class="${isModified('접수날짜') ? 'modified' : ''}" style="padding:6px 8px;" ondblclick="editFullBriefingCell('${item.id}', '접수날짜', event)">${escapeHtml(displayFields['접수날짜'] || '-')}</td>
+                <td data-field="접수일" class="${isModified('접수일') ? 'modified' : ''}" style="padding:6px 8px;" ondblclick="editFullBriefingCell('${item.id}', '접수일', event)">${escapeHtml(displayFields['접수일'] || '-')}</td>
                 <td data-field="지역" class="${isModified('지역') ? 'modified' : ''}" style="padding:6px 8px;" ondblclick="editFullBriefingCell('${item.id}', '지역', event)">${escapeHtml(displayFields['지역'] || '-')}</td>
                 <td data-field="지번" class="${isModified('지번') ? 'modified' : ''}" style="padding:6px 8px;" ondblclick="editFullBriefingCell('${item.id}', '지번', event)">${escapeHtml(displayFields['지번'] || '-')}</td>
                 <td data-field="건물명" class="${isModified('건물명') ? 'modified' : ''}" style="padding:6px 8px;" ondblclick="editFullBriefingCell('${item.id}', '건물명', event)">${escapeHtml(displayFields['건물명'] || '-')}</td>

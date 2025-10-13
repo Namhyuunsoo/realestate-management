@@ -6,29 +6,33 @@ import json
 from flask import Blueprint, request, jsonify, session
 from ..services.listings_loader import load_listings
 from ..services.sheet_fetcher import clear_listing_cache
-from ..core.decorators import require_user
+from ..core.decorators import require_user, validate_csrf_token, require_admin
+from ..services.user_service import mask_email, mask_ip
 from ..core.lazy_init import ensure_background_services
 
 bp = Blueprint("listings", __name__)
 
 @bp.route("/api/listings")
 @require_user()
+@validate_csrf_token()
 def api_listings():
     # 백그라운드 서비스 지연 초기화
     ensure_background_services()
     
     # 데코레이터에서 이미 사용자 인증 완료, request.current_user 사용
     user = request.current_user
-    current_app.logger.info(f"Listings request from user: {user.email} (IP: {request.remote_addr})")
+    current_app.logger.info(f"Listings request from user: {mask_email(user.email)} (IP: {mask_ip(request.remote_addr)})")
     
     force = request.args.get("force") == "1"
     status_raw = request.args.get("status_raw")
-    limit = int(request.args.get("limit", 100))
+    # 매물 데이터 접근 제한 제거
+    requested_limit = int(request.args.get("limit", 100))
+    limit = requested_limit  # 제한 없음
     offset = int(request.args.get("offset", 0))
 
     # 강제 새로고침 요청 시 로그
     if force:
-        current_app.logger.info(f"🔄 강제 새로고침 요청: {user.email} (IP: {request.remote_addr})")
+        current_app.logger.info(f"🔄 강제 새로고침 요청: {mask_email(user.email)} (IP: {mask_ip(request.remote_addr)})")
 
     # force 파라미터를 제대로 전달
     try:
@@ -57,7 +61,9 @@ def api_listings():
                     data = []
         except Exception as filter_error:
             current_app.logger.error(f"❌ 역할별 필터링 중 오류: {filter_error}")
-            # 필터링 실패 시 모든 매물 조회 (안전한 기본값)
+            # 보안 강화: 필터링 실패 시 빈 결과 반환 (매물 정보 보호)
+            data = []
+            current_app.logger.warning(f"🚨 보안: 필터링 실패로 인해 사용자 {mask_email(user.email)}에게 빈 결과 반환")
 
     total = len(data)
     sliced = data[offset:offset+limit]
@@ -76,6 +82,7 @@ def api_listings():
     )
 
 @bp.route("/api/listings/clear-cache", methods=["POST"])
+@require_admin()
 def clear_listings_cache():
     """매물 캐시 강제 삭제 (관리자용)"""
     try:

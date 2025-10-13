@@ -14,7 +14,7 @@ class SheetDownloadService:
     """Google Sheets를 Excel로 다운로드하는 서비스"""
     
     def __init__(self, service_account_file: str = None):
-        self.service_account_file = service_account_file or os.getenv("SERVICE_ACCOUNT_FILE", "service_account.json")
+        self.service_account_file = service_account_file or os.getenv("SERVICE_ACCOUNT_FILE", "../config/service_account.json")
         self.spreadsheet_id = os.getenv("SPREADSHEET_ID", "1D14iWPeTuHAMf9m_LrtsILYEd2Z8dpjAbIfpx-WR8eY")
         self.download_dir = os.getenv("SHEET_DOWNLOAD_DIR", "./data/raw")
         

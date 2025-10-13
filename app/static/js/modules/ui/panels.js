@@ -233,7 +233,10 @@ function renderCustomerDetail(c) {
 }
 
 function renderCustomerForm(c = {}) {
-  showSecondaryPanel('viewCustomerForm');
+  // 모바일 모달 모드가 아닐 때만 2차 사이드바 열기
+  if (!window.isMobileModalMode) {
+    showSecondaryPanel('viewCustomerForm');
+  }
 
   const detailTitleEl = document.getElementById("secondaryPanelTitle");
   const viewCustomerForm = document.getElementById("viewCustomerForm");
