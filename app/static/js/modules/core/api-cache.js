@@ -197,7 +197,8 @@ async function getCachedCustomers(filter = 'own') {
   
   try {
     const data = await cachedFetch(`/api/customers?filter=${filter}`, {
-      headers: { 'X-User': currentUser }
+      headers: { 'X-User': currentUser },
+      credentials: 'include'
     });
     
     customersCache = data;
@@ -225,7 +226,8 @@ async function getCachedRecommendations() {
   
   try {
     const data = await cachedFetch('/api/recommendations', {
-      headers: { 'X-User': currentUser }
+      headers: { 'X-User': currentUser },
+      credentials: 'include'
     });
     
     recommendationsCache = data;

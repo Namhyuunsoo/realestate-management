@@ -16,12 +16,13 @@ let USER_RECOMMENDATIONS = new Set(); // 현재 사용자가 추천한 매물 ID
  */
 async function loadRecommendations() {
   try {
-    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
+    const csrfToken = (window.getCsrfToken ? window.getCsrfToken() : document.querySelector('meta[name="csrf-token"]')?.content) || '';
     const response = await fetch('/api/recommendations', {
       headers: { 
         "X-User": currentUser,
         "X-CSRF-Token": csrfToken
-      }
+      },
+      credentials: 'include'
     });
     
     if (!response.ok) {
@@ -61,13 +62,14 @@ async function toggleRecommendation(listingId) {
     
     if (isCurrentlyRecommended) {
       // 추천 해제
-      const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
+      const csrfToken = (window.getCsrfToken ? window.getCsrfToken() : document.querySelector('meta[name="csrf-token"]')?.content) || '';
       const response = await fetch(`/api/recommendations/${listingId}`, {
         method: 'DELETE',
         headers: { 
           "X-User": currentUser,
           "X-CSRF-Token": csrfToken
-        }
+        },
+        credentials: 'include'
       });
       
       if (!response.ok) {
@@ -178,7 +180,7 @@ function openRecommendationModal(listingId) {
     
     try {
       // 추천 추가
-      const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
+      const csrfToken = (window.getCsrfToken ? window.getCsrfToken() : document.querySelector('meta[name="csrf-token"]')?.content) || '';
       const response = await fetch(`/api/recommendations/${listingId}`, {
         method: 'POST',
         headers: {
@@ -186,7 +188,8 @@ function openRecommendationModal(listingId) {
           "Content-Type": "application/json",
           "X-CSRF-Token": csrfToken
         },
-        body: JSON.stringify({ reason })
+        body: JSON.stringify({ reason }),
+        credentials: 'include'
       });
       
       if (!response.ok) {
@@ -202,7 +205,8 @@ function openRecommendationModal(listingId) {
             "Content-Type": "application/json",
             "X-CSRF-Token": csrfToken
           },
-          body: JSON.stringify({ comment })
+          body: JSON.stringify({ comment }),
+          credentials: 'include'
         });
         
         if (!commentResponse.ok) {
@@ -291,13 +295,14 @@ function openRecommendationCancelModal(listingId) {
   // 추천 취소 확인
   confirmBtn.addEventListener('click', async () => {
     try {
-      const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
+      const csrfToken = (window.getCsrfToken ? window.getCsrfToken() : document.querySelector('meta[name="csrf-token"]')?.content) || '';
       const response = await fetch(`/api/recommendations/${listingId}`, {
         method: 'DELETE',
         headers: { 
           "X-User": currentUser,
           "X-CSRF-Token": csrfToken
-        }
+        },
+        credentials: 'include'
       });
       
       if (!response.ok) {
@@ -430,7 +435,7 @@ function openRecommendationDetailModal(listingId) {
     }
     
     try {
-      const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
+      const csrfToken = (window.getCsrfToken ? window.getCsrfToken() : document.querySelector('meta[name="csrf-token"]')?.content) || '';
       const response = await fetch(`/api/recommendations/${listingId}/comments`, {
         method: 'POST',
         headers: {
@@ -438,7 +443,8 @@ function openRecommendationDetailModal(listingId) {
           "Content-Type": "application/json",
           "X-CSRF-Token": csrfToken
         },
-        body: JSON.stringify({ comment })
+        body: JSON.stringify({ comment }),
+        credentials: 'include'
       });
       
       if (!response.ok) {

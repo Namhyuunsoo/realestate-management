@@ -537,7 +537,8 @@ async function applyUser() {
       method: "GET",
       headers: {
         "X-User": email
-      }
+      },
+      credentials: 'include'
     });
     
     if (response.ok) {
