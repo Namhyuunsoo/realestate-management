@@ -23,7 +23,6 @@ class ModeSwitcher {
   }
 
   init() {
-    console.log('ModeSwitcher 초기화 시작');
     
     // DOM이 완전히 로드될 때까지 대기
     if (document.readyState === 'loading') {
@@ -82,7 +81,6 @@ class ModeSwitcher {
     
     // 초기화 완료 표시
     this._isInitialized = true;
-    console.log('ModeSwitcher 초기화 완료');
   }
 
   // 모드 전환
@@ -173,21 +171,13 @@ class ModeSwitcher {
   // 브리핑 모드 진입
   enterBriefingMode() {
     this.setMode('briefing');
-    
-    // 민감한 정보 필드 접기
-    setTimeout(() => {
-      this.collapseSensitiveDetailFields();
-    }, 100);
+    this.collapseSensitiveDetailFields();
   }
   
   // 중개사 모드 진입
   enterAgentMode() {
     this.setMode('agent');
-    
-    // 모든 민감한 정보 필드 펼치기
-    setTimeout(() => {
-      this.expandSensitiveDetailFields();
-    }, 100);
+    this.expandSensitiveDetailFields();
   }
   
   // 매물 상세정보에서 민감한 필드 접기
@@ -270,4 +260,3 @@ class ModeSwitcher {
 window.modeSwitcher = new ModeSwitcher();
 
 // 모듈 로드 완료 표시
-console.log('✅ mode-switcher.js 로드 완료');

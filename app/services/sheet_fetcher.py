@@ -78,12 +78,18 @@ def _check_cache_validity(cache_file: str, source_file: str) -> Tuple[bool, Opti
         if not os.path.exists(cache_file):
             return False, None
         
+        # 소스 파일 존재 여부 확인
+        if not os.path.exists(source_file):
+            print(f"⚠️ 소스 파일이 존재하지 않아 캐시 무효화: {source_file}")
+            return False, None
+        
         # 소스 파일의 수정 시간과 캐시 파일의 수정 시간 비교
         source_mtime = os.path.getmtime(source_file)
         cache_mtime = os.path.getmtime(cache_file)
         
-        if source_mtime > cache_mtime:
-            print(f"⚠️ 소스 파일이 더 최신입니다. 캐시 무효화: {source_mtime} > {cache_mtime}")
+        # 🔥 수정: 소스 파일이 더 최신이거나 같을 경우 캐시 무효화
+        if source_mtime >= cache_mtime:
+            print(f"⚠️ 소스 파일이 더 최신이거나 같으므로 캐시 무효화 (source_mtime: {source_mtime}, cache_mtime: {cache_mtime})")
             return False, None
         
         # 캐시 파일 로드 시도

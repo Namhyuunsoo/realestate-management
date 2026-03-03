@@ -10,6 +10,9 @@ credentials.json
 *.p12
 *.pfx
 
+# Vercel Configuration
+.vercel/
+
 # Python
 __pycache__/
 *.py[cod]
@@ -106,3 +109,4 @@ Thumbs.db
 *.tmp
 *.temp
 payload.json
+nul

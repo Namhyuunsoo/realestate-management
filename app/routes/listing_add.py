@@ -43,9 +43,9 @@ def add_listing():
         if not data:
             return jsonify({"error": "매물 데이터가 없습니다."}), 400
         
-        # 접수날짜 자동 설정 (오늘 날짜)
-        if not data.get('접수날짜'):
-            data['접수날짜'] = datetime.now().strftime('%Y-%m-%d')
+        # 접수일 자동 설정 (오늘 날짜)
+        if not data.get('접수일'):
+            data['접수일'] = datetime.now().strftime('%Y-%m-%d')
         
         # 매물등록 서비스로 시트에 추가
         listing_service = get_listing_service()

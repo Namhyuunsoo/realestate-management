@@ -12,28 +12,30 @@ async function initUserManagement() {
   
   // 어드민 권한 확인
   if (!currentUser) {
-    console.log('❌ currentUser가 없음');
     return;
   }
 
   // 서버에서 사용자 정보 가져오기
   try {
-    // console.log('🔍 /api/me 요청 시작...');
-    const response = await fetch('/api/me', {
+    // console.log('🔍 /api/auth/me 요청 시작...');
+    const response = await fetch('/api/auth/me', {
       headers: {
         'X-User': currentUser
       }
     });
 
-    console.log('🔍 /api/me 응답 상태:', response.status);
-    
     if (response.ok) {
-      const userInfo = await response.json();
-      console.log('🔍 사용자 정보:', userInfo);
+      const responseData = await response.json();
+      
+      // 응답 형식: { user: { ... } } 또는 { logged_in: true, role: ... } 등
+      const userInfo = responseData.user || responseData;
       window.currentUserInfo = userInfo;
       
-      if (userInfo.is_admin || userInfo.role === 'admin') {
-        console.log('✅ 어드민 권한 확인됨');
+      // role 확인 (user 객체에서 또는 직접)
+      const userRole = userInfo.role || responseData.role;
+      const isAdmin = userRole === 'admin';
+      
+      if (isAdmin) {
         localStorage.setItem("X-USER-ADMIN", "true");
         localStorage.setItem("X-USER-ROLE", "admin");
         
@@ -41,8 +43,7 @@ async function initUserManagement() {
         showAdminUI(true);
         setupUserManagementEvents();
         // console.log('✅ 어드민 사용자 관리 기능 초기화 완료');
-      } else if (userInfo.role === 'manager') {
-        console.log('ℹ️ 매니저 권한 확인됨');
+      } else if (userRole === 'manager') {
         localStorage.removeItem("X-USER-ADMIN");
         localStorage.setItem("X-USER-ROLE", "manager");
         
@@ -51,12 +52,9 @@ async function initUserManagement() {
         setupUserManagementEvents();
         // console.log('✅ 매니저 사용자 관리 기능 초기화 완료');
       } else {
-        console.log('ℹ️ 일반 사용자 - 사용자 관리 기능 비활성화');
         localStorage.removeItem("X-USER-ADMIN");
         localStorage.setItem("X-USER-ROLE", "user");
       }
-    } else {
-      console.log('ℹ️ 사용자 정보를 가져올 수 없음 - 사용자 관리 기능 비활성화');
     }
   } catch (error) {
     console.error('사용자 정보 조회 실패:', error);
@@ -69,9 +67,7 @@ function showAdminUI(showAllFeatures = true) {
   const adminElements = document.querySelectorAll('.admin-only');
   
   
-  adminElements.forEach((element, index) => {
-    console.log(`🔍 요소 ${index}:`, element.className);
-    
+  adminElements.forEach((element) => {
     if (showAllFeatures) {
       // 어드민: 모든 기능 표시
       element.classList.remove('hidden');
@@ -100,12 +96,16 @@ function showAdminUI(showAllFeatures = true) {
 function setupUserManagementEvents() {
   // 사용자 관리 버튼 클릭 (어드민만)
   const userManagementBtn = document.getElementById('userManagementBtn');
-  if (userManagementBtn && window.currentUserInfo && 
-      (window.currentUserInfo.is_admin || window.currentUserInfo.role === 'admin')) {
-    userManagementBtn.addEventListener('click', openUserManagementModal);
-    // console.log('✅ 사용자 관리 버튼 이벤트 리스너 등록 완료');
-  } else {
-    console.log('⚠️ 사용자 관리 버튼 이벤트 리스너 등록 건너뜀 (권한 없음)');
+  if (userManagementBtn && window.currentUserInfo) {
+    // role 확인 (user 객체에서 또는 직접)
+    const userRole = window.currentUserInfo.role;
+    const isAdmin = userRole === 'admin';
+    
+    if (isAdmin) {
+      // 기존 이벤트 리스너 제거 (중복 방지)
+      userManagementBtn.removeEventListener('click', openUserManagementModal);
+      userManagementBtn.addEventListener('click', openUserManagementModal);
+    }
   }
 
   // 모달 닫기 버튼들
@@ -119,7 +119,13 @@ function setupUserManagementEvents() {
     .filter(btn => !btn.closest('#userFormModal'));
   otherCloseBtns.forEach(btn => btn.addEventListener('click', closeAllModals));
 
-  // 정책 변경으로 새 사용자 추가 버튼 제거됨
+  // 사용자 추가 버튼 클릭
+  const addUserBtn = document.getElementById('addUserBtn');
+  if (addUserBtn) {
+    addUserBtn.addEventListener('click', () => {
+      openUserFormModal(null); // null을 전달하면 추가 모드
+    });
+  }
 
   // 사용자 폼 제출
   const userForm = document.getElementById('userForm');
@@ -147,10 +153,17 @@ function setupUserManagementEvents() {
 // 사용자 관리 모달 열기
 async function openUserManagementModal() {
   try {
-    console.log('🔍 사용자 관리 모달 열기...');
     
     // 어드민 권한 확인
-    if (!window.currentUserInfo || !window.currentUserInfo.is_admin) {
+    if (!window.currentUserInfo) {
+      showToast('사용자 정보를 불러올 수 없습니다.', 'error');
+      return;
+    }
+    
+    const userRole = window.currentUserInfo.role;
+    const isAdmin = userRole === 'admin';
+    
+    if (!isAdmin) {
       showToast('사용자 관리 권한이 없습니다.', 'error');
       return;
     }
@@ -197,7 +210,10 @@ async function openUserManagementModal() {
 // 사용자 목록 로드
 async function loadUserList() {
   try {
-    const response = await fetch('/api/admin/users', {
+    const response = await fetch('/api/users', {
+      headers: {
+        'X-User': currentUser
+      },
       credentials: 'include'
     });
     
@@ -373,8 +389,6 @@ async function saveJobTitle(userId) {
 
 // 담당자명 수정 모드로 전환
 function editManagerName(userId) {
-  console.log('editManagerName 함수 호출됨:', userId);
-  
   const row = document.querySelector(`tr[data-user-id="${userId}"]`);
   if (!row) {
     console.error('사용자 행을 찾을 수 없음:', userId);
@@ -408,8 +422,6 @@ function editManagerName(userId) {
 
 // 담당자명 저장
 async function saveManagerName(userId) {
-  console.log('saveManagerName 함수 호출됨:', userId);
-  
   // 사용자 행 찾기
   const row = document.querySelector(`tr[data-user-id="${userId}"]`);
   if (!row) {
@@ -427,8 +439,6 @@ async function saveManagerName(userId) {
   }
   
   const managerName = input.value.trim();
-  console.log('입력된 담당자명:', managerName);
-  
   if (!managerName) {
     showToast('담당자명을 입력해주세요.', 'error');
     return;
@@ -439,8 +449,6 @@ async function saveManagerName(userId) {
 
 // 실제 저장 로직
 async function updateManagerName(userId, managerName) {
-  console.log('담당자명 저장 시도:', userId, managerName);
-  
   try {
     const response = await fetch(`/api/admin/users/${userId}/update-manager-name`, {
       method: 'POST',
@@ -450,9 +458,6 @@ async function updateManagerName(userId, managerName) {
       credentials: 'include', // 세션 쿠키 포함
       body: JSON.stringify({ manager_name: managerName })
     });
-    
-    console.log('API 응답 상태:', response.status, response.statusText);
-    
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
       console.error('API 오류 응답:', errorData);
@@ -460,8 +465,6 @@ async function updateManagerName(userId, managerName) {
     }
     
     const data = await response.json();
-    console.log('저장 성공:', data);
-    
     // 성공 메시지 표시
     showToast('담당자명이 저장되었습니다.', 'success');
     
@@ -481,7 +484,10 @@ function updateTopBarUserInfo() {
     // 세션 기반으로 현재 사용자 정보 가져오기
     fetch('/api/auth/me')
     .then(response => response.json())
-    .then(user => {
+    .then(responseData => {
+      // 응답 형식: { user: { ... } } 또는 { logged_in: true, role: ... } 등
+      const user = responseData.user || responseData;
+      
       if (user.job_title) {
         userRoleNameEl.textContent = `${user.job_title} ${user.name}`;
       } else {
@@ -645,10 +651,20 @@ function openUserFormModal(user = null) {
   form.reset();
   editingUserId = null;
 
+  // 비밀번호 필드와 재설정 필드 표시/숨김 제어
+  const passwordGroup = document.getElementById('userPasswordGroup');
+  const passwordResetGroup = document.getElementById('userPasswordResetGroup');
+  const passwordRequired = document.getElementById('passwordRequired');
+  
   if (user) {
     // 수정 모드
     title.textContent = '사용자 수정';
     editingUserId = user.id;
+    
+    // 비밀번호 필드 숨김, 재설정 필드 표시
+    if (passwordGroup) passwordGroup.style.display = 'none';
+    if (passwordResetGroup) passwordResetGroup.style.display = 'block';
+    if (passwordRequired) passwordRequired.style.display = 'none';
     
     // 폼에 기존 데이터 채우기
     const emailField = document.getElementById('userEmail');
@@ -676,6 +692,11 @@ function openUserFormModal(user = null) {
     title.textContent = '사용자 추가';
     const emailField = document.getElementById('userEmail');
     if (emailField) emailField.readOnly = false;
+    
+    // 비밀번호 필드 표시, 재설정 필드 숨김
+    if (passwordGroup) passwordGroup.style.display = 'block';
+    if (passwordResetGroup) passwordResetGroup.style.display = 'none';
+    if (passwordRequired) passwordRequired.style.display = 'inline';
   }
 
   modal.classList.remove('hidden');
@@ -710,11 +731,6 @@ async function handleUserFormSubmit(e) {
     manager_name: manager_name ? manager_name.trim() : '',
     is_active: (is_active || 'false') === 'true'
   };
-
-  // 디버깅을 위한 로그
-  console.log('🔍 폼 데이터:', { email, name, role, is_active });
-  console.log('🔍 처리된 userData:', userData);
-
   // 유효성 검사
   if (!userData.email || !userData.name || !userData.role) {
     showToast('모든 필수 필드를 입력해주세요.', 'error');
@@ -727,8 +743,30 @@ async function handleUserFormSubmit(e) {
   }
 
   try {
-    const url = editingUserId ? `/api/users/${encodeURIComponent(editingUserId)}` : '/api/users';
-    const method = editingUserId ? 'PUT' : 'POST';
+    let url, method, requestData;
+    
+    if (editingUserId) {
+      // 수정 모드: 기존 API 사용
+      url = `/api/users/${encodeURIComponent(editingUserId)}`;
+      method = 'PUT';
+      requestData = userData;
+    } else {
+      // 추가 모드: 새 관리자 API 사용
+      const passwordField = document.getElementById('userPassword');
+      const password = passwordField ? passwordField.value.trim() : '';
+      
+      if (!password || password.length < 6) {
+        showToast('비밀번호는 최소 6자 이상이어야 합니다.', 'error');
+        return;
+      }
+      
+      url = '/api/admin/users';
+      method = 'POST';
+      requestData = {
+        ...userData,
+        password: password
+      };
+    }
 
     const response = await fetch(url, {
       method: method,
@@ -736,7 +774,8 @@ async function handleUserFormSubmit(e) {
         'Content-Type': 'application/json',
         'X-User': currentUser
       },
-      body: JSON.stringify(userData)
+      credentials: 'include', // 세션 쿠키 포함
+      body: JSON.stringify(requestData)
     });
 
     if (!response.ok) {
@@ -861,7 +900,11 @@ window.updateUserRole = updateUserRole;
 // 어드민 권한 확인
 function isAdminUser() {
   // 서버에서 받은 사용자 정보를 사용
-  return currentUser && window.currentUserInfo && window.currentUserInfo.is_admin;
+  if (!currentUser || !window.currentUserInfo) {
+    return false;
+  }
+  const userRole = window.currentUserInfo.role;
+  return userRole === 'admin';
 }
 
 // HTML 이스케이프
@@ -880,6 +923,7 @@ function showToast(message, type = 'info') {
     alert(message);
   }
 } 
+
 
 // 전역 함수로 등록
 window.openUserManagementModal = openUserManagementModal;

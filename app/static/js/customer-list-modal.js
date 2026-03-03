@@ -13,7 +13,12 @@ class CustomerListModalManager {
   }
 
   async openModal() {
-    console.log('📱 고객리스트 모달 열기 시작');
+    // 🔥 모바일 토글 기능: 이미 열려있으면 닫기
+    if (this.isOpen && this.container && !this.container.classList.contains('hidden')) {
+      this.closeModal();
+      return;
+    }
+    
     
     // 인증 상태 확인
     if (!currentUser) {
@@ -36,11 +41,9 @@ class CustomerListModalManager {
     // 고객 목록 로드
     await this.loadCustomerList();
 
-    console.log('📱 고객리스트 모달 열기 완료');
   }
 
   createModal() {
-    console.log('📱 고객리스트 모달 생성');
     
     // 모달 컨테이너 생성
     this.container = document.createElement('div');
@@ -136,19 +139,26 @@ class CustomerListModalManager {
   }
 
   closeModal() {
-    console.log('📱 고객리스트 모달 닫기');
     
     if (this.container) {
       this.container.style.display = 'none';
       this.container.classList.add('hidden');
     }
     
+    // 🔥 파생 사이드바도 닫기 (고객 상세 모달 등)
+    // 고객 상세 모달이 열려있으면 함께 닫기
+    const customerDetailModals = document.querySelectorAll('.customer-detail-modal');
+    customerDetailModals.forEach(modal => {
+      if (modal && !modal.classList.contains('hidden')) {
+        modal.remove();
+      }
+    });
+    
     this.isOpen = false;
     this.currentCustomers = [];
   }
 
   async loadCustomerList() {
-    console.log('📱 고객 목록 로드 시작');
     
     try {
       // 사용자 역할에 따라 필터 설정
@@ -162,7 +172,6 @@ class CustomerListModalManager {
         url += '?filter=all';
       }
       
-      console.log('📱 고객 목록 요청:', url);
       
       const res = await fetch(url, {
         headers: {
@@ -177,7 +186,6 @@ class CustomerListModalManager {
       const data = await res.json();
       const customerList = data.items || data.itema || [];
       
-      console.log('📱 고객 목록 로드 완료:', customerList.length + '개');
       
       this.currentCustomers = customerList;
       this.renderCustomerList(customerList);
@@ -189,7 +197,6 @@ class CustomerListModalManager {
   }
 
   renderCustomerList(customers) {
-    console.log('📱 고객리스트 렌더링 시작:', customers.length + '개');
     
     const container = this.container.querySelector('.customer-list-container');
     if (!container) {
@@ -206,7 +213,6 @@ class CustomerListModalManager {
     let listHtml = '';
     
     customers.forEach((customer, index) => {
-      console.log(`📱 고객 ${index + 1} 렌더링:`, customer);
       
       // 고객 정보 요약
       const summary = [];
@@ -275,7 +281,6 @@ class CustomerListModalManager {
   }
 
   bindCustomerCardEvents() {
-    console.log('📱 고객카드 이벤트 바인딩 시작');
     
     const customerCards = this.container.querySelectorAll('.customer-card');
     
@@ -323,7 +328,6 @@ class CustomerListModalManager {
           const customer = this.currentCustomers.find(c => c.id === customerId);
           
           if (customer) {
-            console.log('📱 고객카드 터치:', customer.name);
             this.showCustomerDetail(customer);
           }
         }
@@ -338,7 +342,6 @@ class CustomerListModalManager {
         const customer = this.currentCustomers.find(c => c.id === customerId);
         
         if (customer) {
-          console.log('📱 고객카드 클릭:', customer.name);
           this.showCustomerDetail(customer);
         }
       });
@@ -355,18 +358,15 @@ class CustomerListModalManager {
       });
     });
     
-    console.log('📱 고객카드 이벤트 바인딩 완료');
   }
 
   showCustomerDetail(customer) {
-    console.log('📱 고객 상세보기:', customer.name);
     
     // 고객 상세보기 모달 생성
     this.createCustomerDetailModal(customer);
   }
 
   createCustomerDetailModal(customer) {
-    console.log('📱 고객 상세보기 모달 생성:', customer.name);
     
     // 기존 상세보기 모달이 있으면 제거
     const existingModal = document.getElementById('customerDetailModal');
@@ -478,7 +478,6 @@ class CustomerListModalManager {
     cancelBtn.addEventListener('click', () => detailModal.remove());
     
     applyFilterBtn.addEventListener('click', () => {
-      console.log('📱 고객 필터 적용:', customer.name);
       this.applyCustomerFilter(customer);
       detailModal.remove();
       this.closeModal(); // 고객리스트 모달도 닫기
@@ -495,6 +494,13 @@ class CustomerListModalManager {
   }
 
   generateCustomerDetailHtml(customer) {
+    const phoneRaw = customer.phone || '';
+    const telPhone = this.toTelPhone(phoneRaw);
+    const phoneDisplay = phoneRaw ? this.escapeHtml(phoneRaw) : '연락처 없음';
+    const phoneHtml = telPhone
+      ? `<a href="tel:${telPhone}" style="color: #0d6efd; text-decoration: none;">${phoneDisplay}</a>`
+      : phoneDisplay;
+
     // 고객 상세정보 HTML 생성
     let html = `
       <div style="background: white; border: 1px solid #e0e0e0; border-radius: 8px; padding: 16px; margin-bottom: 16px;">
@@ -508,7 +514,7 @@ class CustomerListModalManager {
         </div>
         <div class="detail-row" style="margin-bottom: 12px;">
           <label style="display: block; font-weight: 600; color: #333; margin-bottom: 4px; font-size: 12px;">연락처</label>
-          <div style="color: #666; font-size: 14px;">${this.escapeHtml(customer.phone || '연락처 없음')}</div>
+          <div style="color: #666; font-size: 14px;">${phoneHtml}</div>
         </div>
         <div class="detail-row" style="margin-bottom: 12px;">
           <label style="display: block; font-weight: 600; color: #333; margin-bottom: 4px; font-size: 12px;">상태</label>
@@ -586,7 +592,6 @@ class CustomerListModalManager {
   }
 
   applyCustomerFilter(customer) {
-    console.log('📱 고객 필터 적용:', customer.name);
     
     // PC의 applyCustomerFilter 로직 재사용
     if (typeof window.applyCustomerFilter === 'function') {
@@ -596,7 +601,6 @@ class CustomerListModalManager {
       const clearCustomerFilterBtn = document.getElementById('clearCustomerFilterBtn');
       if (clearCustomerFilterBtn) {
         clearCustomerFilterBtn.style.display = 'flex';
-        console.log('📱 모바일 고객 필터 해제 버튼 표시');
       }
     } else {
       console.error('❌ applyCustomerFilter 함수를 찾을 수 없습니다');
@@ -621,6 +625,12 @@ class CustomerListModalManager {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
+  }
+
+  toTelPhone(phone) {
+    if (!phone) return '';
+    const normalized = String(phone).replace(/[^0-9+]/g, '');
+    return normalized.replace(/(?!^)\+/g, '');
   }
 }
 

@@ -25,7 +25,6 @@ function initializeHistory() {
     // 모바일 환경에서만 히스토리 관리 적용
     // popstate 이벤트 리스너 등록 (뒤로가기 버튼 감지)
     window.addEventListener('popstate', handlePopState);
-    console.log("✅ 모바일 히스토리 관리 초기화 완료");
   } else {
     // 데스크톱 환경 - 히스토리 관리 건너뜀
   }
@@ -35,13 +34,11 @@ function initializeHistory() {
 
 // 뒤로가기 버튼 처리 함수 (모바일에서만 작동)
 function handlePopState(event) {
-  console.log("🔍 뒤로가기 버튼 감지됨");
   
   // 로그인 상태 확인
   const isLoggedIn = !!currentUser || !!localStorage.getItem('X-USER');
   
   if (isLoggedIn) {
-    console.log("✅ 로그인된 상태 - 메인 페이지 유지");
     
     // 먼저 열려있는 패널들을 확인하고 닫기
     if (closeOpenPanels()) {
@@ -62,11 +59,9 @@ function handlePopState(event) {
     }
     
     // 모바일 앱에서 뒤로가기 시 앱 종료 확인 다이얼로그 표시
-    console.log("📱 모바일 환경 - 앱 종료 확인 다이얼로그 표시");
     showExitConfirmDialog();
     return; // 다이얼로그 표시 후 여기서 종료
   } else {
-    console.log("❌ 로그인되지 않은 상태 - 로그인 화면으로 이동");
     showLoginScreen();
   }
 }
@@ -75,7 +70,6 @@ function handlePopState(event) {
 function isMobileApp() {
   // 1. window.MOBILE_APP 플래그 확인
   if (window.MOBILE_APP) {
-    console.log("📱 모바일 앱 감지: window.MOBILE_APP 플래그");
     return true;
   }
   
@@ -84,13 +78,11 @@ function isMobileApp() {
   const mobileRegex = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i;
   
   if (mobileRegex.test(userAgent)) {
-    console.log("📱 모바일 앱 감지: User-Agent 기반");
     return true;
   }
   
   // 3. 화면 크기 기반 감지 (더 엄격한 조건)
   if (window.innerWidth <= 480) {
-    console.log("📱 모바일 앱 감지: 화면 크기 기반 (480px 이하)");
     return true;
   }
   
@@ -111,7 +103,6 @@ function closeOpenPanels() {
   
   // 열려있는 패널이 있으면 해당 패널을 닫고 true 반환
   if (fullListPanel && !fullListPanel.classList.contains('hidden')) {
-    console.log('📱 전체보기 패널 닫기');
     if (typeof toggleFullList === 'function') {
       toggleFullList(false);
     }
@@ -119,7 +110,6 @@ function closeOpenPanels() {
   }
   
   if (fullBriefingListPanel && !fullBriefingListPanel.classList.contains('hidden')) {
-    console.log('📱 전체 브리핑 리스트 패널 닫기');
     if (typeof toggleFullBriefingList === 'function') {
       toggleFullBriefingList(false);
     }
@@ -127,7 +117,6 @@ function closeOpenPanels() {
   }
   
   if (secondaryPanel && !secondaryPanel.classList.contains('hidden')) {
-    console.log('📱 2차 사이드바 닫기');
     if (typeof closeSecondaryPanel === 'function') {
       closeSecondaryPanel();
     }
@@ -135,7 +124,6 @@ function closeOpenPanels() {
   }
   
   if (clusterList && !clusterList.classList.contains('hidden')) {
-    console.log('📱 클러스터 리스트 닫기');
     if (typeof hideClusterList === 'function') {
       hideClusterList();
     }
@@ -143,7 +131,6 @@ function closeOpenPanels() {
   }
   
   if (roadviewContainer && !roadviewContainer.classList.contains('hidden')) {
-    console.log('📱 로드뷰 닫기');
     if (typeof closeRoadview === 'function') {
       closeRoadview();
     } else {
@@ -157,7 +144,6 @@ function closeOpenPanels() {
 
 // 앱 종료 확인 다이얼로그 표시
 function showExitConfirmDialog() {
-  console.log("🔍 앱 종료 확인 다이얼로그 표시");
   
   const overlay = document.getElementById("exitConfirmOverlay");
   if (!overlay) {
@@ -182,7 +168,6 @@ function showExitConfirmDialog() {
     
     // 새로운 이벤트 리스너 추가
     newCancelBtn.addEventListener('click', function() {
-      console.log("✅ 앱 종료 취소");
       hideExitConfirmDialog();
       // 취소 시 히스토리에 현재 상태 다시 추가하여 뒤로가기 방지
       window.history.pushState({ loggedIn: true, timestamp: Date.now() }, '', '/');
@@ -196,7 +181,6 @@ function showExitConfirmDialog() {
     
     // 새로운 이벤트 리스너 추가
     newConfirmBtn.addEventListener('click', function() {
-      console.log("✅ 앱 종료 확인");
       hideExitConfirmDialog();
       // 확인 시 앱 종료 허용 (기본 브라우저 동작 수행)
       window.history.back();
@@ -212,37 +196,30 @@ function hideExitConfirmDialog() {
     setTimeout(() => {
       overlay.classList.add("hidden");
     }, 300);
-    console.log("📱 앱 종료 확인 다이얼로그 숨김");
   }
 }
 
 // 로그인 성공 시 히스토리 고정 (모바일에서만)
 function fixHistoryAfterLogin() {
-  console.log("🔍 로그인 후 히스토리 고정");
   
   // 모바일 환경에서만 히스토리 고정 적용
   if (isMobileApp()) {
-    console.log("📱 모바일 환경 - 히스토리 고정 적용");
     // 현재 히스토리를 메인 페이지로 교체
     window.history.replaceState({ loggedIn: true, timestamp: Date.now() }, '', '/');
     
     // 추가 히스토리 엔트리 생성 (뒤로가기 시 메인 페이지 유지)
     window.history.pushState({ loggedIn: true, timestamp: Date.now() }, '', '/');
     
-    console.log("✅ 모바일 히스토리 고정 완료");
   } else {
-    console.log("🖥️ 데스크톱 환경 - 히스토리 고정 건너뜀");
   }
 }
 
 // 로그아웃 시 히스토리 정리
 function clearHistoryOnLogout() {
-  console.log("🔍 로그아웃 시 히스토리 정리");
   
   // 히스토리를 로그인 페이지로 교체
   window.history.replaceState({ loggedIn: false }, '', '/');
   
-  console.log("✅ 히스토리 정리 완료");
 }
 
 /**************************************
@@ -250,7 +227,6 @@ function clearHistoryOnLogout() {
  **************************************/
 
 function showLoginScreen(msg = "") {
-  console.log("🔍 showLoginScreen 호출됨:", msg);
   
   const loginRequired = document.getElementById("loginRequiredScreen");
   const appRoot = document.getElementById("appRoot");
@@ -258,13 +234,11 @@ function showLoginScreen(msg = "") {
   if (loginRequired) {
     loginRequired.classList.remove("hidden");
     // style.display 직접 조작 제거 - CSS의 flexbox가 작동하도록 함
-    console.log("✅ 로그인 필요 화면 표시");
   }
   
   if (appRoot) {
     appRoot.classList.add("hidden");
     appRoot.style.display = "none";
-    console.log("✅ 앱 화면 숨김");
   }
 }
 
@@ -303,7 +277,7 @@ function setCurrentUser(email) {
   // console.log('✅ setCurrentUser 호출됨:', email, 'currentUser:', currentUser, 'window.currentUser:', window.currentUser);
   
   // 사용자 역할 확인 (서버에서 최신 정보 가져오기)
-  fetch('/api/me', {
+  fetch('/api/auth/me', {
     headers: { 'X-User': email },
     credentials: 'include'
   })
@@ -399,7 +373,6 @@ function setCurrentUser(email) {
     // 사용자가 없는 경우 원래 fetch 함수로 복원
     if (window._originalFetch) {
       window.fetch = window._originalFetch;
-      console.log('🔄 fetch 함수 원래대로 복원');
     }
   }
 }
@@ -429,11 +402,9 @@ function toggleLoginLogoutUI(isLoggedIn) {
                      /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
     
     if (isMobile) {
-      console.log("📱 모바일 환경에서 로그아웃 버튼 표시");
       mobileLogoutBtn.style.display = "inline-block";
       mobileLogoutBtn.classList.remove("hidden");
     } else {
-      console.log("💻 PC 환경에서 모바일 로그아웃 버튼 숨김");
       mobileLogoutBtn.style.display = "none";
       mobileLogoutBtn.classList.add("hidden");
     }
@@ -497,7 +468,6 @@ function toggleAdminUI(isAdmin) {
 }
 
 async function applyUser() {
-  console.log("🔍 applyUser 함수 호출됨");
   
   const loginInp  = document.getElementById("loginEmail");
   const manualInp = document.getElementById("userEmail");
@@ -505,16 +475,13 @@ async function applyUser() {
   let email = "";
   if (loginInp && loginInp.value.trim()) {
     email = loginInp.value.trim();
-    console.log("🔍 로그인 이메일 입력:", email);
   } else if (manualInp && manualInp.value.trim()) {
     email = manualInp.value.trim();
-    console.log("🔍 수동 이메일 입력:", email);
   }
 
   if (!email) {
     const m = document.getElementById("loginErrorMsg");
     if (m) m.textContent = "이메일을 입력하세요.";
-    console.log("❌ 이메일이 입력되지 않음");
     return;
   }
 
@@ -522,18 +489,16 @@ async function applyUser() {
   if (!EMAIL_RE.test(email)) {
     const m = document.getElementById("loginErrorMsg");
     if (m) m.textContent = "올바른 이메일 형식이 아닙니다.";
-    console.log("❌ 이메일 형식 오류:", email);
     return;
   }
 
-  console.log("✅ 이메일 검증 통과:", email);
   
   // 사용자 설정
   setCurrentUser(email);
   
   // 서버에서 사용자 정보 및 권한 확인
   try {
-    const response = await fetch("/api/me", {
+    const response = await fetch("/api/auth/me", {
       method: "GET",
       headers: {
         "X-User": email
@@ -585,7 +550,6 @@ async function applyUser() {
   if (loginScreen) {
     loginScreen.classList.add("hidden");
     loginScreen.style.display = "none";
-    console.log("✅ 로그인 화면 숨김");
   }
   
   if (appRoot) {
@@ -604,20 +568,20 @@ async function applyUser() {
   fixHistoryAfterLogin();
 
   // 매물 데이터 로드 (함수 존재 여부 확인 후 실행)
+  // 옵션 1: 재로그인 시 FETCH_CALLED_ONCE 리셋하여 데이터 재로드
+  if (typeof window.FETCH_CALLED_ONCE !== 'undefined') {
+    window.FETCH_CALLED_ONCE = false;
+    FETCH_CALLED_ONCE = false; // 전역 변수 동기화
+  }
+  
   if (typeof runAfterMapReady === 'function') {
     runAfterMapReady(() => {
-      // 재로그인 시에는 항상 데이터를 다시 로드
-      if (typeof FETCH_CALLED_ONCE !== 'undefined') {
-        FETCH_CALLED_ONCE = true;
-      }
       if (typeof fetchListings === 'function') {
         fetchListings();
-        console.log("✅ 매물 데이터 로드 시작");
       }
     });
   }
   
-  console.log("✅ 로그인 완료:", email);
   
   // 모바일 로그아웃 버튼 표시 상태 업데이트
   setTimeout(() => {
@@ -707,7 +671,6 @@ async function checkSessionAndAutoLogin() {
   }
   
   // 모든 방법 실패 시 로그인 화면 표시
-  console.log("❌ 로그인 필요");
   showLoginScreen();
   return false;
 }
@@ -717,14 +680,12 @@ async function checkSessionAndAutoLogin() {
 
 function handleLogoutClick(e) {
   e.preventDefault();
-  console.log("🔍 로그아웃 시작");
 
   try {
     localStorage.removeItem("X-USER");
     localStorage.removeItem("X-USER-ADMIN");
     localStorage.removeItem("X-USER-ROLE");
     currentUser = null;
-    console.log("✅ localStorage에서 사용자 정보 제거");
   } catch (err) {
     console.error("localStorage 제거 실패", err);
   }
@@ -748,7 +709,6 @@ function handleLogoutClick(e) {
       }
     });
     MARKERS = [];
-    console.log("✅ 지도 마커들 제거");
   }
   
   // 클러스터 그룹 초기화
@@ -763,7 +723,6 @@ function handleLogoutClick(e) {
   const ul = document.getElementById("listingList");
   if (ul) {
     ul.innerHTML = "";
-    console.log("✅ 매물 리스트 초기화");
   }
   
   // 카운트 초기화
@@ -799,9 +758,14 @@ function handleLogoutClick(e) {
 
   showLoginScreen("");
 
-  fetch("/auth/logout", { method: "GET", credentials: "include" })
+  fetch("/api/auth/logout", { 
+    method: "POST", 
+    headers: {
+      "Content-Type": "application/json"
+    },
+    credentials: "include" 
+  })
     .finally(() => {
-      console.log("✅ 로그아웃 완료");
     });
 }
 
@@ -817,18 +781,23 @@ function updateMobileLogoutButtonVisibility() {
                    /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
   
   if (isMobile) {
-    console.log("📱 모바일 환경 감지 - 로그아웃 버튼 표시");
     mobileLogoutBtn.style.display = "inline-block";
     mobileLogoutBtn.classList.remove("hidden");
   } else {
-    console.log("💻 PC 환경 감지 - 모바일 로그아웃 버튼 숨김");
     mobileLogoutBtn.style.display = "none";
     mobileLogoutBtn.classList.add("hidden");
   }
 }
 
-// 화면 크기 변경 시 로그아웃 버튼 상태 업데이트
-window.addEventListener('resize', updateMobileLogoutButtonVisibility);
+// 화면 크기 변경 시 로그아웃 버튼 상태 업데이트 (실제 창 크기 변경만 감지)
+window.addEventListener('resize', () => {
+  // 실제 창 크기 변경인지 확인 (스크롤바 등으로 인한 가짜 리사이즈 무시)
+  if (typeof window.isRealWindowResize === 'function' && !window.isRealWindowResize()) {
+    return;
+  }
+  
+  updateMobileLogoutButtonVisibility();
+});
 
 function applyCustomerInputs() {
   const nameInp = document.getElementById("customerName");

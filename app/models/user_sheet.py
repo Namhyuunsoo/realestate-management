@@ -20,7 +20,7 @@ class UserSheet(BaseModel, TimestampMixin, ValidationMixin):
         self.sheet_url = kwargs.get('sheet_url', '')
         self.sheet_id = kwargs.get('sheet_id', '')  # 구글 시트 ID
         self.is_active = kwargs.get('is_active', True)
-        self.sync_enabled = kwargs.get('sync_enabled', True)
+        self.sync_enabled = kwargs.get('sync_enabled', False)  # 기본값 False (Supabase 동기화)
         self.last_sync_at = kwargs.get('last_sync_at')
         self.sync_interval = kwargs.get('sync_interval', 3600)  # 초 단위
         self.custom_fields = kwargs.get('custom_fields', {})  # 사용자 정의 필드

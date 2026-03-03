@@ -314,9 +314,12 @@ document.addEventListener('DOMContentLoaded', () => {
   }, 100);
 });
 
-// 윈도우 리사이즈 시에도 위치 재계산
+// 윈도우 리사이즈 시에도 위치 재계산 (실제 창 크기 변경만 감지)
 window.addEventListener('resize', () => {
-  calculateSecondaryPanelPosition();
+  // 실제 창 크기 변경인지 확인 (스크롤바 등으로 인한 가짜 리사이즈 무시)
+  if (isRealWindowResize()) {
+    calculateSecondaryPanelPosition();
+  }
 });
 
 /**
@@ -330,8 +333,6 @@ function adjustMobileAppHeight() {
     
     // 실제 사용 가능한 높이 계산 (브라우저 UI 제외)
     const availableHeight = Math.min(screenHeight, visualViewportHeight);
-    
-    console.log(`📱 화면 정보: innerHeight=${screenHeight}, visualViewport=${visualViewportHeight}, available=${availableHeight}`);
     
     // body와 layout에 화면 높이 적용
     document.body.style.height = `${availableHeight}px`;
@@ -472,8 +473,6 @@ function adjustMobileAppHeight() {
     
     // CSS 변수로 설정하여 CSS에서도 사용할 수 있도록 함
     document.documentElement.style.setProperty('--mobile-screen-height', `${availableHeight}px`);
-    
-    console.log(`📱 모바일 앱 높이 조정 완료: ${availableHeight}px`);
   }
 }
 
@@ -486,15 +485,267 @@ function handleVisualViewportChange() {
   }
 }
 
+// 실제 창 크기 변경 감지를 위한 전역 변수
+let lastWindowWidth = window.innerWidth;
+let lastWindowHeight = window.innerHeight;
+
+/**
+ * 실제 창 크기 변경인지 확인하는 함수
+ * @returns {boolean} 실제 창 크기가 변경되었으면 true
+ */
+function isRealWindowResize() {
+  const currentWidth = window.innerWidth;
+  const currentHeight = window.innerHeight;
+  
+  // 창 크기가 실제로 변경되었는지 확인
+  const isResized = (currentWidth !== lastWindowWidth || currentHeight !== lastWindowHeight);
+  
+  if (isResized) {
+    lastWindowWidth = currentWidth;
+    lastWindowHeight = currentHeight;
+  }
+  
+  return isResized;
+}
+
+/**
+ * PC 환경에서 실제 상단바 높이를 계산하여 #layout과 #sidebar 높이를 정확히 설정하는 함수
+ */
+function setPCLayoutHeight() {
+  const topbar = document.getElementById('topbar');
+  const statusCounts = document.getElementById('statusCounts');
+  const topFilterBar = document.getElementById('topFilterBar');
+  const layout = document.getElementById('layout');
+  const sidebar = document.getElementById('sidebar');
+  
+  if (!topbar || !statusCounts || !topFilterBar || !layout || !sidebar) {
+    return;
+  }
+  
+  // 실제 상단바 높이 계산
+  const topbarHeight = parseFloat(window.getComputedStyle(topbar).height);
+  const statusCountsHeight = parseFloat(window.getComputedStyle(statusCounts).height);
+  const topFilterBarHeight = parseFloat(window.getComputedStyle(topFilterBar).height);
+  
+  const totalTopbarHeight = topbarHeight + statusCountsHeight + topFilterBarHeight;
+  const viewportHeight = window.innerHeight;
+  const layoutHeight = viewportHeight - totalTopbarHeight;
+  
+  // #layout 높이 정확히 설정
+  layout.style.top = totalTopbarHeight + 'px';
+  layout.style.height = layoutHeight + 'px';
+  layout.style.maxHeight = layoutHeight + 'px';
+  layout.style.bottom = '0';
+  
+  // #sidebar 높이를 레이아웃 높이와 정확히 맞춤
+  sidebar.style.height = layoutHeight + 'px';
+  sidebar.style.maxHeight = layoutHeight + 'px';
+  sidebar.style.top = '0';
+  sidebar.style.bottom = 'auto';
+  
+  // 설정 후 실제 계산된 값 확인
+  const actualLayoutTop = parseFloat(window.getComputedStyle(layout).top);
+  const actualLayoutHeight = parseFloat(window.getComputedStyle(layout).height);
+  const actualSidebarHeight = parseFloat(window.getComputedStyle(sidebar).height);
+}
+
+/**
+ * PC 환경에서 #layout의 높이를 CSS 값으로 복원하는 함수 (레거시 - setPCLayoutHeight 사용 권장)
+ */
+function restorePCLayoutHeight() {
+  // 새로운 함수 사용
+  setPCLayoutHeight();
+}
+
 /**
  * 윈도우 리사이즈 시 앱 높이 재조정
+ * PC 환경에서는 실행하지 않음 (모바일 전용)
+ * 실제 창 크기 변경만 감지 (스크롤바 등으로 인한 가짜 리사이즈 무시)
+ * PC 환경에서는 리사이즈 발생 시 높이를 CSS 값으로 복원
  */
 function handleMobileAppResize() {
-  adjustMobileAppHeight();
+  const isRealResize = isRealWindowResize();
+  const isPC = window.innerWidth > 768;
+  
+  // PC 환경에서는 리사이즈 발생 시 높이 재설정 (가짜 리사이즈 포함)
+  if (isPC) {
+    // requestAnimationFrame을 사용하여 레이아웃 재계산 완료 후 재설정
+    requestAnimationFrame(() => {
+      setPCLayoutHeight();
+    });
+  }
+  
+  // 실제 창 크기 변경인지 확인 (스크롤바 등으로 인한 가짜 리사이즈 무시)
+  if (!isRealResize) {
+    return;
+  }
+  
+  // 모바일 환경에서만 높이 조정 실행
+  if (window.innerWidth <= 768) {
+    adjustMobileAppHeight();
+  }
 }
 
 // 페이지 로드 시 앱 높이 조정
-document.addEventListener('DOMContentLoaded', adjustMobileAppHeight);
+document.addEventListener('DOMContentLoaded', () => {
+  // 모바일에서만 실행
+  if (window.innerWidth <= 768) {
+    adjustMobileAppHeight();
+  } else {
+    // PC 환경: 실제 상단바 높이를 계산하여 정확히 설정
+    setPCLayoutHeight();
+    
+    // PC 환경에서 #layout과 #sidebar 높이/위치 변경 감지 (디버깅용)
+    const layout = document.getElementById('layout');
+    const sidebar = document.getElementById('sidebar');
+    const topbar = document.getElementById('topbar');
+    const statusCounts = document.getElementById('statusCounts');
+    const topFilterBar = document.getElementById('topFilterBar');
+    
+    if (layout) {
+      let lastLayoutHeight = window.getComputedStyle(layout).height;
+      let lastLayoutTop = window.getComputedStyle(layout).top;
+      let lastLayoutBottom = window.getComputedStyle(layout).bottom;
+      
+      const layoutObserver = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+          if (mutation.type === 'attributes' && mutation.attributeName === 'style') {
+            const currentHeight = layout.style.height;
+            const computedHeight = window.getComputedStyle(layout).height;
+            const computedTop = window.getComputedStyle(layout).top;
+            const computedBottom = window.getComputedStyle(layout).bottom;
+            
+            if (currentHeight || computedHeight !== lastLayoutHeight || 
+                computedTop !== lastLayoutTop || computedBottom !== lastLayoutBottom) {
+              console.warn('⚠️ #layout 변경 감지:', {
+                inlineHeight: currentHeight || '(CSS 값)',
+                computedHeight: computedHeight,
+                previousHeight: lastLayoutHeight,
+                computedTop: computedTop,
+                previousTop: lastLayoutTop,
+                computedBottom: computedBottom,
+                previousBottom: lastLayoutBottom,
+                stackTrace: new Error().stack.split('\n').slice(2, 8).join('\n')
+              });
+              
+              lastLayoutHeight = computedHeight;
+              lastLayoutTop = computedTop;
+              lastLayoutBottom = computedBottom;
+              
+              // PC 환경에서 인라인 스타일이 설정되면 즉시 재설정
+              if (window.innerWidth > 768) {
+                requestAnimationFrame(() => {
+                  setPCLayoutHeight();
+                });
+              }
+            }
+          }
+        });
+      });
+      
+      layoutObserver.observe(layout, {
+        attributes: true,
+        attributeFilter: ['style']
+      });
+      
+      // 상단바 영역 높이 추적
+      if (topbar && statusCounts && topFilterBar) {
+        let lastTopbarHeight = window.getComputedStyle(topbar).height;
+        let lastStatusCountsHeight = window.getComputedStyle(statusCounts).height;
+        let lastTopFilterBarHeight = window.getComputedStyle(topFilterBar).height;
+        
+        const topbarObserver = new MutationObserver(() => {
+          const topbarHeight = window.getComputedStyle(topbar).height;
+          const statusCountsHeight = window.getComputedStyle(statusCounts).height;
+          const topFilterBarHeight = window.getComputedStyle(topFilterBar).height;
+          const layoutTop = window.getComputedStyle(layout).top;
+          
+          if (topbarHeight !== lastTopbarHeight || 
+              statusCountsHeight !== lastStatusCountsHeight || 
+              topFilterBarHeight !== lastTopFilterBarHeight) {
+            console.error('🚨 상단바 영역 높이 변경 감지:', {
+              topbarHeight: topbarHeight,
+              previousTopbarHeight: lastTopbarHeight,
+              statusCountsHeight: statusCountsHeight,
+              previousStatusCountsHeight: lastStatusCountsHeight,
+              topFilterBarHeight: topFilterBarHeight,
+              previousTopFilterBarHeight: lastTopFilterBarHeight,
+              layoutTop: layoutTop,
+              expectedTop: '166px',
+              totalHeight: parseFloat(topbarHeight) + parseFloat(statusCountsHeight) + parseFloat(topFilterBarHeight) + 'px',
+              stackTrace: new Error().stack.split('\n').slice(2, 10).join('\n')
+            });
+            
+            lastTopbarHeight = topbarHeight;
+            lastStatusCountsHeight = statusCountsHeight;
+            lastTopFilterBarHeight = topFilterBarHeight;
+          }
+        });
+        
+        topbarObserver.observe(topbar, { attributes: true, attributeFilter: ['style'] });
+        topbarObserver.observe(statusCounts, { attributes: true, attributeFilter: ['style'] });
+        topbarObserver.observe(topFilterBar, { attributes: true, attributeFilter: ['style'] });
+      }
+    }
+    
+    if (sidebar) {
+      let lastSidebarHeight = window.getComputedStyle(sidebar).height;
+      
+      const sidebarObserver = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+          if (mutation.type === 'attributes' && (mutation.attributeName === 'style' || mutation.attributeName === 'class')) {
+            const currentHeight = sidebar.style.height;
+            const computedHeight = window.getComputedStyle(sidebar).height;
+            
+            if (computedHeight !== lastSidebarHeight) {
+              console.error('🚨 #sidebar 높이 변경 감지:', {
+                inlineHeight: currentHeight || '(CSS 값)',
+                computedHeight: computedHeight,
+                previousHeight: lastSidebarHeight,
+                heightDiff: parseFloat(computedHeight) - parseFloat(lastSidebarHeight),
+                stackTrace: new Error().stack.split('\n').slice(2, 10).join('\n')
+              });
+              
+              lastSidebarHeight = computedHeight;
+            }
+          }
+        });
+      });
+      
+      sidebarObserver.observe(sidebar, {
+        attributes: true,
+        attributeFilter: ['style', 'class']
+      });
+      
+      // #layout의 높이 변경도 감지 (sidebar는 layout의 100%이므로)
+      if (layout) {
+        const layoutHeightObserver = new MutationObserver(() => {
+          const layoutHeight = window.getComputedStyle(layout).height;
+          const sidebarHeight = window.getComputedStyle(sidebar).height;
+          
+          if (sidebarHeight !== lastSidebarHeight) {
+            console.error('🚨 #sidebar 높이 변경 감지 (#layout 영향):', {
+              layoutHeight: layoutHeight,
+              sidebarHeight: sidebarHeight,
+              previousSidebarHeight: lastSidebarHeight,
+              heightDiff: parseFloat(sidebarHeight) - parseFloat(lastSidebarHeight),
+              stackTrace: new Error().stack.split('\n').slice(2, 10).join('\n')
+            });
+            
+            lastSidebarHeight = sidebarHeight;
+          }
+        });
+        
+        layoutHeightObserver.observe(layout, {
+          attributes: true,
+          attributeFilter: ['style'],
+          childList: false,
+          subtree: false
+        });
+      }
+    }
+  }
+});
 
 // 윈도우 리사이즈 시 앱 높이 재조정
 window.addEventListener('resize', handleMobileAppResize);
@@ -529,4 +780,7 @@ window.cleanObject = cleanObject;
 window.calculateSecondaryPanelPosition = calculateSecondaryPanelPosition;
 window.adjustMobileAppHeight = adjustMobileAppHeight;
 window.handleMobileAppResize = handleMobileAppResize;
-window.handleVisualViewportChange = handleVisualViewportChange; 
+window.handleVisualViewportChange = handleVisualViewportChange;
+window.isRealWindowResize = isRealWindowResize; // 실제 창 크기 변경 감지 함수 export
+window.setPCLayoutHeight = setPCLayoutHeight; // PC 환경 높이 설정 함수 export
+window.restorePCLayoutHeight = restorePCLayoutHeight; // PC 환경 높이 복원 함수 export (레거시) 

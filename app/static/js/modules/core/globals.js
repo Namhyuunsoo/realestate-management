@@ -12,6 +12,7 @@
 let MAP = null;
 let MAP_READY = false;
 let FETCH_CALLED_ONCE = false;
+let PLACING_MARKERS = false; // 🔥 성능 최적화: placeMarkers 중복 호출 방지
 
 // 매물 데이터 관련 전역 변수
 let MARKERS = [];
@@ -75,7 +76,10 @@ const UI_STATE = {
   showFullBriefingList: false,
   isBriefingListMode: false, // true: 브리핑리스트 모드, false: 일반 매물리스트 모드
   selectedCustomerId: null,
-  currentCustomerView: "detail"
+  currentCustomerView: "detail",
+  listingMode: "commercial", // "commercial" | "housing"
+  housingSubtype: "sale", // "sale" | "jeonse" | "monthly"
+  commercialSubtype: "lease" // "sale" | "lease" (상가 매매는 아직 미구현)
 };
 
 // 지도 준비 큐
@@ -133,6 +137,7 @@ window.getStatusDisplay = getStatusDisplay;
 window.MAP = MAP;
 window.MAP_READY = MAP_READY;
 window.FETCH_CALLED_ONCE = FETCH_CALLED_ONCE;
+window.PLACING_MARKERS = PLACING_MARKERS;
 window.MARKERS = MARKERS;
 window.LISTINGS = LISTINGS;
 window.ORIGINAL_LIST = ORIGINAL_LIST;

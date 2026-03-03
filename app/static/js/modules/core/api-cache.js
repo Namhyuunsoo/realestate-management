@@ -18,7 +18,7 @@ function getCsrfToken() {
     // console.log('🔑 CSRF 토큰 발견 (메타 태그):', token);
     return token;
   }
-  
+
   // 세션 스토리지에서 토큰 가져오기
   const sessionToken = sessionStorage.getItem('csrf_token');
   if (sessionToken) {
@@ -26,7 +26,7 @@ function getCsrfToken() {
     // console.log('🔑 CSRF 토큰 발견 (세션 스토리지):', sessionToken);
     return sessionToken;
   }
-  
+
   console.warn('⚠️ CSRF 토큰을 찾을 수 없습니다');
   return null;
 }
@@ -38,7 +38,7 @@ function getCsrfHeaders() {
     console.warn('⚠️ CSRF 토큰이 없어서 요청이 실패할 수 있습니다');
     return {};
   }
-  
+
   return {
     'X-CSRF-Token': token
   };
@@ -59,7 +59,7 @@ function generateCacheKey(url, options = {}) {
 async function cachedFetch(url, options = {}) {
   const cacheKey = generateCacheKey(url, options);
   const now = Date.now();
-  
+
   // 캐시 확인
   if (API_CACHE.has(cacheKey)) {
     const cached = API_CACHE.get(cacheKey);
@@ -71,7 +71,7 @@ async function cachedFetch(url, options = {}) {
       API_CACHE.delete(cacheKey);
     }
   }
-  
+
   // CSRF 토큰 자동 포함
   const csrfHeaders = getCsrfHeaders();
   const mergedOptions = {
@@ -81,22 +81,31 @@ async function cachedFetch(url, options = {}) {
       ...options.headers
     }
   };
-  
+
   // API 호출
   const response = await fetch(url, mergedOptions);
-  
+
   if (!response.ok) {
+    if (response.status === 401) {
+      // 세션 만료 처리 (로그인 페이지로 이동)
+      if (!window._isRedirectingToLogin) {
+        window._isRedirectingToLogin = true;
+        alert('세션이 만료되었습니다. 다시 로그인해주세요.');
+        window.location.href = '/login';
+      }
+      throw new Error('Unauthorized');
+    }
     throw new Error(`API 실패: ${response.status}`);
   }
-  
+
   const data = await response.json();
-  
+
   // 캐시에 저장
   API_CACHE.set(cacheKey, {
     data: data,
     timestamp: now
   });
-  
+
   return data;
 }
 
@@ -127,20 +136,20 @@ let userInfoCacheTime = 0;
 
 async function getCurrentUserInfo() {
   const now = Date.now();
-  
+
   // 캐시 확인 (5분간 유효)
   if (userInfoCache && (now - userInfoCacheTime) < 300000) {
     return userInfoCache;
   }
-  
+
   try {
-    const data = await cachedFetch('/api/me', {
+    const data = await cachedFetch('/api/auth/me', {
       credentials: 'include'
     });
-    
+
     userInfoCache = data;
     userInfoCacheTime = now;
-    
+
     return data;
   } catch (error) {
     console.error('사용자 정보 로드 실패:', error);
@@ -148,36 +157,68 @@ async function getCurrentUserInfo() {
   }
 }
 
-// 매물 목록 조회 (캐싱 적용)
-let listingsCache = null;
-let listingsCacheTime = 0;
+// 상가 매물 목록 조회 (캐싱 적용)
+let listingsCache = {}; // subtype별 캐시
+let listingsCacheTime = {}; // subtype별 캐시 시간
 
 async function getCachedListings(force = false) {
   const now = Date.now();
-  
-  console.log("🔍 getCachedListings 호출됨, force:", force);
-  
+  const subtype = UI_STATE.commercialSubtype || "lease";
+  const cacheKey = subtype;
+
   // 강제 새로고침이 아니고 캐시가 유효한 경우
-  if (!force && listingsCache && (now - listingsCacheTime) < 60000) { // 1분간 유효
-    // 캐시된 매물 목록 사용
-    console.log("📦 캐시된 매물 목록 사용");
-    return listingsCache;
+  if (!force && listingsCache[cacheKey] && (now - listingsCacheTime[cacheKey]) < 60000) { // 1분간 유효
+    return listingsCache[cacheKey];
   }
-  
+
   try {
-    const url = force ? '/api/listings?force=1&limit=100000' : '/api/listings?limit=100000';
-    console.log("🌐 API 호출:", url);
+    const url = force
+      ? `/api/listings?force=1&limit=100000&subtype=${subtype}`
+      : `/api/listings?limit=100000&subtype=${subtype}`;
     const data = await cachedFetch(url, {
       credentials: 'include'
     });
-    
-    listingsCache = data;
-    listingsCacheTime = now;
-    console.log("✅ 매물 목록 캐시 업데이트 완료");
-    
+
+    listingsCache[cacheKey] = data;
+    listingsCacheTime[cacheKey] = now;
+
     return data;
   } catch (error) {
-    console.error('매물 목록 로드 실패:', error);
+    console.error('상가 매물 목록 로드 실패:', error);
+    return null;
+  }
+}
+
+// 주택 매물 목록 조회 (캐싱 적용)
+let housingListingsCache = {}; // subtype별 캐시
+let housingListingsCacheTime = {}; // subtype별 캐시 시간
+
+async function getCachedHousingListings(subtype = "sale", status_raw = "생", force = false) {
+  const now = Date.now();
+  const cacheKey = `${subtype}_${status_raw}`;
+
+  // 강제 새로고침이 아니고 캐시가 유효한 경우
+  if (!force && housingListingsCache[cacheKey] && housingListingsCacheTime[cacheKey] && (now - housingListingsCacheTime[cacheKey]) < 60000) { // 1분간 유효
+    // 캐시된 주택 매물 목록 사용
+    return housingListingsCache[cacheKey];
+  }
+
+  try {
+    const url = `/api/listings/housing?subtype=${subtype}&status_raw=${status_raw}&limit=100000`;
+    const data = await cachedFetch(url, {
+      credentials: 'include'
+    });
+
+    housingListingsCache[cacheKey] = data;
+    housingListingsCacheTime[cacheKey] = now;
+
+    return data;
+  } catch (error) {
+    console.error('주택 매물 목록 로드 실패:', error);
+    // 403 에러(권한 없음)인 경우 빈 데이터 반환
+    if (error.message && error.message.includes('403')) {
+      return { items: [], total: 0, limit: 100000, offset: 0 };
+    }
     return null;
   }
 }
@@ -188,22 +229,22 @@ let customersCacheTime = 0;
 
 async function getCachedCustomers(filter = 'own') {
   const now = Date.now();
-  
+
   // 캐시 확인 (2분간 유효)
   if (customersCache && (now - customersCacheTime) < 120000) {
     // 캐시된 고객 목록 사용
     return customersCache;
   }
-  
+
   try {
     const data = await cachedFetch(`/api/customers?filter=${filter}`, {
       headers: { 'X-User': currentUser },
       credentials: 'include'
     });
-    
+
     customersCache = data;
     customersCacheTime = now;
-    
+
     return data;
   } catch (error) {
     console.error('고객 목록 로드 실패:', error);
@@ -217,22 +258,22 @@ let recommendationsCacheTime = 0;
 
 async function getCachedRecommendations() {
   const now = Date.now();
-  
+
   // 캐시 확인 (1분간 유효)
   if (recommendationsCache && (now - recommendationsCacheTime) < 60000) {
     // 캐시된 추천 목록 사용
     return recommendationsCache;
   }
-  
+
   try {
     const data = await cachedFetch('/api/recommendations', {
       headers: { 'X-User': currentUser },
       credentials: 'include'
     });
-    
+
     recommendationsCache = data;
     recommendationsCacheTime = now;
-    
+
     return data;
   } catch (error) {
     console.error('추천 목록 로드 실패:', error);
@@ -249,15 +290,20 @@ function clearUserCache() {
   userInfoCache = null;
   userInfoCacheTime = 0;
   invalidateCache();
-  console.log('🔄 사용자 변경으로 인한 캐시 무효화');
 }
 
 // 매물 데이터 변경 시 관련 캐시 무효화
 function clearListingsCache() {
-  listingsCache = null;
-  listingsCacheTime = 0;
+  listingsCache = {};
+  listingsCacheTime = {};
   invalidateCache('/api/listings');
-  console.log('🔄 매물 데이터 변경으로 인한 캐시 무효화');
+}
+
+// 주택 매물 데이터 변경 시 관련 캐시 무효화
+function clearHousingListingsCache() {
+  housingListingsCache = {};
+  housingListingsCacheTime = {};
+  invalidateCache('/api/listings/housing');
 }
 
 // 고객 데이터 변경 시 관련 캐시 무효화
@@ -265,7 +311,6 @@ function clearCustomersCache() {
   customersCache = null;
   customersCacheTime = 0;
   invalidateCache('/api/customers');
-  console.log('🔄 고객 데이터 변경으로 인한 캐시 무효화');
 }
 
 // 추천 데이터 변경 시 관련 캐시 무효화
@@ -273,7 +318,6 @@ function clearRecommendationsCache() {
   recommendationsCache = null;
   recommendationsCacheTime = 0;
   invalidateCache('/api/recommendations');
-  console.log('🔄 추천 데이터 변경으로 인한 캐시 무효화');
 }
 
 /*******************************
@@ -284,14 +328,15 @@ function clearRecommendationsCache() {
 window.cachedFetch = cachedFetch;
 window.getCurrentUserInfo = getCurrentUserInfo;
 window.getCachedListings = getCachedListings;
+window.getCachedHousingListings = getCachedHousingListings;
 window.getCachedCustomers = getCachedCustomers;
 window.getCachedRecommendations = getCachedRecommendations;
 window.clearUserCache = clearUserCache;
 window.clearListingsCache = clearListingsCache;
+window.clearHousingListingsCache = clearHousingListingsCache;
 window.clearCustomersCache = clearCustomersCache;
 window.clearRecommendationsCache = clearRecommendationsCache;
 window.invalidateCache = invalidateCache;
 window.getCsrfToken = getCsrfToken;
 window.getCsrfHeaders = getCsrfHeaders;
 
-console.log("✅ api-cache.js 모듈 로드 완료");

@@ -1,0 +1,43 @@
+# Caddy configuration file
+# DuckDNS domain HTTPS auto setup
+
+# HTTP to HTTPS auto redirect
+# Allow HTTP access for certificate issuance (Let's Encrypt HTTP-01 challenge)
+http://skrealestate.duckdns.org {
+    # Allow HTTP access until certificate is issued (Let's Encrypt challenge)
+    reverse_proxy localhost:5000 {
+        header_up Host {host}
+        header_up X-Real-IP {remote_host}
+        header_up X-Forwarded-For {remote_host}
+        header_up X-Forwarded-Proto {scheme}
+        header_down -Server
+    }
+
+    log {
+        output file logs/caddy.log
+        format json
+    }
+}
+
+# HTTPS configuration (auto certificate issuance)
+# Caddy automatically issues Let's Encrypt certificate
+# HTTP-01 challenge (port 80 must be accessible from outside)
+skrealestate.duckdns.org {
+    # Proxy to Flask server
+    reverse_proxy localhost:5000 {
+        # Header settings
+        header_up Host {host}
+        header_up X-Real-IP {remote_host}
+        header_up X-Forwarded-For {remote_host}
+        header_up X-Forwarded-Proto {scheme}
+
+        # Downstream header settings
+        header_down -Server
+    }
+
+    # Log settings
+    log {
+        output file logs/caddy.log
+        format json
+    }
+}

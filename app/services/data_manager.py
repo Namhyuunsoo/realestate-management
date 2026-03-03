@@ -3,12 +3,12 @@
 import os
 import time
 from typing import Dict, Any, Optional, List
-from .customer_service import CustomerService
 from .briefing_service import BriefingService
 from .user_service import UserService
 from .sheet_download_service import SheetDownloadService
 from .sheet_scheduler import SheetScheduler
 from .geocoding_scheduler import GeocodingScheduler
+from .webhook_renewal_scheduler import WebhookRenewalScheduler
 from .recommendation_service import RecommendationService
 
 class DataManager:
@@ -19,12 +19,12 @@ class DataManager:
         self._lock = None  # 스레드 안전성을 위한 락
         
         # 서비스 인스턴스들 (지연 초기화)
-        self.customer_service: Optional[CustomerService] = None
         self.briefing_service: Optional[BriefingService] = None
         self.user_service: Optional[UserService] = None
         self.sheet_download_service: Optional[SheetDownloadService] = None
         self.sheet_scheduler: Optional[SheetScheduler] = None
         self.geocoding_scheduler: Optional[GeocodingScheduler] = None
+        self.webhook_renewal_scheduler: Optional[WebhookRenewalScheduler] = None
         self.recommendation_service: Optional[RecommendationService] = None
         
         # 초기화 상태 추적
@@ -52,9 +52,6 @@ class DataManager:
         if name == 'user_service':
             self._ensure_user_service()
             return self.user_service
-        elif name == 'customer_service':
-            self._ensure_customer_service()
-            return self.customer_service
         elif name == 'briefing_service':
             self._ensure_briefing_service()
             return self.briefing_service
@@ -73,13 +70,6 @@ class DataManager:
             self.user_service = UserService(self.data_dir)
             self._initialized_services.add('user_service')
             print("✅ UserService 지연 초기화 완료")
-    
-    def _ensure_customer_service(self):
-        """고객 서비스 지연 초기화"""
-        if 'customer_service' not in self._initialized_services:
-            self.customer_service = CustomerService(self.data_dir)
-            self._initialized_services.add('customer_service')
-            print("✅ CustomerService 지연 초기화 완료")
     
     def _ensure_briefing_service(self):
         """브리핑 서비스 지연 초기화"""
@@ -159,11 +149,46 @@ class DataManager:
                 print(f"❌ GeocodingScheduler 초기화 실패: {e}")
                 return False
         return True
+
+    def initialize_webhook_renewal_scheduler(self, app):
+        """웹훅 갱신 스케줄러 초기화 (매일 05시 주택매물장 웹훅 등록) - 지연 초기화"""
+        if 'webhook_renewal_scheduler' not in self._initialized_services:
+            try:
+                run_hour = int(os.getenv("WEBHOOK_RENEW_HOUR", "5"))
+                run_minute = int(os.getenv("WEBHOOK_RENEW_MINUTE", "0"))
+                self.webhook_renewal_scheduler = WebhookRenewalScheduler(
+                    app=app, run_hour=run_hour, run_minute=run_minute
+                )
+                self._initialized_services.add('webhook_renewal_scheduler')
+                print("✅ WebhookRenewalScheduler 지연 초기화 완료")
+                return True
+            except Exception as e:
+                print(f"❌ WebhookRenewalScheduler 초기화 실패: {e}")
+                return False
+        return True
+
+    def start_webhook_renewal(self):
+        """웹훅 갱신 스케줄러 시작 (WEBHOOK_BASE_URL 설정 시에만 동작)"""
+        if self.webhook_renewal_scheduler:
+            return self.webhook_renewal_scheduler.start()
+        return False
+
+    def get_webhook_renewal_status(self) -> Optional[Dict[str, Any]]:
+        """웹훅 갱신 스케줄러 상태 조회"""
+        if self.webhook_renewal_scheduler:
+            return self.webhook_renewal_scheduler.get_status()
+        return None
+    
+    def run_webhook_renewal_now(self) -> bool:
+        """즉시 웹훅 등록 실행"""
+        if self.webhook_renewal_scheduler:
+            return self.webhook_renewal_scheduler.run_now()
+        return False
     
     def _load_compatibility_data(self):
         """기존 호환성을 위한 데이터 로드"""
         # 기존 데이터 구조 유지를 위한 호환성 레이어
-        # CustomerService와 BriefingService는 별도 파일로 데이터를 관리하므로
+        # BriefingService는 별도 파일로 데이터를 관리하므로
         # 여기서는 빈 딕셔너리로 초기화
         self.customers = {}
         self.briefings = {}
@@ -178,49 +203,10 @@ class DataManager:
     
     def _save_store(self):
         """데이터 저장 (기존 호환성)"""
-        if self.customer_service:
-            self.customer_service._save_customers()
         if self.briefing_service:
             self.briefing_service._save_briefings()
         if self.user_service:
             self.user_service._save_users()
-    
-    # 기존 호환성 메서드들
-    def create_customer(self, user_email: str, data: Dict[str, Any]) -> Dict[str, Any]:
-        """고객 생성 (기존 호환성)"""
-        if self.customer_service:
-            return self.customer_service.create_customer(user_email, data)
-        return {}
-    
-    def get_customer(self, customer_id: str) -> Optional[Dict[str, Any]]:
-        """고객 조회 (기존 호환성)"""
-        if self.customer_service:
-            return self.customer_service.get_customer(customer_id)
-        return None
-    
-    def update_customer(self, customer_id: str, data: Dict[str, Any], user_email: str) -> Optional[Dict[str, Any]]:
-        """고객 업데이트 (기존 호환성)"""
-        if self.customer_service:
-            return self.customer_service.update_customer(customer_id, data, user_email)
-        return None
-    
-    def delete_customer(self, customer_id: str, user_email: str) -> bool:
-        """고객 삭제 (기존 호환성)"""
-        if self.customer_service:
-            return self.customer_service.delete_customer(customer_id, user_email)
-        return False
-    
-    def list_customers(self, user_email: str, filter_type: str = 'own', manager: str = '') -> list:
-        """고객 목록 조회 (기존 호환성)"""
-        if self.customer_service:
-            return self.customer_service.list_customers(user_email, filter_type, manager)
-        return []
-    
-    def get_managers(self, user_email: str) -> list:
-        """매니저 목록 조회 (기존 호환성)"""
-        if self.customer_service:
-            return self.customer_service.get_managers(user_email)
-        return []
     
     def is_admin(self, user_email: str) -> bool:
         """관리자 권한 확인 (기존 호환성)"""

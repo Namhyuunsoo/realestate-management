@@ -14,3 +14,5 @@ requests
 Flask-Compress==1.14
 certbot
 pyOpenSSL
+supabase
+psycopg2-binary

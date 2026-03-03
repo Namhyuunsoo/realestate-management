@@ -1,47 +1,127 @@
 @echo off
-chcp 65001 >nul
+REM Change code page to UTF-8 before any Korean text
+chcp 65001 >nul 2>&1
 setlocal enabledelayedexpansion
 
-:: 현재 디렉토리 확인
-if not exist "run.py" (
-    echo [ERROR] run.py 파일을 찾을 수 없습니다.
-    echo 이 스크립트를 프로젝트 루트 디렉토리에서 실행해주세요.
+REM Change to script directory
+cd /d "%~dp0"
+
+REM Check Python installation
+python --version >nul 2>&1
+if errorlevel 1 (
+    echo.
+    echo ========================================
+    echo    [ERROR] Python is not installed
+    echo ========================================
+    echo.
+    echo Please install Python 3.8 or higher:
+    echo https://www.python.org/downloads/
+    echo.
+    echo Check "Add Python to PATH" during installation.
+    echo.
     pause
     exit /b 1
 )
 
-:: 가상환경 활성화
-if exist "venv\Scripts\activate.bat" (
-    call venv\Scripts\activate.bat
-    echo [INFO] 가상환경 활성화 완료
-) else (
-    echo [WARNING] 가상환경을 찾을 수 없습니다. 시스템 Python을 사용합니다.
+REM Check current directory
+if not exist "run.py" (
+    echo.
+    echo ========================================
+    echo    [ERROR] run.py file not found
+    echo ========================================
+    echo.
+    echo Current path: %CD%
+    echo Please run this script from the project root directory.
+    echo.
+    pause
+    exit /b 1
 )
 
-:: DuckDNS 백그라운드 시작
-echo [INFO] DuckDNS 자동 IP 업데이트 시작...
-start /b python duckdns_updater.py
+REM Check and activate virtual environment
+if exist "venv\Scripts\activate.bat" (
+    call venv\Scripts\activate.bat
+    if errorlevel 1 (
+        echo.
+        echo [WARNING] Virtual environment activation failed. Using system Python.
+    ) else (
+        echo [INFO] Virtual environment activated
+    )
+) else (
+    echo.
+    echo ========================================
+    echo    [WARNING] Virtual environment not found
+    echo ========================================
+    echo.
+    echo Virtual environment has not been created.
+    echo Please run setup_new_computer.bat first.
+    echo.
+    echo Continuing with system Python...
+    echo.
+    pause
+)
 
-:: 환경변수 설정
+REM Start DuckDNS in background
+if exist "duckdns_updater.py" (
+    echo [INFO] Starting DuckDNS auto IP update...
+    start /b python duckdns_updater.py
+)
+
+REM Set environment variables
 set PORT=5000
 set HOST=0.0.0.0
 set FLASK_DEBUG=False
 
+echo.
 echo ========================================
-echo    부동산 관리 시스템 서버 시작
+echo    Real Estate Management System Server
 echo ========================================
 echo.
-echo 서버 주소: http://localhost:5000
-echo 외부 접속: http://[컴퓨터IP]:5000
-echo DuckDNS: 백그라운드에서 자동 실행 중
+echo Server address: http://localhost:5000
+echo External access: http://[ComputerIP]:5000
+if exist "duckdns_updater.py" (
+    echo DuckDNS: Running in background
+)
 echo.
-echo 서버를 중지하려면 Ctrl+C를 누르세요.
+echo Press Ctrl+C to stop the server.
 echo.
 
-:: 서버 시작
-python run.py
+REM Start server in background
+start /b python run.py
+
+REM Wait for server to start
+echo [INFO] Starting server... (waiting 3 seconds)
+timeout /t 3 /nobreak >nul
+
+REM Open web browser
+echo [INFO] Opening web browser...
+start http://localhost:5000
+
+REM Wait for server process to end
+:wait_loop
+timeout /t 2 /nobreak >nul
+tasklist /FI "IMAGENAME eq python.exe" 2>nul | find /I "python.exe" >nul
+if not errorlevel 1 (
+    goto wait_loop
+)
+echo.
+echo [INFO] Server has stopped.
+set EXIT_CODE=%ERRORLEVEL%
 
 echo.
-echo 서버가 종료되었습니다.
+if %EXIT_CODE% neq 0 (
+    echo ========================================
+    echo    [ERROR] Server error occurred
+    echo ========================================
+    echo.
+    echo Exit code: %EXIT_CODE%
+    echo.
+    echo Troubleshooting:
+    echo 1. Check if Python is properly installed
+    echo 2. Run setup_new_computer.bat to install packages
+    echo 3. Check if .env file is properly configured
+    echo.
+) else (
+    echo Server stopped normally.
+)
 pause
-
+exit /b %EXIT_CODE%

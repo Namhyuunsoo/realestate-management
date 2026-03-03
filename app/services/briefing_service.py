@@ -3,12 +3,14 @@
 from typing import List, Dict, Any, Optional
 from flask import current_app
 from ..models.briefing import Briefing
+from .repositories import get_briefing_repository
 
 class BriefingService:
     """브리핑 관련 비즈니스 로직 서비스"""
     
     def __init__(self, data_manager):
         self.data_manager = data_manager
+        self.repository = get_briefing_repository()
     
     def create_briefing(self, user_email: str, customer_id: str, listing_ids: List[str]) -> Dict[str, Any]:
         """브리핑 생성"""
@@ -28,8 +30,8 @@ class BriefingService:
                 print(f"❌ 브리핑 데이터 검증 실패: {errors}")
                 raise ValueError(f"브리핑 데이터 검증 실패: {', '.join(errors)}")
             
-            # DataManager를 통해 저장
-            result = self.data_manager.create_briefing(user_email, customer_id, listing_ids)
+            # Repository를 통해 저장
+            result = self.repository.create_briefing(user_email, customer_id, listing_ids)
             
             print(f"✅ 브리핑 생성 완료: {result['id']}")
             return result
@@ -43,7 +45,7 @@ class BriefingService:
         print(f"🔍 get_briefing 호출: bid={briefing_id}")
         
         try:
-            result = self.data_manager.get_briefing(briefing_id)
+            result = self.repository.get_briefing(briefing_id)
             if result:
                 print(f"✅ 브리핑 조회 완료: {briefing_id}")
             else:
@@ -59,7 +61,7 @@ class BriefingService:
         print(f"🔍 list_briefings 호출: user={user_email}, is_admin={is_admin}")
         
         try:
-            result = self.data_manager.list_briefings(user_email, is_admin)
+            result = self.repository.list_briefings(user_email, is_admin)
             print(f"✅ 브리핑 목록 조회 완료: {len(result)}개")
             return result
             
@@ -72,8 +74,11 @@ class BriefingService:
         print(f"🔍 set_listing_override 호출: bid={briefing_id}, lid={listing_id}, field={field}, value={value}")
         
         try:
-            self.data_manager.set_listing_override(briefing_id, listing_id, field, value)
-            print(f"✅ 매물 오버라이드 설정 완료")
+            result = self.repository.set_listing_override(briefing_id, listing_id, field, value)
+            if result:
+                print(f"✅ 매물 오버라이드 설정 완료")
+            else:
+                raise ValueError(f"브리핑을 찾을 수 없음: {briefing_id}")
             
         except Exception as e:
             print(f"❌ 매물 오버라이드 설정 중 오류: {e}")
@@ -84,8 +89,11 @@ class BriefingService:
         print(f"🔍 clear_listing_override 호출: bid={briefing_id}, lid={listing_id}, field={field}")
         
         try:
-            self.data_manager.clear_listing_override(briefing_id, listing_id, field)
-            print(f"✅ 매물 오버라이드 해제 완료")
+            result = self.repository.clear_listing_override(briefing_id, listing_id, field)
+            if result:
+                print(f"✅ 매물 오버라이드 해제 완료")
+            else:
+                raise ValueError(f"브리핑을 찾을 수 없음: {briefing_id}")
             
         except Exception as e:
             print(f"❌ 매물 오버라이드 해제 중 오류: {e}")
@@ -96,8 +104,11 @@ class BriefingService:
         print(f"🔍 set_listing_tag 호출: bid={briefing_id}, lid={listing_id}, tag={tag}")
         
         try:
-            self.data_manager.set_listing_tag(briefing_id, listing_id, tag)
-            print(f"✅ 매물 태그 설정 완료")
+            result = self.repository.set_listing_tag(briefing_id, listing_id, tag)
+            if result:
+                print(f"✅ 매물 태그 설정 완료")
+            else:
+                raise ValueError(f"브리핑을 찾을 수 없음: {briefing_id}")
             
         except Exception as e:
             print(f"❌ 매물 태그 설정 중 오류: {e}")
@@ -108,15 +119,19 @@ class BriefingService:
         print(f"🔍 clear_listing_tag 호출: bid={briefing_id}, lid={listing_id}")
         
         try:
-            self.data_manager.clear_listing_tag(briefing_id, listing_id)
-            print(f"✅ 매물 태그 해제 완료")
+            result = self.repository.clear_listing_tag(briefing_id, listing_id)
+            if result:
+                print(f"✅ 매물 태그 해제 완료")
+            else:
+                raise ValueError(f"브리핑을 찾을 수 없음: {briefing_id}")
             
         except Exception as e:
             print(f"❌ 매물 태그 해제 중 오류: {e}")
             raise
     
-    def get_briefing_with_listings(self, briefing_id: str, user_email: str) -> Optional[Dict[str, Any]]:
+    def get_briefing_with_listings(self, briefing_id: str, user) -> Optional[Dict[str, Any]]:
         """브리핑과 매물 정보를 함께 조회"""
+        user_email = user.email if hasattr(user, 'email') else str(user)
         print(f"🔍 get_briefing_with_listings 호출: bid={briefing_id}, user={user_email}")
         
         try:

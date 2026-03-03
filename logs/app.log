@@ -8779,3 +8779,146 @@ AttributeError: 'str' object has no attribute 'get'
 [2025-08-20 13:19:17,249] INFO in geocoding_service: 지도캐시에서 3130개 좌표 로드 완료
 [2025-08-20 13:19:17,267] INFO in geocoding_service: 총 주소: 1857, 기존 좌표: 3130, 새 주소: 0
 [2025-08-20 13:19:17,280] INFO in geocoding_service: 새로 지오코딩이 필요한 주소가 없습니다. 기존 지도캐시 유지.
+[2026-01-14 11:53:21,619] INFO in extensions: 애플리케이션 시작
+[2026-01-14 11:53:21,668] INFO in extensions: 애플리케이션 시작
+[2026-01-14 11:53:28,867] INFO in decorators: ACCESS: GET /api/auth/check-session - User: anonymous - IP: 127.0.0.1
+[2026-01-14 11:53:28,868] INFO in auth: 세션 없음 또는 만료됨
+[2026-01-14 11:53:29,114] INFO in decorators: ACCESS: GET /api/auth/check-session - User: anonymous - IP: 127.0.0.1
+[2026-01-14 11:53:29,116] INFO in auth: 세션 없음 또는 만료됨
+[2026-01-14 12:11:38,091] INFO in decorators: ACCESS: GET /api/auth/check-session - User: anonymous - IP: 127.0.0.1
+[2026-01-14 12:11:38,092] INFO in auth: 세션 없음 또는 만료됨
+[2026-01-14 12:11:38,352] INFO in decorators: ACCESS: GET /api/auth/check-session - User: anonymous - IP: 127.0.0.1
+[2026-01-14 12:11:38,353] INFO in auth: 세션 없음 또는 만료됨
+[2026-01-14 14:35:30,010] INFO in decorators: ACCESS: GET /api/auth/check-session - User: anonymous - IP: 127.0.0.1
+[2026-01-14 14:35:30,010] INFO in auth: 세션 없음 또는 만료됨
+[2026-01-14 14:35:30,242] INFO in decorators: ACCESS: GET /api/auth/check-session - User: anonymous - IP: 127.0.0.1
+[2026-01-14 14:35:30,243] INFO in auth: 세션 없음 또는 만료됨
+[2026-01-14 14:35:41,992] INFO in decorators: ACCESS: POST /api/auth/login - User: anonymous - IP: 127.0.0.1
+[2026-01-14 14:35:41,993] INFO in auth: 로그인 시도: char********@naver.com
+[2026-01-14 14:35:41,994] INFO in auth: 사용자 찾음: char********@naver.com (상태: approved, 역할: admin)
+[2026-01-14 14:35:41,995] INFO in auth: 비밀번호 확인 시작: char********@naver.com
+[2026-01-14 14:35:42,117] INFO in auth: 비밀번호 확인 결과: True
+[2026-01-14 14:35:42,117] INFO in auth: 비밀번호 확인 성공: char********@naver.com
+[2026-01-14 14:35:42,124] INFO in auth: 로그인 성공: char********@naver.com (역할: admin)
+[2026-01-14 14:35:42,125] WARNING in security: [SECURITY] 2026-01-14 14:35:42 - LOGIN_SUCCESS - IP: 127.0.0.1 - UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 - User logged in: char********@naver.com
+[2026-01-14 14:36:01,603] INFO in decorators: ACCESS: GET /api/auth/check-session - User: usr_1754650773146_e3t141 - IP: 127.0.0.1
+[2026-01-14 14:36:01,604] INFO in auth: 세션 확인 성공: charming_nam@naver.com
+[2026-01-14 14:36:01,914] INFO in decorators: ACCESS: GET /api/auth/check-session - User: usr_1754650773146_e3t141 - IP: 127.0.0.1
+[2026-01-14 14:36:01,915] INFO in auth: 세션 확인 성공: charming_nam@naver.com
+[2026-01-14 14:36:02,676] INFO in sheet_scheduler: 시트 다운로드 시작 (실행 횟수: 1)
+[2026-01-14 14:36:02,676] INFO in sheet_scheduler: 시트 다운로드 스케줄러 시작 (간격: 5분)
+[2026-01-14 14:36:02,825] INFO in geocoding_scheduler: 지오코딩 업데이트 시작 (실행 횟수: 1)
+[2026-01-14 14:36:02,840] INFO in geocoding_scheduler: 지오코딩 스케줄러 시작 (간격: 30분)
+[2026-01-14 14:36:02,916] INFO in geocoding_scheduler: Flask 앱 상태: True
+[2026-01-14 14:36:02,959] INFO in listings: Listings request from user: char********@naver.com (IP: 127.0.***.***)
+[2026-01-14 14:36:02,959] INFO in geocoding_scheduler: 첫 실행이므로 지오코딩 건너뛰기 (Flask 앱 초기화 대기)
+[2026-01-14 14:36:05,719] INFO in listings_loader: Using sheet for map cache: Sheet1
+[2026-01-14 14:36:06,984] INFO in listings_loader: Loaded 3347 coordinate mappings
+[2026-01-14 14:41:03,158] INFO in sheet_scheduler: 시트 다운로드 시작 (실행 횟수: 2)
+[2026-01-14 14:46:04,093] INFO in sheet_scheduler: 시트 다운로드 시작 (실행 횟수: 3)
+[2026-01-14 14:51:04,956] INFO in sheet_scheduler: 시트 다운로드 시작 (실행 횟수: 4)
+[2026-01-14 14:56:05,915] INFO in sheet_scheduler: 시트 다운로드 시작 (실행 횟수: 5)
+[2026-01-14 15:01:06,646] INFO in sheet_scheduler: 시트 다운로드 시작 (실행 횟수: 6)
+[2026-01-14 15:06:03,132] INFO in geocoding_scheduler: 지오코딩 업데이트 시작 (실행 횟수: 2)
+[2026-01-14 15:06:03,133] INFO in geocoding_scheduler: Flask 앱 상태: True
+[2026-01-14 15:06:03,134] WARNING in geocoding_scheduler: Flask 앱 컨텍스트 없음 - 환경변수 사용
+[2026-01-14 15:06:03,170] INFO in geocoding_service: === API 키 상태 확인 (__init__) ===
+[2026-01-14 15:06:03,172] INFO in geocoding_service: Client ID: **********
+[2026-01-14 15:06:03,173] INFO in geocoding_service: Client Secret: ****************************************
+[2026-01-14 15:06:03,176] INFO in geocoding_service: ==================================================
+[2026-01-14 15:06:03,178] INFO in geocoding_service: 상가임대차 파일 경로: ./data\raw\상가임대차.xlsx
+[2026-01-14 15:06:05,503] INFO in geocoding_service: 상가임대차에서 현황이 '생'인 매물 2041개 주소 추출 완료
+[2026-01-14 15:06:05,506] INFO in geocoding_service: 지도캐시 파일 경로: ./data\raw\지도캐시.xlsx
+[2026-01-14 15:06:06,087] INFO in geocoding_service: 지도캐시에서 3347개 좌표 로드 완료
+[2026-01-14 15:06:06,089] INFO in geocoding_service: 총 주소: 2041, 기존 좌표: 3347, 새 주소: 5
+[2026-01-14 15:06:06,090] INFO in geocoding_service: 지오코딩 진행 중: 1/5 - 부평구 중동 1112
+[2026-01-14 15:06:06,091] INFO in geocoding_service: === 지오코딩 시작: 부평구 중동 1112 ===
+[2026-01-14 15:06:06,092] INFO in geocoding_service: 지오코딩 API 호출 - URL: https://maps.apigw.ntruss.com/map-geocode/v2/geocode
+[2026-01-14 15:06:06,092] INFO in geocoding_service: 지오코딩 API 호출 - Params: {'query': '부평구 중동 1112'}
+[2026-01-14 15:06:06,709] INFO in geocoding_service: API 응답 상태 코드: 200
+[2026-01-14 15:06:06,711] INFO in geocoding_service: API 응답 헤더: {'date': 'Wed, 14 Jan 2026 06:06:06 GMT', 'content-type': 'application/json', 'transfer-encoding': 'chunked', 'x-ncp-trace-id': '64p9k6cq36pb56ap9p6gpj2e9m', 'x-ncp-apigw-response-origin': 'ENDPOINT', 'referrer-policy': 'unsafe-url', 'server': 'nfront'}
+[2026-01-14 15:06:06,712] INFO in geocoding_service: API 응답 데이터: {'status': 'OK', 'meta': {'totalCount': 0, 'count': 0}, 'addresses': [], 'errorMessage': ''}
+[2026-01-14 15:06:07,114] INFO in sheet_scheduler: 시트 다운로드 시작 (실행 횟수: 7)
+[2026-01-14 15:06:07,722] INFO in geocoding_service: 지오코딩 진행 중: 2/5 - 미추홀구 주안동 1904-4
+[2026-01-14 15:06:07,757] INFO in geocoding_service: === 지오코딩 시작: 미추홀구 주안동 1904-4 ===
+[2026-01-14 15:06:07,757] INFO in geocoding_service: 지오코딩 API 호출 - URL: https://maps.apigw.ntruss.com/map-geocode/v2/geocode
+[2026-01-14 15:06:07,758] INFO in geocoding_service: 지오코딩 API 호출 - Params: {'query': '미추홀구 주안동 1904-4'}
+[2026-01-14 15:06:08,260] INFO in geocoding_service: API 응답 상태 코드: 200
+[2026-01-14 15:06:08,261] INFO in geocoding_service: API 응답 헤더: {'date': 'Wed, 14 Jan 2026 06:06:08 GMT', 'content-type': 'application/json', 'transfer-encoding': 'chunked', 'x-ncp-trace-id': '6cchkcco62p9h3cc35c4q3cob1', 'x-ncp-apigw-response-origin': 'ENDPOINT', 'referrer-policy': 'unsafe-url', 'server': 'nfront'}
+[2026-01-14 15:06:08,261] INFO in geocoding_service: API 응답 데이터: {'status': 'OK', 'meta': {'totalCount': 0, 'count': 0}, 'addresses': [], 'errorMessage': ''}
+[2026-01-14 15:06:09,277] INFO in geocoding_service: 지오코딩 진행 중: 3/5 - 부평구 부개동 1901-6
+[2026-01-14 15:06:09,430] INFO in geocoding_service: === 지오코딩 시작: 부평구 부개동 1901-6 ===
+[2026-01-14 15:06:09,538] INFO in geocoding_service: 지오코딩 API 호출 - URL: https://maps.apigw.ntruss.com/map-geocode/v2/geocode
+[2026-01-14 15:06:09,700] INFO in geocoding_service: 지오코딩 API 호출 - Params: {'query': '부평구 부개동 1901-6'}
+[2026-01-14 15:06:10,434] INFO in geocoding_service: API 응답 상태 코드: 200
+[2026-01-14 15:06:10,443] INFO in geocoding_service: API 응답 헤더: {'date': 'Wed, 14 Jan 2026 06:06:10 GMT', 'content-type': 'application/json', 'transfer-encoding': 'chunked', 'x-ncp-trace-id': '30p9h74o3apb26ac1o6di6cd32', 'x-ncp-apigw-response-origin': 'ENDPOINT', 'referrer-policy': 'unsafe-url', 'server': 'nfront'}
+[2026-01-14 15:06:10,465] INFO in geocoding_service: API 응답 데이터: {'status': 'OK', 'meta': {'totalCount': 0, 'count': 0}, 'addresses': [], 'errorMessage': ''}
+[2026-01-14 15:06:11,591] INFO in geocoding_service: 지오코딩 진행 중: 4/5 - 부평구 부개동 1900-10
+[2026-01-14 15:06:11,609] INFO in geocoding_service: === 지오코딩 시작: 부평구 부개동 1900-10 ===
+[2026-01-14 15:06:11,609] INFO in geocoding_service: 지오코딩 API 호출 - URL: https://maps.apigw.ntruss.com/map-geocode/v2/geocode
+[2026-01-14 15:06:11,610] INFO in geocoding_service: 지오코딩 API 호출 - Params: {'query': '부평구 부개동 1900-10'}
+[2026-01-14 15:06:12,171] INFO in geocoding_service: API 응답 상태 코드: 200
+[2026-01-14 15:06:12,172] INFO in geocoding_service: API 응답 헤더: {'date': 'Wed, 14 Jan 2026 06:06:12 GMT', 'content-type': 'application/json', 'transfer-encoding': 'chunked', 'x-ncp-trace-id': '62c366ksj2or43cc1jcop38chk', 'x-ncp-apigw-response-origin': 'ENDPOINT', 'referrer-policy': 'unsafe-url', 'server': 'nfront'}
+[2026-01-14 15:06:12,173] INFO in geocoding_service: API 응답 데이터: {'status': 'OK', 'meta': {'totalCount': 0, 'count': 0}, 'addresses': [], 'errorMessage': ''}
+[2026-01-14 15:06:13,183] INFO in geocoding_service: 지오코딩 진행 중: 5/5 - 인천서구 가좌동 -
+[2026-01-14 15:06:13,185] INFO in geocoding_service: === 지오코딩 시작: 인천서구 가좌동 - ===
+[2026-01-14 15:06:13,186] INFO in geocoding_service: 지오코딩 API 호출 - URL: https://maps.apigw.ntruss.com/map-geocode/v2/geocode
+[2026-01-14 15:06:13,186] INFO in geocoding_service: 지오코딩 API 호출 - Params: {'query': '인천서구 가좌동 -'}
+[2026-01-14 15:06:13,687] INFO in geocoding_service: API 응답 상태 코드: 200
+[2026-01-14 15:06:13,687] INFO in geocoding_service: API 응답 헤더: {'date': 'Wed, 14 Jan 2026 06:06:13 GMT', 'content-type': 'application/json', 'transfer-encoding': 'chunked', 'x-ncp-trace-id': '6ceb574o34ohi3cd336dimccr5', 'x-ncp-apigw-response-origin': 'ENDPOINT', 'referrer-policy': 'unsafe-url', 'server': 'nfront'}
+[2026-01-14 15:06:13,689] INFO in geocoding_service: API 응답 데이터: {'status': 'OK', 'meta': {'totalCount': 0, 'count': 0}, 'addresses': [], 'errorMessage': ''}
+[2026-01-14 15:06:13,696] WARNING in geocoding_service: 새로 지오코딩된 매물이 없습니다.
+[2026-01-14 15:06:13,699] INFO in geocoding_service: 기존 지도캐시 유지: 3347개 매물
+[2026-01-14 15:06:13,700] WARNING in geocoding_service: 실패한 새 주소들: ['부평구 중동 1112', '미추홀구 주안동 1904-4', '부평구 부개동 1901-6', '부평구 부개동 1900-10', '인천서구 가좌동 -']
+[2026-01-14 15:11:08,023] INFO in sheet_scheduler: 시트 다운로드 시작 (실행 횟수: 8)
+[2026-01-14 15:16:09,009] INFO in sheet_scheduler: 시트 다운로드 시작 (실행 횟수: 9)
+[2026-01-14 15:21:09,320] INFO in sheet_scheduler: 시트 다운로드 시작 (실행 횟수: 10)
+[2026-01-14 15:26:09,340] INFO in sheet_scheduler: 시트 다운로드 시작 (실행 횟수: 11)
+[2026-01-14 15:31:09,987] INFO in sheet_scheduler: 시트 다운로드 시작 (실행 횟수: 12)
+[2026-01-14 15:36:03,649] INFO in geocoding_scheduler: 지오코딩 업데이트 시작 (실행 횟수: 3)
+[2026-01-14 15:36:03,650] INFO in geocoding_scheduler: Flask 앱 상태: True
+[2026-01-14 15:36:03,651] WARNING in geocoding_scheduler: Flask 앱 컨텍스트 없음 - 환경변수 사용
+[2026-01-14 15:36:03,657] INFO in geocoding_service: 상가임대차 파일 경로: ./data\raw\상가임대차.xlsx
+[2026-01-14 15:36:06,087] INFO in geocoding_service: 상가임대차에서 현황이 '생'인 매물 2040개 주소 추출 완료
+[2026-01-14 15:36:06,089] INFO in geocoding_service: 지도캐시 파일 경로: ./data\raw\지도캐시.xlsx
+[2026-01-14 15:36:06,752] INFO in geocoding_service: 지도캐시에서 3347개 좌표 로드 완료
+[2026-01-14 15:36:06,754] INFO in geocoding_service: 총 주소: 2040, 기존 좌표: 3347, 새 주소: 5
+[2026-01-14 15:36:06,755] INFO in geocoding_service: 지오코딩 진행 중: 1/5 - 미추홀구 주안동 1904-4
+[2026-01-14 15:36:06,756] INFO in geocoding_service: === 지오코딩 시작: 미추홀구 주안동 1904-4 ===
+[2026-01-14 15:36:06,758] INFO in geocoding_service: 지오코딩 API 호출 - URL: https://maps.apigw.ntruss.com/map-geocode/v2/geocode
+[2026-01-14 15:36:06,758] INFO in geocoding_service: 지오코딩 API 호출 - Params: {'query': '미추홀구 주안동 1904-4'}
+[2026-01-14 15:36:07,351] INFO in geocoding_service: API 응답 상태 코드: 200
+[2026-01-14 15:36:07,351] INFO in geocoding_service: API 응답 헤더: {'date': 'Wed, 14 Jan 2026 06:36:07 GMT', 'content-type': 'application/json', 'transfer-encoding': 'chunked', 'x-ncp-trace-id': '3eor26tgmcc9j64p9m6cpj4d9j', 'x-ncp-apigw-response-origin': 'ENDPOINT', 'referrer-policy': 'unsafe-url', 'server': 'nfront'}
+[2026-01-14 15:36:07,353] INFO in geocoding_service: API 응답 데이터: {'status': 'OK', 'meta': {'totalCount': 0, 'count': 0}, 'addresses': [], 'errorMessage': ''}
+[2026-01-14 15:36:08,359] INFO in geocoding_service: 지오코딩 진행 중: 2/5 - 부평구 부개동 1901-6
+[2026-01-14 15:36:08,360] INFO in geocoding_service: === 지오코딩 시작: 부평구 부개동 1901-6 ===
+[2026-01-14 15:36:08,361] INFO in geocoding_service: 지오코딩 API 호출 - URL: https://maps.apigw.ntruss.com/map-geocode/v2/geocode
+[2026-01-14 15:36:08,361] INFO in geocoding_service: 지오코딩 API 호출 - Params: {'query': '부평구 부개동 1901-6'}
+[2026-01-14 15:36:08,920] INFO in geocoding_service: API 응답 상태 코드: 200
+[2026-01-14 15:36:08,921] INFO in geocoding_service: API 응답 헤더: {'date': 'Wed, 14 Jan 2026 06:36:08 GMT', 'content-type': 'application/json', 'transfer-encoding': 'chunked', 'x-ncp-trace-id': '32e1p74o36p9i6cd1oc9gj6c32', 'x-ncp-apigw-response-origin': 'ENDPOINT', 'referrer-policy': 'unsafe-url', 'server': 'nfront'}
+[2026-01-14 15:36:08,922] INFO in geocoding_service: API 응답 데이터: {'status': 'OK', 'meta': {'totalCount': 0, 'count': 0}, 'addresses': [], 'errorMessage': ''}
+[2026-01-14 15:36:09,929] INFO in geocoding_service: 지오코딩 진행 중: 3/5 - 부평구 부개동 1900-10
+[2026-01-14 15:36:09,929] INFO in geocoding_service: === 지오코딩 시작: 부평구 부개동 1900-10 ===
+[2026-01-14 15:36:09,929] INFO in geocoding_service: 지오코딩 API 호출 - URL: https://maps.apigw.ntruss.com/map-geocode/v2/geocode
+[2026-01-14 15:36:09,932] INFO in geocoding_service: 지오코딩 API 호출 - Params: {'query': '부평구 부개동 1900-10'}
+[2026-01-14 15:36:10,504] INFO in geocoding_service: API 응답 상태 코드: 200
+[2026-01-14 15:36:10,505] INFO in geocoding_service: API 응답 헤더: {'date': 'Wed, 14 Jan 2026 06:36:10 GMT', 'content-type': 'application/json', 'transfer-encoding': 'chunked', 'x-ncp-trace-id': '32p9o70sj0ohi32ohj6gp6adpl', 'x-ncp-apigw-response-origin': 'ENDPOINT', 'referrer-policy': 'unsafe-url', 'server': 'nfront'}
+[2026-01-14 15:36:10,505] INFO in geocoding_service: API 응답 데이터: {'status': 'OK', 'meta': {'totalCount': 0, 'count': 0}, 'addresses': [], 'errorMessage': ''}
+[2026-01-14 15:36:10,755] INFO in sheet_scheduler: 시트 다운로드 시작 (실행 횟수: 13)
+[2026-01-14 15:36:11,515] INFO in geocoding_service: 지오코딩 진행 중: 4/5 - 부평구 중동 1112
+[2026-01-14 15:36:11,515] INFO in geocoding_service: === 지오코딩 시작: 부평구 중동 1112 ===
+[2026-01-14 15:36:11,516] INFO in geocoding_service: 지오코딩 API 호출 - URL: https://maps.apigw.ntruss.com/map-geocode/v2/geocode
+[2026-01-14 15:36:11,516] INFO in geocoding_service: 지오코딩 API 호출 - Params: {'query': '부평구 중동 1112'}
+[2026-01-14 15:36:12,094] INFO in geocoding_service: API 응답 상태 코드: 200
+[2026-01-14 15:36:12,095] INFO in geocoding_service: API 응답 헤더: {'date': 'Wed, 14 Jan 2026 06:36:11 GMT', 'content-type': 'application/json', 'transfer-encoding': 'chunked', 'x-ncp-trace-id': '62ob46opj0or33icb5c8omae1m', 'x-ncp-apigw-response-origin': 'ENDPOINT', 'referrer-policy': 'unsafe-url', 'server': 'nfront'}
+[2026-01-14 15:36:12,096] INFO in geocoding_service: API 응답 데이터: {'status': 'OK', 'meta': {'totalCount': 0, 'count': 0}, 'addresses': [], 'errorMessage': ''}
+[2026-01-14 15:36:13,104] INFO in geocoding_service: 지오코딩 진행 중: 5/5 - 인천서구 가좌동 -
+[2026-01-14 15:36:13,104] INFO in geocoding_service: === 지오코딩 시작: 인천서구 가좌동 - ===
+[2026-01-14 15:36:13,105] INFO in geocoding_service: 지오코딩 API 호출 - URL: https://maps.apigw.ntruss.com/map-geocode/v2/geocode
+[2026-01-14 15:36:13,106] INFO in geocoding_service: 지오코딩 API 호출 - Params: {'query': '인천서구 가좌동 -'}
+[2026-01-14 15:36:13,874] INFO in geocoding_service: API 응답 상태 코드: 200
+[2026-01-14 15:36:13,934] INFO in geocoding_service: API 응답 헤더: {'date': 'Wed, 14 Jan 2026 06:36:13 GMT', 'content-type': 'application/json', 'transfer-encoding': 'chunked', 'x-ncp-trace-id': '36or475h32cb468p1kcorjicr1', 'x-ncp-apigw-response-origin': 'ENDPOINT', 'referrer-policy': 'unsafe-url', 'server': 'nfront'}
+[2026-01-14 15:36:14,010] INFO in geocoding_service: API 응답 데이터: {'status': 'OK', 'meta': {'totalCount': 0, 'count': 0}, 'addresses': [], 'errorMessage': ''}
+[2026-01-14 15:36:14,493] WARNING in geocoding_service: 새로 지오코딩된 매물이 없습니다.
+[2026-01-14 15:36:14,564] INFO in geocoding_service: 기존 지도캐시 유지: 3347개 매물
+[2026-01-14 15:36:14,571] WARNING in geocoding_service: 실패한 새 주소들: ['미추홀구 주안동 1904-4', '부평구 부개동 1901-6', '부평구 부개동 1900-10', '부평구 중동 1112', '인천서구 가좌동 -']

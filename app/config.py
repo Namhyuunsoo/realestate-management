@@ -53,10 +53,17 @@ class AppConfig:
     NAVER_MAPS_NCP_CLIENT_ID: str = os.getenv("NAVER_MAPS_NCP_CLIENT_ID", "")
     NAVER_MAPS_NCP_CLIENT_SECRET: str = os.getenv("NAVER_MAPS_NCP_CLIENT_SECRET", "")
     
-    # Naver 로그인 API 설정
-    NAVER_LOGIN_CLIENT_ID: str = os.getenv("NAVER_LOGIN_CLIENT_ID", "")
-    NAVER_LOGIN_CLIENT_SECRET: str = os.getenv("NAVER_LOGIN_CLIENT_SECRET", "")
-    NAVER_LOGIN_REDIRECT_URI: str = os.getenv("NAVER_LOGIN_REDIRECT_URI", "")
+    # Supabase 설정
+    SUPABASE_URL: str = os.getenv("SUPABASE_URL", "")
+    SUPABASE_ANON_KEY: str = os.getenv("SUPABASE_ANON_KEY", "")
+    SUPABASE_SERVICE_ROLE_KEY: str = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "")
+    
+    # Supabase 기능 플래그 (기능별 전환 제어)
+    USE_SUPABASE_CUSTOMERS: bool = os.getenv("USE_SUPABASE_CUSTOMERS", "false").lower() == "true"
+    USE_SUPABASE_BRIEFINGS: bool = os.getenv("USE_SUPABASE_BRIEFINGS", "false").lower() == "true"
+    USE_SUPABASE_RECOMMENDATIONS: bool = os.getenv("USE_SUPABASE_RECOMMENDATIONS", "false").lower() == "true"
+    USE_SUPABASE_LISTINGS: bool = os.getenv("USE_SUPABASE_LISTINGS", "false").lower() == "true"
+    USE_SUPABASE_AUTH: bool = os.getenv("USE_SUPABASE_AUTH", "false").lower() == "true"
     
     @classmethod
     def from_env(cls) -> 'AppConfig':
@@ -91,9 +98,6 @@ class AppConfig:
             'NAVER_MAPS_NCP_KEY_ID': self.NAVER_MAPS_NCP_KEY_ID,
             'NAVER_MAPS_NCP_CLIENT_ID': self.NAVER_MAPS_NCP_CLIENT_ID,
             'NAVER_MAPS_NCP_CLIENT_SECRET': '***' if self.NAVER_MAPS_NCP_CLIENT_SECRET else '',
-            'NAVER_LOGIN_CLIENT_ID': self.NAVER_LOGIN_CLIENT_ID,
-            'NAVER_LOGIN_CLIENT_SECRET': '***' if self.NAVER_LOGIN_CLIENT_SECRET else '',
-            'NAVER_LOGIN_REDIRECT_URI': self.NAVER_LOGIN_REDIRECT_URI,
         }
 
 def load_config(app):
@@ -140,7 +144,13 @@ def load_config(app):
     app.config['NAVER_MAPS_NCP_CLIENT_ID'] = config.NAVER_MAPS_NCP_CLIENT_ID
     app.config['NAVER_MAPS_NCP_CLIENT_SECRET'] = config.NAVER_MAPS_NCP_CLIENT_SECRET
     
-    # Naver 로그인 API 설정
-    app.config['NAVER_LOGIN_CLIENT_ID'] = config.NAVER_LOGIN_CLIENT_ID
-    app.config['NAVER_LOGIN_CLIENT_SECRET'] = config.NAVER_LOGIN_CLIENT_SECRET
-    app.config['NAVER_LOGIN_REDIRECT_URI'] = config.NAVER_LOGIN_REDIRECT_URI
+    # Supabase 설정
+    app.config['SUPABASE_URL'] = config.SUPABASE_URL
+    app.config['SUPABASE_ANON_KEY'] = config.SUPABASE_ANON_KEY
+    app.config['SUPABASE_SERVICE_ROLE_KEY'] = config.SUPABASE_SERVICE_ROLE_KEY
+    
+    # Supabase 기능 플래그
+    app.config['USE_SUPABASE_CUSTOMERS'] = config.USE_SUPABASE_CUSTOMERS
+    app.config['USE_SUPABASE_BRIEFINGS'] = config.USE_SUPABASE_BRIEFINGS
+    app.config['USE_SUPABASE_LISTINGS'] = config.USE_SUPABASE_LISTINGS
+    app.config['USE_SUPABASE_AUTH'] = config.USE_SUPABASE_AUTH

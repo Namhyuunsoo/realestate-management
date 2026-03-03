@@ -5,10 +5,13 @@ from flask import current_app
 import json
 from flask import Blueprint, request, jsonify, session
 from ..services.listings_loader import load_listings
+from ..services.housing_listings_service import fetch_housing_listings
 from ..services.sheet_fetcher import clear_listing_cache
-from ..core.decorators import require_user, validate_csrf_token, require_admin
+from ..core.decorators import require_user, validate_csrf_token, require_admin, require_manager_or_admin
 from ..services.user_service import mask_email, mask_ip
 from ..core.lazy_init import ensure_background_services
+
+from ..services.commercial_listings_service import fetch_all_commercial_listings, SUPABASE_AVAILABLE
 
 bp = Blueprint("listings", __name__)
 
@@ -25,45 +28,34 @@ def api_listings():
     
     force = request.args.get("force") == "1"
     status_raw = request.args.get("status_raw")
+    subtype = request.args.get("subtype") # 상가 하위 카테고리 (lease, unit, land)
     # 매물 데이터 접근 제한 제거
     requested_limit = int(request.args.get("limit", 100))
-    limit = requested_limit  # 제한 없음
+    limit = requested_limit  
     offset = int(request.args.get("offset", 0))
 
     # 강제 새로고침 요청 시 로그
     if force:
         current_app.logger.info(f"🔄 강제 새로고침 요청: {mask_email(user.email)} (IP: {mask_ip(request.remote_addr)})")
 
-    # force 파라미터를 제대로 전달
     try:
-        data = load_listings(force_reload=force)
+        # Supabase 사용 가능 시 Supabase에서 로드, 아니면 레거시 로컬 파일 사용
+        if SUPABASE_AVAILABLE:
+            data = fetch_all_commercial_listings(subtype=subtype)
+            current_app.logger.info(f"✅ Supabase에서 {len(data)}개 매물 로드됨 (subtype: {subtype})")
+        else:
+            data = load_listings(force_reload=force)
+            current_app.logger.info(f"ℹ️ 로컬 파일에서 {len(data)}개 매물 로드됨 (Supabase 미사용)")
     except Exception as e:
-        current_app.logger.error(f"❌ load_listings 실패: {str(e)}")
-        current_app.logger.error(f"❌ 에러 타입: {type(e).__name__}")
-        import traceback
-        current_app.logger.error(f"❌ 스택 트레이스: {traceback.format_exc()}")
+        current_app.logger.error(f"❌ 데이터 로드 실패: {str(e)}")
         return jsonify({"error": f"데이터 로드 실패: {str(e)}"}), 500
 
-    # 필터
+    # 필터 (현황 필터)
     if status_raw:
         data = [d for d in data if d.get("status_raw") == status_raw]
     
-    # 역할별 매물 필터링 (안전한 처리)
-    if user and hasattr(user, 'is_user') and hasattr(user, 'is_manager') and hasattr(user, 'is_admin'):
-        try:
-            if user.is_user():
-                # 일반 사용자는 본인 담당 매물만 조회
-                manager_name = getattr(user, 'manager_name', '')
-                if manager_name:
-                    data = [d for d in data if d.get("fields", {}).get("담당자") == manager_name]
-                else:
-                    # 담당자명이 설정되지 않은 경우 빈 결과 반환
-                    data = []
-        except Exception as filter_error:
-            current_app.logger.error(f"❌ 역할별 필터링 중 오류: {filter_error}")
-            # 보안 강화: 필터링 실패 시 빈 결과 반환 (매물 정보 보호)
-            data = []
-            current_app.logger.warning(f"🚨 보안: 필터링 실패로 인해 사용자 {mask_email(user.email)}에게 빈 결과 반환")
+    # 역할별 필터링 없음 — 시트에 있는 매물은 담당자/사용자 등록 여부 무관하게 전체 표시
+    current_app.logger.info(f"✅ 전체 매물 {len(data)}개 반환 (사용자: {mask_email(user.email)})")
 
     total = len(data)
     sliced = data[offset:offset+limit]
@@ -74,12 +66,49 @@ def api_listings():
         "limit": limit,
         "offset": offset,
         "force_reload": force,
-        "cache_used": not force
+        "cache_used": not force and not SUPABASE_AVAILABLE
     }
     return current_app.response_class(
         json.dumps(resp_dict, ensure_ascii=False),
         mimetype="application/json; charset=utf-8"
     )
+
+@bp.route("/api/listings/housing")
+@require_user()
+@require_manager_or_admin()
+@validate_csrf_token()
+def api_listings_housing():
+    """주택 매물 조회 API (매니저·어드민만)"""
+    user = request.current_user
+    current_app.logger.info(f"Housing listings request from user: {mask_email(user.email)}")
+
+    subtype = request.args.get("subtype", "sale")
+    status_raw = request.args.get("status_raw")
+    limit = int(request.args.get("limit", 100000))
+    offset = int(request.args.get("offset", 0))
+
+    try:
+        data = fetch_housing_listings(subtype=subtype, status_raw=status_raw, limit=limit, offset=offset)
+    except Exception as e:
+        current_app.logger.error(f"Housing listings fetch failed: {e}")
+        return jsonify({"error": str(e)}), 500
+
+    if "error" in data and data["error"]:
+        return jsonify({"error": data["error"]}), 400
+
+    resp_dict = {
+        "items": data["items"],
+        "total": data["total"],
+        "limit": data["limit"],
+        "offset": data["offset"],
+        "force_reload": False,
+        "cache_used": False,
+    }
+    return current_app.response_class(
+        json.dumps(resp_dict, ensure_ascii=False),
+        mimetype="application/json; charset=utf-8",
+    )
+
 
 @bp.route("/api/listings/clear-cache", methods=["POST"])
 @require_admin()

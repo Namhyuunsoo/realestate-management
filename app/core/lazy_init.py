@@ -26,3 +26,17 @@ def ensure_background_services():
         except Exception as e:
             print(f"⚠️ 지오코딩 동기화 시작 실패: {e}")
             data_manager._geocoding_sync_started = True
+
+    # 웹훅 갱신 스케줄러 초기화 (매일 05시 주택매물장 웹훅 자동 등록)
+    if not hasattr(data_manager, '_webhook_renewal_started'):
+        try:
+            if data_manager.initialize_webhook_renewal_scheduler(current_app):
+                if data_manager.start_webhook_renewal():
+                    print("✅ 웹훅 자동 갱신 스케줄러가 시작되었습니다. (매일 05:00)")
+                    # 첫 기동 시 즉시 웹훅 등록 시도
+                    if data_manager.run_webhook_renewal_now():
+                        print("✅ 초기 웹훅 등록이 완료되었습니다.")
+            data_manager._webhook_renewal_started = True
+        except Exception as e:
+            print(f"⚠️ 웹훅 갱신 스케줄러 시작 실패: {e}")
+            data_manager._webhook_renewal_started = True

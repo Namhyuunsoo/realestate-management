@@ -157,8 +157,17 @@ def create_app(config_object=None):
         response.headers.add('Access-Control-Allow-Credentials', 'true')
         
         # 캐시 헤더 설정
+        # 개발 환경에서는 캐시 비활성화, 프로덕션에서는 캐시 활성화
+        is_debug = os.getenv('FLASK_DEBUG', 'True').lower() == 'true'
         if request.path.startswith('/static/'):
-            response.headers.add('Cache-Control', 'public, max-age=31536000')
+            if is_debug:
+                # 개발 환경: 캐시 비활성화 (코드 변경 시 즉시 반영)
+                response.headers.add('Cache-Control', 'no-cache, no-store, must-revalidate')
+                response.headers.add('Pragma', 'no-cache')
+                response.headers.add('Expires', '0')
+            else:
+                # 프로덕션 환경: 캐시 활성화 (성능 최적화)
+                response.headers.add('Cache-Control', 'public, max-age=31536000')
         else:
             response.headers.add('Cache-Control', 'no-cache, no-store, must-revalidate')
         
@@ -170,7 +179,7 @@ def create_app(config_object=None):
         from flask import session
         from app.core.security import generate_csrf_token
         import os
-        
+
         # CSRF 토큰 생성 (세션 기반)
         if 'csrf_token' not in session:
             session['csrf_token'] = generate_csrf_token()
@@ -234,7 +243,6 @@ def register_blueprints(app):
     from .routes.customers import bp as customers_bp
     from .routes.briefings import bp as briefings_bp
     from .routes.auth import bp as auth_bp
-    from .routes.auth_naver import bp as auth_naver_bp
     from .routes.admin import bp as admin_bp
     from .routes.users import bp as users_bp
     from .routes.security import bp as security_bp
@@ -242,13 +250,13 @@ def register_blueprints(app):
     from .routes.geocoding import bp as geocoding_bp
     from .routes.listing_add import bp as listing_add_bp
     from .routes.recommendations import bp as recommendations_bp
+    from .routes.webhooks import bp as webhooks_bp
 
     app.register_blueprint(health_bp)
     app.register_blueprint(listings_bp)
     app.register_blueprint(customers_bp)
     app.register_blueprint(briefings_bp)
     app.register_blueprint(auth_bp)
-    app.register_blueprint(auth_naver_bp)
     app.register_blueprint(admin_bp)
     app.register_blueprint(users_bp)
     app.register_blueprint(security_bp)
@@ -256,3 +264,4 @@ def register_blueprints(app):
     app.register_blueprint(geocoding_bp)
     app.register_blueprint(listing_add_bp)
     app.register_blueprint(recommendations_bp)
+    app.register_blueprint(webhooks_bp)

@@ -18,7 +18,17 @@ class ListingAddManager {
         // 매물등록 버튼 클릭
         const addListingBtn = document.getElementById('addListingBtn');
         if (addListingBtn) {
-            addListingBtn.addEventListener('click', () => this.openModal());
+            addListingBtn.addEventListener('click', () => {
+                // 🔥 모바일 토글 기능: 이미 열려있으면 닫기
+                if (window.MOBILE_APP || (window.innerWidth <= 768)) {
+                    if (this.modal && !this.modal.classList.contains('hidden')) {
+                        console.log('📱 매물등록 모달이 이미 열려있음 - 닫기');
+                        this.closeModal();
+                        return;
+                    }
+                }
+                this.openModal();
+            });
         }
         
         // 모달 닫기 버튼

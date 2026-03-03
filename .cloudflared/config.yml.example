@@ -1,0 +1,24 @@
+# Cloudflare Tunnel 설정 파일 예시
+# 이 파일을 .cloudflared/config.yml로 복사하고 실제 값으로 수정하세요
+
+# 터널 이름 (setup_cloudflare_tunnel.bat에서 생성한 이름)
+tunnel: realestate-tunnel
+
+# 인증 파일 경로 (cloudflared tunnel login 후 생성됨)
+# Windows 기본 경로: C:\Users\[사용자명]\.cloudflared\[터널ID].json
+credentials-file: C:\Users\YOUR_USERNAME\.cloudflared\YOUR_TUNNEL_ID.json
+
+# 트래픽 라우팅 설정
+ingress:
+  # 메인 서비스 (로컬 서버)
+  - hostname: your-tunnel-name.trycloudflare.com
+    service: http://localhost:5000
+  
+  # 기본 응답 (매칭되지 않는 모든 요청)
+  - service: http_status:404
+
+# 참고:
+# 1. YOUR_USERNAME을 Windows 사용자명으로 변경
+# 2. YOUR_TUNNEL_ID를 실제 터널 ID로 변경 (cloudflared tunnel list로 확인)
+# 3. hostname은 Cloudflare가 자동 생성하거나, 커스텀 도메인 사용 가능
+# 4. service의 포트 번호는 .env의 PORT 값과 일치해야 함

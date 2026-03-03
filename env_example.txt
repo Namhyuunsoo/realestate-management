@@ -24,14 +24,20 @@ SPREADSHEET_ID=1D14iWPeTuHAMf9m_LrtsILYEd2Z8dpjAbIfpx-WR8eY
 SERVICE_ACCOUNT_FILE=../config/service_account.json
 SHEET_DOWNLOAD_INTERVAL=5
 
+# 주택매물장 시트 (Sheets → Supabase 동기화)
+# SK부동산 주택매물장. 미설정 시 아래 기본값 사용.
+HOUSING_SHEET_ID=1KZ7aLN_Vzfnp0MhnOsJXuCtPtGIPuVj-UaHB2xP7JRs
+
+# 웹훅 (Google Sheets 변경 감지 → Supabase 동기화)
+# HTTPS 공개 URL. 설정 시 서버 실행 중 매일 05:00에 웹훅 자동 등록.
+WEBHOOK_BASE_URL=https://skrealestate.duckdns.org
+# 웹훅 갱신 실행 시각 (선택, 기본 05:00)
+# WEBHOOK_RENEW_HOUR=5
+# WEBHOOK_RENEW_MINUTE=0
+
 # Naver 지도 API 설정
 NAVER_MAPS_NCP_CLIENT_ID=your_naver_maps_client_id
 NAVER_MAPS_NCP_CLIENT_SECRET=your_naver_maps_client_secret
-
-# Naver 로그인 API 설정
-NAVER_LOGIN_CLIENT_ID=your_naver_login_client_id
-NAVER_LOGIN_CLIENT_SECRET=your_naver_login_client_secret
-NAVER_LOGIN_REDIRECT_URI=http://localhost:5000/auth/naver/callback
 
 # 데이터 경로 설정
 DATA_DIR=./data
@@ -41,6 +47,13 @@ MAP_CACHE_FILENAME=지도캐시.xlsx
 # 캐시 파일 설정
 LISTING_CACHE_FILE=./data/cache/listings_normalized.json
 GEOCODE_CACHE_FILE=./data/cache/geocode_cache.json
+
+# Supabase DB 연결 (스키마 내보내기·SQL 실행 시 사용)
+# Supabase 대시보드 → Settings → Database → Connection string에서 확인
+# SUPABASE_URL이 있으면 SUPABASE_DB_PASSWORD만 추가해도 됨
+SUPABASE_DB_PASSWORD=your-database-password
+# 또는 전체 연결 문자열 사용:
+# DATABASE_URL=postgresql://postgres:비밀번호@db.프로젝트ID.supabase.co:5432/postgres
 
 # DuckDNS 설정 (선택사항)
 DUCKDNS_DOMAIN=your-domain.duckdns.org

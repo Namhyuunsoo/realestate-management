@@ -18,14 +18,12 @@ async function addMobileButtons() {
   // 상태카운트바 찾기
   const statusCounts = document.getElementById('statusCounts');
   if (!statusCounts) {
-    console.log('상태카운트바를 찾을 수 없습니다.');
     return;
   }
 
   // 기존 매물등록 버튼 찾기
   const existingAddBtn = statusCounts.querySelector('.btn-add-listing');
   if (!existingAddBtn) {
-    console.log('기존 매물등록 버튼을 찾을 수 없습니다.');
     return;
   }
 
@@ -79,32 +77,26 @@ async function addMobileButtons() {
     color: white;
   `;
   // 모바일 전용 매물리스트 버튼 이벤트
-  propertyListBtn.addEventListener('click', async function() {
-    console.log('📱 매물LIST 버튼 클릭됨');
-    
+  propertyListBtn.addEventListener('click', async function () {
     // 중복 클릭 방지
     if (this.disabled) {
-      console.log('📱 버튼이 이미 처리 중입니다');
       return;
     }
     this.disabled = true;
-    
+
     try {
-      // 매물리스트 모달 열기
+      // 🔥 토글 기능: 이미 열려있으면 닫기 (openModal 내부에서 처리됨)
       if (window.listingListModalManager) {
-        console.log('📱 매물리스트 모달 열기 시도');
         await window.listingListModalManager.openModal();
-        console.log('📱 매물리스트 모달 열기 완료');
       } else {
         console.error('❌ listingListModalManager를 찾을 수 없습니다');
       }
     } catch (error) {
-      console.error('❌ 매물리스트 모달 열기 실패:', error);
+      console.error('❌ 매물리스트 모달 열기/닫기 실패:', error);
     } finally {
       // 버튼 활성화 복원 (1초 후)
       setTimeout(() => {
         this.disabled = false;
-        console.log('📱 버튼 활성화 복원');
       }, 1000);
     }
   });
@@ -129,32 +121,26 @@ async function addMobileButtons() {
     background: #ffc107;
     color: black;
   `;
-  customerListBtn.addEventListener('click', async function() {
-    console.log('📱 고객LIST 버튼 클릭됨');
-    
+  customerListBtn.addEventListener('click', async function () {
     // 중복 클릭 방지
     if (this.disabled) {
-      console.log('📱 버튼이 이미 처리 중입니다');
       return;
     }
     this.disabled = true;
-    
+
     try {
-      // 고객리스트 모달 열기
+      // 🔥 토글 기능: 이미 열려있으면 닫기 (openModal 내부에서 처리됨)
       if (window.customerListModalManager) {
-        console.log('📱 고객리스트 모달 열기 시도');
         await window.customerListModalManager.openModal();
-        console.log('📱 고객리스트 모달 열기 완료');
       } else {
         console.error('❌ customerListModalManager를 찾을 수 없습니다');
       }
     } catch (error) {
-      console.error('❌ 고객리스트 모달 열기 실패:', error);
+      console.error('❌ 고객리스트 모달 열기/닫기 실패:', error);
     } finally {
       // 버튼 활성화 복원 (1초 후)
       setTimeout(() => {
         this.disabled = false;
-        console.log('📱 버튼 활성화 복원');
       }, 1000);
     }
   });
@@ -179,13 +165,12 @@ async function addMobileButtons() {
     background: #dc3545;
     color: white;
   `;
-  customerAddBtn.addEventListener('click', function() {
-    console.log('고객등록 버튼 클릭됨');
-    // 고객등록 모달 열기
+  customerAddBtn.addEventListener('click', function () {
+    // 🔥 토글 기능: 이미 열려있으면 닫기 (openModal 내부에서 처리됨)
     if (window.customerAddManager) {
       window.customerAddManager.openModal();
     } else {
-      console.error('customerAddManager를 찾을 수 없습니다.');
+      console.error('❌ customerAddManager를 찾을 수 없습니다.');
     }
   });
 
@@ -195,17 +180,311 @@ async function addMobileButtons() {
   allButtonsContainer.appendChild(customerListBtn);
   allButtonsContainer.appendChild(customerAddBtn);
 
+  // 필터 버튼과 필터 요약을 담을 첫 번째 행 컨테이너 생성
+  const filterRowContainer = document.createElement('div');
+  filterRowContainer.className = 'filter-row-container';
+  filterRowContainer.style.cssText = `
+    display: flex;
+    gap: 4px;
+    width: 100%;
+    align-items: stretch;
+    margin-bottom: 4px;
+  `;
+
+  // 필터 버튼 생성
+  const filterBtn = document.createElement('button');
+  filterBtn.id = 'mobileFilterBtn';
+  filterBtn.className = 'btn-filter';
+  filterBtn.textContent = '🔍 필터';
+  filterBtn.style.cssText = `
+    flex: 0 0 25%;
+    padding: 8px 4px;
+    border-radius: 4px;
+    font-size: 11px;
+    cursor: pointer;
+    border: none;
+    box-sizing: border-box;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
+    background: #6c757d;
+    color: white;
+  `;
+  filterBtn.addEventListener('click', function () {
+    if (window.openFilterModal) {
+      window.openFilterModal();
+    } else {
+      console.error('❌ openFilterModal 함수를 찾을 수 없습니다.');
+    }
+  });
+
+  // 필터 요약 표시 영역 생성
+  const filterSummaryEl = document.createElement('div');
+  filterSummaryEl.id = 'mobileFilterSummary';
+  filterSummaryEl.className = 'filter-summary';
+  filterSummaryEl.style.cssText = `
+    flex: 1;
+    padding: 8px 4px;
+    font-size: 10px;
+    color: #666;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: flex;
+    align-items: center;
+    background: #f8f9fa;
+    border-radius: 4px;
+  `;
+  filterSummaryEl.textContent = '';
+
+  // 필터 행 컨테이너에 필터 버튼과 요약 추가
+  filterRowContainer.appendChild(filterBtn);
+  filterRowContainer.appendChild(filterSummaryEl);
+
   // 기존 count-info를 새로운 컨테이너로 교체
   const countInfo = statusCounts.querySelector('.count-info');
   if (countInfo) {
     countInfo.innerHTML = '';
+    countInfo.style.cssText = `
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      width: 100%;
+      padding: 8px 16px;
+      box-sizing: border-box;
+    `;
+    countInfo.appendChild(filterRowContainer);
     countInfo.appendChild(allButtonsContainer);
   }
 
-  console.log('모든 버튼이 동일한 크기로 통일되었습니다.');
+  // 필터 요약 초기 업데이트
+  updateMobileFilterSummary();
+
 }
+
+// 필터 요약 업데이트 함수 - 모든 적용된 필터 표시
+function updateMobileFilterSummary() {
+  const filterSummaryEl = document.getElementById('mobileFilterSummary');
+  if (!filterSummaryEl) return;
+
+  // EFFECTIVE_FILTERS에서 필터 값 읽기
+  const filters = window.EFFECTIVE_FILTERS || {};
+
+  const summaryParts = [];
+
+  // 필터 필드명 매핑
+  const filterLabels = {
+    region: '지역',
+    jibun: '지번',
+    building: '건물명',
+    floor: '층',
+    store: '가게명',
+    area_sale: '분양',
+    area_real: '실평수',
+    deposit: '보증금',
+    rent: '월세',
+    premium: '권리금',
+    note: '비고',
+    manager: '담당자',
+    region2: '지역2',
+    phone: '연락처',
+    client: '의뢰인',
+    note3: '비고3'
+  };
+
+  // 모든 필터를 순회하면서 값이 있는 것만 요약에 추가
+  Object.keys(filters).forEach(key => {
+    const value = filters[key];
+    if (value && value.toString().trim() !== '') {
+      const label = filterLabels[key] || key;
+      // 숫자 필터의 경우 범위 표시, 텍스트 필터는 그대로 표시
+      if (key === 'floor') {
+        summaryParts.push(value + label);
+      } else if (key === 'deposit' || key === 'rent' || key === 'premium' || key === 'area_sale' || key === 'area_real') {
+        summaryParts.push(label + ' ' + value);
+      } else {
+        summaryParts.push(label + ':' + value);
+      }
+    }
+  });
+
+  // 필터 요약 텍스트 설정
+  if (summaryParts.length > 0) {
+    filterSummaryEl.textContent = summaryParts.join(' ');
+    filterSummaryEl.style.display = 'flex';
+  } else {
+    filterSummaryEl.textContent = '';
+    filterSummaryEl.style.display = 'none';
+  }
+}
+
+// 전역 함수로 등록
+window.updateMobileFilterSummary = updateMobileFilterSummary;
 
 // 모바일 버튼 초기화는 main-new.js에서 통합 관리됨 (중복 제거)
 
 // 전역 함수로 등록
 window.addMobileButtons = addMobileButtons;
+
+/**
+ * 모바일 매물 모드 선택 버튼 초기화
+ */
+function initMobileListingModeButton() {
+  // 모바일 디바이스인지 확인
+  function isMobileDevice() {
+    const ua = navigator.userAgent;
+    const isMobileOS = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua);
+    const isMobileBrowser = ua.includes('Mobile') || ua.includes('NAVER(inapp');
+    return isMobileOS || isMobileBrowser;
+  }
+
+  // 모바일이 아니면 실행하지 않음
+  if (!isMobileDevice()) {
+    return;
+  }
+
+  const btnWrap = document.getElementById('mobileListingModeBtnWrap');
+  const btn = document.getElementById('mobileListingModeBtn');
+  const dropdown = document.getElementById('mobileListingModeDropdown');
+  const btnText = document.getElementById('mobileListingModeText');
+
+  if (!btnWrap || !btn || !dropdown || !btnText) {
+    return;
+  }
+
+  // 현재 모드에 따라 버튼 텍스트 업데이트
+  function updateButtonText() {
+    if (!window.UI_STATE) return;
+
+    const mode = window.UI_STATE.listingMode || 'commercial';
+    const subtype = mode === 'housing'
+      ? (window.UI_STATE.housingSubtype || 'sale')
+      : (window.UI_STATE.commercialSubtype || 'lease');
+
+    let text = '';
+    if (mode === 'commercial') {
+      if (subtype === 'unit') text = '구분상가';
+      else if (subtype === 'land') text = '건물토지';
+      else if (subtype === 'sale') text = '상가매매'; // Fallback
+      else text = '상가임대차';
+    } else {
+      if (subtype === 'sale') text = '주택 매매';
+      else if (subtype === 'jeonse') text = '주택 전세';
+      else if (subtype === 'monthly') text = '주택 월세';
+      else text = '주택 매매';
+    }
+
+    btnText.textContent = text;
+  }
+
+  // 드롭다운 열기/닫기
+  function toggleDropdown() {
+    btnWrap.classList.toggle('open');
+    dropdown.classList.toggle('hidden');
+  }
+
+  // 드롭다운 닫기
+  function closeDropdown() {
+    btnWrap.classList.remove('open');
+    dropdown.classList.add('hidden');
+  }
+
+  // 버튼 클릭 시 드롭다운 토글
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    toggleDropdown();
+  });
+
+  // 드롭다운 항목 클릭 처리
+  dropdown.querySelectorAll('.dropdown-item').forEach(item => {
+    item.addEventListener('click', async (e) => {
+      e.stopPropagation();
+
+      // 비활성화된 항목은 무시
+      if (item.classList.contains('disabled')) {
+        return;
+      }
+
+      const mode = item.dataset.mode;
+      const subtype = item.dataset.subtype;
+
+      // 모드 전환
+      if (mode === 'commercial') {
+        if (typeof window.switchListingMode === 'function') {
+          await window.switchListingMode('commercial');
+        }
+        if (typeof window.switchCommercialSubtype === 'function') {
+          window.switchCommercialSubtype(subtype);
+        }
+      } else if (mode === 'housing') {
+        if (typeof window.switchListingMode === 'function') {
+          await window.switchListingMode('housing');
+        }
+        if (typeof window.switchHousingSubtype === 'function') {
+          window.switchHousingSubtype(subtype);
+        }
+      }
+
+      // 버튼 텍스트 업데이트
+      updateButtonText();
+
+      // 드롭다운 닫기
+      closeDropdown();
+    });
+  });
+
+  // 외부 클릭 시 드롭다운 닫기
+  document.addEventListener('click', (e) => {
+    if (!btnWrap.contains(e.target)) {
+      closeDropdown();
+    }
+  });
+
+  // 권한 체크 및 주택 메뉴 항목 비활성화
+  async function checkPermissions() {
+    try {
+      // getCurrentUserInfo 함수 확인 (전역 함수)
+      if (typeof window.getCurrentUserInfo !== 'function') {
+        console.warn('getCurrentUserInfo 함수를 찾을 수 없습니다.');
+        return;
+      }
+
+      const userInfo = await window.getCurrentUserInfo();
+      if (!userInfo) return;
+
+      const role = userInfo?.user?.role ?? userInfo?.role ?? 'user';
+      const isManagerOrAdmin = role === 'manager' || role === 'admin';
+
+      // 주택 관련 메뉴 항목 처리
+      dropdown.querySelectorAll('.dropdown-item[data-mode="housing"]').forEach(item => {
+        if (!isManagerOrAdmin) {
+          item.classList.add('disabled');
+          item.title = '매니저·어드민만 이용 가능합니다';
+        } else {
+          item.classList.remove('disabled');
+          item.title = '';
+        }
+      });
+    } catch (error) {
+      console.error('권한 확인 실패:', error);
+    }
+  }
+
+  // 초기 버튼 텍스트 설정
+  updateButtonText();
+
+  // 권한 체크
+  checkPermissions();
+
+  // UI_STATE 변경 감지하여 버튼 텍스트 업데이트
+  // 주기적으로 체크 (간단한 방법)
+  setInterval(() => {
+    updateButtonText();
+  }, 1000);
+
+}
+
+// 전역 함수로 등록
+window.initMobileListingModeButton = initMobileListingModeButton;

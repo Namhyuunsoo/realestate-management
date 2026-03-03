@@ -16,12 +16,12 @@ if (typeof window._clusterClickHandler === 'undefined') {
 
 async function renderClusterGroupList(cluster) {
   const markers = cluster.getClusterMember();
-  const ids     = markers.map(m => m._listingId);
-  const arr     = LISTINGS.filter(x => ids.includes(x.id));
+  const ids = markers.map(m => m._listingId);
+  const arr = LISTINGS.filter(x => ids.includes(x.id));
 
   // PC버전: 클러스터 리스트 표시
   const wrap = document.getElementById("clusterList");
-  const ul   = document.getElementById("clusterItemList");
+  const ul = document.getElementById("clusterItemList");
   const listingList = document.getElementById("listingList");
   if (!wrap || !ul) return;
 
@@ -29,64 +29,130 @@ async function renderClusterGroupList(cluster) {
   // 기존 UI 요소들의 크기나 위치를 변경하지 않음
   ul.innerHTML = "";
 
+  const isHousing = window.UI_STATE && window.UI_STATE.listingMode === "housing";
+  const housingSubtype = (window.UI_STATE && window.UI_STATE.housingSubtype) || "sale";
+  const formatSupplyExcl = typeof window.formatSupplyExclusive === "function" ? window.formatSupplyExclusive : (s, e) => (s || e) ? `${s || "-"}/${e || "-"}` : "-/-";
+  const formatRoomsBath = typeof window.formatRoomsBath === "function" ? window.formatRoomsBath : (r, b) => `방${(r || "").toString().trim() || "-"}화${(b || "").toString().trim() || "-"}`;
+
   arr.forEach(item => {
-    const fields      = item.fields || {};
-    
-    // 주소에서 지역과 지번 추출
-    const addr        = item.address_full || "";
-    const addrParts   = addr.split(' ');
-    const region      = addrParts.length > 0 ? escapeHtml(addrParts[0]) : "";
-    const jibun       = addrParts.length > 1 ? escapeHtml(addrParts[1]) : "";
-    
-    // 층수 처리
-    const floorRaw    = fields["층수"] || fields["층"] || "";
-    const floor       = floorRaw
+    const fields = item.fields || {};
+
+    const addr = item.address_full || "";
+    const addrParts = addr.split(' ');
+    const floorRaw = fields["층수"] || fields["층"] || "";
+    const floor = floorRaw
       ? (/층|지하|^b\d+/i.test(floorRaw) ? floorRaw : `${floorRaw}층`)
       : "-";
-    
-    // 가게명
-    const storeName   = escapeHtml(fields["가게명"] || fields["건물명"] || "");
-    
-    // 실평수
-    const area_real   = escapeHtml(fields["실평수"] || "-");
-    
-    // 보증금, 월세, 권리금
-    const dep         = escapeHtml(fields["보증금"] || "-");
-    const rent        = escapeHtml(fields["월세"]   || "-");
-    const rawPrem     = (fields["권리금"] ?? "").toString().trim();
-    const premDisplay = ["", "무권리", "0", "무"].includes(rawPrem)
-      ? "무권리"
-      : escapeHtml(rawPrem);
+
+    const storeName = escapeHtml(fields["가게명"] || fields["건물명"] || "");
+
+    let metaTopHtml = "";
+    let metaBottomHtml = "";
+
+    if (isHousing) {
+      const addrDisplayParts = [
+        fields["지역"] || (addrParts.length > 0 ? addrParts[0] : ""),
+        fields["지번"] || (addrParts.length > 1 ? addrParts[1] : ""),
+        fields["건물명"] || fields["가게명"],
+        fields["동"],
+        floor
+      ].map(x => (x || "").toString().trim()).filter(x => x && x !== "-");
+      const addressDisplay = escapeHtml(addrDisplayParts.join(" "));
+      const supplyExcl = formatSupplyExcl(fields["공급"], fields["전용"]);
+      const roomsBath = formatRoomsBath(fields["방"], fields["화장실"]);
+      const rentVal = (fields["월세"] || "").toString().trim();
+      const hasRent = !!rentVal && rentVal !== "-";
+
+      metaTopHtml = `<span class="address">${addressDisplay}</span>`;
+
+      if (housingSubtype === "sale") {
+        const salePrice = escapeHtml(fields["매매가"] || "-");
+        metaBottomHtml = `<span class="rooms-bath">${escapeHtml(roomsBath)}</span><span class="area-real">${supplyExcl}</span><span class="sale-price">매매 ${salePrice}</span>`;
+      } else {
+        const dep = escapeHtml(fields["보증금"] || "-");
+        const rentPart = hasRent ? `<span class="rent">월 ${escapeHtml(rentVal)}</span>` : "";
+        metaBottomHtml = `<span class="rooms-bath">${escapeHtml(roomsBath)}</span><span class="area-real">${supplyExcl}</span><span class="deposit">보 ${dep}</span>${rentPart}`;
+      }
+    } else {
+      // 상가 모드: 서브타입별 분기
+      const subtype = (window.UI_STATE && window.UI_STATE.commercialSubtype) || "lease";
+      const region = addrParts.length > 0 ? escapeHtml(addrParts[0]) : "";
+      const jibun = addrParts.length > 1 ? escapeHtml(addrParts[1]) : "";
+
+      if (subtype === "lease") {
+        const areaReal = escapeHtml(fields["실평수"] || "-");
+        const dep = escapeHtml(fields["보증금"] || "-");
+        const rent = escapeHtml(fields["월세"] || "-");
+        const premRaw = (fields["권리금"] ?? "").toString().trim();
+        const premDisplay = ["", "무권리", "0", "무"].includes(premRaw) ? "무권리" : escapeHtml(premRaw);
+
+        metaTopHtml = `
+          <span class="region">${region}</span>
+          <span class="jibun">${jibun}</span>
+          <span class="floor">${floor}</span>
+          <span class="store-name">${storeName}</span>
+        `;
+        metaBottomHtml = `
+          <span class="area-real">${areaReal}평</span>
+          <span class="deposit">보: ${dep}</span>
+          <span class="rent">월: ${rent}</span>
+          <span class="premium">권: ${premDisplay}</span>
+        `;
+      } else if (subtype === "unit") {
+        const areaReal = escapeHtml(fields["전용(평)"] || fields["실평수"] || "-");
+        const price = escapeHtml(fields["매매가"] || "-");
+        const yieldVal = escapeHtml(fields["수익율"] || "-");
+
+        metaTopHtml = `
+          <span class="region">${region}</span>
+          <span class="jibun">${jibun}</span>
+          <span class="floor">${floor}</span>
+          <span class="store-name">${storeName}</span>
+        `;
+        metaBottomHtml = `
+          <span class="area-real">${areaReal}평</span>
+          <span class="sale-price">매매: ${price}</span>
+          <span class="yield" style="color: #d11; font-weight: bold;">수익: ${yieldVal}</span>
+        `;
+      } else if (subtype === "land") {
+        const areaLand = escapeHtml(fields["대지(평)"] || fields["대지면적"] || "-");
+        const price = escapeHtml(fields["매매가"] || "-");
+        const yieldVal = escapeHtml(fields["수익율"] || "-");
+
+        metaTopHtml = `
+          <span class="region">${region}</span>
+          <span class="jibun">${jibun}</span>
+          <span class="store-name" style="font-weight: bold;">${storeName}</span>
+        `;
+        metaBottomHtml = `
+          <span class="area-land">대지: ${areaLand}평</span>
+          <span class="sale-price">매매: ${price}</span>
+          <span class="yield" style="color: #d11; font-weight: bold;">수익: ${yieldVal}</span>
+        `;
+      }
+    }
 
     const li = document.createElement("li");
     li.classList.add("listing-item");
     li.setAttribute("data-id", item.id);
     li.style.position = 'relative';
-    // 현황 정보 추가 (속도 최적화)
-    const status = getStatusDisplay(item.status_raw);
-    
+
     li.innerHTML = `
       <div class="listing-item">
         <div class="meta-top">
           <div class="listing-info">
-            <span class="region">${region}</span>
-            <span class="jibun">${jibun}</span>
-            <span class="floor">${floor}</span>
-            <span class="store-name">${storeName}</span>
+            ${metaTopHtml}
           </div>
           <div class="listing-controls">
             ${window.createRecommendationStar ? window.createRecommendationStar(item.id) : ''}
           </div>
         </div>
         <div class="meta-bottom">
-          <span class="area-real">${area_real}평</span>
-          <span class="deposit">보: ${dep}</span>
-          <span class="rent">월: ${rent}</span>
-          <span class="premium">권: ${premDisplay}</span>
+          ${metaBottomHtml}
         </div>
       </div>
     `;
-    
+
     // 브리핑 상태 표시 추가
     const briefingStatus = getBriefingStatus(item.id);
     updateListingItemBriefingStatus(li, briefingStatus);
@@ -95,7 +161,7 @@ async function renderClusterGroupList(cluster) {
       clearSelection();
       setActiveMarker(item.id);
       renderDetailPanel(item);
-      
+
       // 선택 상태 업데이트 (UI 크기나 위치는 변경하지 않음)
       ul.querySelectorAll("li .listing-item.selected")
         .forEach(el => el.classList.remove("selected"));
@@ -103,7 +169,7 @@ async function renderClusterGroupList(cluster) {
       if (inner) {
         inner.classList.add("selected");
       }
-      
+
       // 클릭 시 애니메이션 효과 추가 (UI 크기나 위치는 변경하지 않음)
       const marker = MARKERS.find(m => m._listingId === item.id);
       if (marker && marker.getElement) {
@@ -113,7 +179,7 @@ async function renderClusterGroupList(cluster) {
           setTimeout(() => dotEl.classList.remove("blink"), 800);
         }
       }
-      
+
       // 클러스터 버블 애니메이션도 시도 (UI 크기나 위치는 변경하지 않음)
       if (CLUSTERER && CLUSTERER._clusters) {
         const clusterObj = CLUSTERER._clusters.find(c =>
@@ -135,7 +201,7 @@ async function renderClusterGroupList(cluster) {
     // 클러스터 목록 마우스오버 이벤트 추가
     li.addEventListener("mouseenter", () => {
       highlightMarkerTemp(item.id, true);
-      
+
       // 마커 도트 blink 효과
       const marker = MARKERS.find(m => m._listingId === item.id);
       if (marker && marker.getElement) {
@@ -145,7 +211,7 @@ async function renderClusterGroupList(cluster) {
           setTimeout(() => dotEl.classList.remove("blink"), 800);
         }
       }
-      
+
       // 클러스터 버블 blink 효과 추가
       if (CLUSTERER && CLUSTERER._clusters) {
         const clusterObj = CLUSTERER._clusters.find(c =>
@@ -174,11 +240,10 @@ async function renderClusterGroupList(cluster) {
 
   // 클러스터 리스트를 표시하되, 기존 UI 요소들의 크기나 위치는 변경하지 않음
   wrap.classList.remove("hidden");
-  
+
   // 클러스터 리스트 열 때 히스토리 상태 추가
   window.history.pushState({ panel: 'clusterList' }, '', '/');
-  console.log('📱 클러스터 리스트 열기 - 히스토리 상태 추가');
-  
+
   // 클러스터 리스트 닫기 버튼 이벤트 리스너 추가
   const closeBtn = document.getElementById("clusterListCloseBtn");
   if (closeBtn) {
@@ -229,8 +294,6 @@ function bindClusterClickDelegation() {
       );
       if (!cluster) return;
 
-  
-
       // 버블 애니메이션 효과
       const bubble = wrapper.querySelector(".cluster-bubble");
       if (bubble) {
@@ -239,7 +302,42 @@ function bindClusterClickDelegation() {
         bubble.classList.add("cluster-animate");
       }
 
-      renderClusterGroupList(cluster);
+      // 🔥 모바일 환경: 매물리스트 모달로 클러스터 목록 표시
+      if (window.MOBILE_APP || (window.innerWidth <= 768)) {
+        const markers = cluster.getClusterMember();
+        const ids = markers.map(m => m._listingId);
+        const clusterItems = LISTINGS.filter(x => ids.includes(x.id));
+
+        if (window.listingListModalManager && typeof window.listingListModalManager.showClusterList === 'function') {
+          // 모달이 열려있지 않으면 먼저 모달 열기
+          const listingListModal = document.getElementById('listingListModal');
+          const isModalOpen = listingListModal && !listingListModal.classList.contains('hidden');
+
+          if (!isModalOpen) {
+            window.listingListModalManager.openModal().then(() => {
+              // 🔥 수정: 모달이 실제로 열렸는지 재확인
+              const listingListModal = document.getElementById('listingListModal');
+              const isModalActuallyOpen = listingListModal && !listingListModal.classList.contains('hidden');
+
+              if (isModalActuallyOpen) {
+                window.listingListModalManager.showClusterList(clusterItems);
+              } else {
+                console.error('❌ 모달이 열리지 않았습니다');
+              }
+            }).catch((error) => {
+              console.error('❌ 모달 열기 실패:', error);
+            });
+          } else {
+            window.listingListModalManager.showClusterList(clusterItems);
+          }
+        } else {
+          // 모바일 모달이 없으면 PC 버전으로 폴백
+          renderClusterGroupList(cluster);
+        }
+      } else {
+        // PC 버전: 기존 클러스터 리스트 표시
+        renderClusterGroupList(cluster);
+      }
       return;
     }
 
@@ -252,8 +350,6 @@ function bindClusterClickDelegation() {
     );
     if (!cluster) return;
 
-
-
     const bubble = wrapper.querySelector(".cluster-bubble");
     if (bubble) {
       bubble.classList.remove("cluster-animate");
@@ -261,7 +357,42 @@ function bindClusterClickDelegation() {
       bubble.classList.add("cluster-animate");
     }
 
-    renderClusterGroupList(cluster);
+    // 🔥 모바일 환경: 매물리스트 모달로 클러스터 목록 표시
+    if (window.MOBILE_APP || (window.innerWidth <= 768)) {
+      const markers = cluster.getClusterMember();
+      const ids = markers.map(m => m._listingId);
+      const clusterItems = LISTINGS.filter(x => ids.includes(x.id));
+
+      if (window.listingListModalManager && typeof window.listingListModalManager.showClusterList === 'function') {
+        // 모달이 열려있지 않으면 먼저 모달 열기
+        const listingListModal = document.getElementById('listingListModal');
+        const isModalOpen = listingListModal && !listingListModal.classList.contains('hidden');
+
+        if (!isModalOpen) {
+          window.listingListModalManager.openModal().then(() => {
+            // 🔥 수정: 모달이 실제로 열렸는지 재확인
+            const listingListModal = document.getElementById('listingListModal');
+            const isModalActuallyOpen = listingListModal && !listingListModal.classList.contains('hidden');
+
+            if (isModalActuallyOpen) {
+              window.listingListModalManager.showClusterList(clusterItems);
+            } else {
+              console.error('❌ 모달이 열리지 않았습니다');
+            }
+          }).catch((error) => {
+            console.error('❌ 모달 열기 실패:', error);
+          });
+        } else {
+          window.listingListModalManager.showClusterList(clusterItems);
+        }
+      } else {
+        // 모바일 모달이 없으면 PC 버전으로 폴백
+        renderClusterGroupList(cluster);
+      }
+    } else {
+      // PC 버전: 기존 클러스터 리스트 표시
+      renderClusterGroupList(cluster);
+    }
   });
 
   window._clusterClickDelegationBound = true;
@@ -270,16 +401,14 @@ function bindClusterClickDelegation() {
 
 function loadMarkerClustering() {
   if (typeof MarkerClustering !== 'undefined') {
-    console.log('✅ MarkerClustering이 이미 로드되어 있습니다.');
     return;
   }
-  
+
   const script = document.createElement('script');
   script.src = '/static/js/vendor/MarkerClustering.js';
-  script.onload = function() {
-    console.log('✅ MarkerClustering이 성공적으로 로드되었습니다.');
+  script.onload = function () {
   };
-  script.onerror = function() {
+  script.onerror = function () {
     console.error('❌ MarkerClustering 로드에 실패했습니다.');
   };
   document.head.appendChild(script);

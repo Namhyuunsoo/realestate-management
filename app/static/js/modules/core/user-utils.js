@@ -262,4 +262,3 @@ window.checkPermission = checkPermission;
 window.requireAdmin = requireAdmin;
 window.requireManager = requireManager;
 
-console.log("✅ user-utils.js 모듈 로드 완료");

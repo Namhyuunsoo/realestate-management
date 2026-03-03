@@ -34,8 +34,6 @@ async function loadCustomerList(filter = null) {
       url += `?filter=manager&manager=${encodeURIComponent(manager)}`;
     }
     
-    console.log('🌐 고객 목록 요청:', url);
-    
     const res = await fetch(url, {
       headers: {
         'X-User': currentUser
@@ -49,8 +47,6 @@ async function loadCustomerList(filter = null) {
     const data = await res.json();
     const customerList = data.items || data.itema || [];
     
-    console.log('✅ 고객 목록 로드 완료:', customerList.length + '개');
-    
     renderCustomerList(customerList);
   } catch (err) {
     console.error('고객 목록 요청 중 예외 발생:', err);
@@ -58,18 +54,8 @@ async function loadCustomerList(filter = null) {
 }
 
 function renderCustomerList(list) {
-  console.log('🔍 renderCustomerList 호출:', list);
-  console.log('🔍 renderCustomerList 매개변수 타입:', typeof list);
-  console.log('🔍 renderCustomerList 매개변수 길이:', list ? list.length : 'undefined');
-  console.log('🔍 고객 ID 목록:', list.map(c => c.id));
-  console.log('🔍 첫 번째 고객 상세:', list[0]);
-  console.log('🔍 첫 번째 고객 타입:', typeof list[0]);
-  console.log('🔍 첫 번째 고객 키들:', list[0] ? Object.keys(list[0]) : 'undefined');
-  
   // 전역 변수에 고객 목록 저장 (수정/삭제 기능용)
   window.currentCustomerList = list;
-  console.log('🔍 window.currentCustomerList 설정 후:', window.currentCustomerList);
-  console.log('🔍 window.currentCustomerList 첫 번째 고객:', window.currentCustomerList[0]);
   
   // 2차 사이드바의 고객 목록 컨테이너를 찾기
   let customerListContent = document.getElementById("customerListContent2");
@@ -211,9 +197,6 @@ function renderCustomerListItems(list) {
   listContainer.style.cssText = 'height: auto; overflow: visible; padding-right: 4px;';
   
   list.forEach((c, index) => {
-    console.log(`🔍 고객 ${index + 1} 렌더링:`, c);
-    console.log(`🔍 고객 ${index + 1} 이름:`, c.name);
-    console.log(`🔍 고객 ${index + 1} 전화번호:`, c.phone);
     
     const customerCard = document.createElement('div');
     customerCard.className = 'customer-card';
@@ -289,8 +272,6 @@ function renderCustomerListItems(list) {
     
     // 우클릭 컨텍스트 메뉴 추가
     customerCard.addEventListener('contextmenu', (e) => {
-      console.log('🖱️ 우클릭 이벤트 발생:', e);
-      console.log('🖱️ 우클릭한 고객:', c);
       e.preventDefault();
       showCustomerContextMenu(e, c);
     });
@@ -329,9 +310,6 @@ function renderCustomerListItems(list) {
 
 // 고객 컨텍스트 메뉴 표시
 function showCustomerContextMenu(e, customer) {
-  console.log('📋 showCustomerContextMenu 호출:', customer);
-  console.log('📋 고객 ID:', customer.id);
-  
   // 기존 컨텍스트 메뉴 제거
   const existingMenu = document.getElementById('customerContextMenu');
   if (existingMenu) {
@@ -356,13 +334,11 @@ function showCustomerContextMenu(e, customer) {
     opacity: 1 !important;
   `;
   
-  console.log('📋 컨텍스트 메뉴 HTML 생성 중...');
   contextMenu.innerHTML = `
     <div class="context-menu-item" data-action="edit" data-customer-id="${customer.id}" style="padding: 8px 12px; cursor: pointer; border-bottom: 1px solid #eee; font-size: 13px;">✏️ 수정</div>
     <div class="context-menu-item" data-action="status" data-customer-id="${customer.id}" style="padding: 8px 12px; cursor: pointer; border-bottom: 1px solid #eee; font-size: 13px;">🔄 상태변경</div>
     <div class="context-menu-item" data-action="delete" data-customer-id="${customer.id}" style="padding: 8px 12px; cursor: pointer; font-size: 13px; color: #dc3545;">🗑️ 삭제</div>
   `;
-  console.log('📋 컨텍스트 메뉴 HTML 생성 완료');
   
   // 호버 효과 및 클릭 이벤트
   const menuItems = contextMenu.querySelectorAll('.context-menu-item');
@@ -379,18 +355,11 @@ function showCustomerContextMenu(e, customer) {
       e.stopPropagation();
       const action = item.getAttribute('data-action');
       const customerId = item.getAttribute('data-customer-id');
-      console.log('🖱️ 컨텍스트 메뉴 클릭:', action, customerId);
       
       if (action === 'edit') {
-        console.log('🔧 editCustomerById 함수 호출 시도:', customerId);
-        console.log('🔧 editCustomerById 함수 존재 여부:', typeof window.editCustomerById);
         if (typeof window.editCustomerById === 'function') {
-          console.log('🔧 editCustomerById 함수 호출 직전');
-          console.log('🔧 customerId 값:', customerId);
-          console.log('🔧 window.editCustomerById 함수:', window.editCustomerById);
           try {
-            const result = await window.editCustomerById(customerId);
-            console.log('🔧 editCustomerById 함수 호출 완료, 결과:', result);
+            await window.editCustomerById(customerId);
           } catch (error) {
             console.error('❌ editCustomerById 함수 실행 중 오류:', error);
           }
@@ -398,14 +367,12 @@ function showCustomerContextMenu(e, customer) {
           console.error('❌ editCustomerById 함수를 찾을 수 없습니다!');
         }
       } else if (action === 'status') {
-        console.log('🔄 changeCustomerStatusById 함수 호출 시도:', customerId);
         if (typeof window.changeCustomerStatusById === 'function') {
           window.changeCustomerStatusById(customerId);
         } else {
           console.error('❌ changeCustomerStatusById 함수를 찾을 수 없습니다!');
         }
       } else if (action === 'delete') {
-        console.log('🗑️ deleteCustomerById 함수 호출 시도:', customerId);
         if (typeof window.deleteCustomerById === 'function') {
           window.deleteCustomerById(customerId);
         } else {
@@ -418,8 +385,6 @@ function showCustomerContextMenu(e, customer) {
   });
   
   document.body.appendChild(contextMenu);
-  console.log('📋 컨텍스트 메뉴 DOM에 추가 완료');
-  console.log('📋 컨텍스트 메뉴 위치:', e.clientX, e.clientY);
   
   // 다른 곳 클릭 시 메뉴 닫기
   setTimeout(() => {
@@ -432,8 +397,6 @@ function showCustomerContextMenu(e, customer) {
 
 // 고객 수정 함수
 window.editCustomerById = async function(customerId) {
-  console.log('🔧 editCustomer 호출:', customerId);
-  
   try {
     // 현재 로드된 고객 목록에서 고객 데이터 찾기
     const customer = window.currentCustomerList.find(c => c.id === customerId);
@@ -444,8 +407,6 @@ window.editCustomerById = async function(customerId) {
       alert('고객 정보를 찾을 수 없습니다.');
       return;
     }
-    
-    console.log('✅ 고객 데이터 찾음:', customer);
     
     // 현재 선택된 고객 저장 (취소 버튼용)
     window.selectedCustomer = customer;
@@ -467,16 +428,12 @@ window.editCustomerById = async function(customerId) {
 
 // 고객 삭제 함수
 window.deleteCustomerById = async function(customerId) {
-  console.log('🗑️ deleteCustomer 호출:', customerId);
-  
   if (!confirm('정말로 이 고객을 삭제하시겠습니까?')) {
     return;
   }
   
   try {
     const url = `/api/customers/${customerId}`;
-    console.log('🌐 요청 URL:', url);
-    
     const response = await fetch(url, {
       method: 'DELETE',
       headers: {
@@ -484,8 +441,6 @@ window.deleteCustomerById = async function(customerId) {
         'X-User': currentUser
       }
     });
-    
-    console.log('📡 응답 상태:', response.status, response.statusText);
     
     if (response.ok) {
       showToast('고객이 삭제되었습니다.', 'success');
@@ -534,19 +489,14 @@ function clearCustomerSelection() {
 
 // 고객 필터 해제
 function clearCustomerFilter() {
-  console.log('🔧 clearCustomerFilter 호출됨');
-  
   // CUSTOMER_FILTERS 초기화
   Object.keys(CUSTOMER_FILTERS).forEach(k => delete CUSTOMER_FILTERS[k]);
-  console.log('🔧 CUSTOMER_FILTERS 초기화 완료:', CUSTOMER_FILTERS);
   
   // EFFECTIVE_FILTERS 재구성
   buildEffectiveFilters();
-  console.log('🔧 buildEffectiveFilters 호출 완료');
   
   // 필터 적용
   applyAllFilters();
-  console.log('🔧 applyAllFilters 호출 완료');
   
   // 매물리스트 타이틀 원래대로 복원
   const listingTitle = document.querySelector(".listing-title");
@@ -570,14 +520,12 @@ function clearCustomerFilter() {
   const selectedCustomerInfo = document.getElementById('selectedCustomerInfo');
   if (selectedCustomerInfo) {
     selectedCustomerInfo.classList.add('hidden');
-    console.log('🔧 1차 사이드바 고객정보 패널 닫기 완료');
   }
   
   // 고객 목록 컨테이너도 닫기
   const customerListContainer = document.getElementById('customerListContainer');
   if (customerListContainer) {
     customerListContainer.classList.add('hidden');
-    console.log('🔧 고객 목록 컨테이너 닫기 완료');
   }
   
   // 2차 사이드바도 닫기
@@ -585,7 +533,6 @@ function clearCustomerFilter() {
   if (secondaryPanel) {
     secondaryPanel.classList.add('hidden');
     secondaryPanel.classList.remove('visible');
-    console.log('🔧 2차 사이드바 닫기 완료');
   }
   
   showToast('고객 필터가 해제되었습니다.', 'info');
@@ -594,14 +541,11 @@ function clearCustomerFilter() {
   const clearCustomerFilterBtn = document.getElementById('clearCustomerFilterBtn');
   if (clearCustomerFilterBtn) {
     clearCustomerFilterBtn.style.display = 'none';
-    console.log('🔧 모바일 고객 필터 해제 버튼 숨김');
   }
 }
 
 // 고객의 저장된 필터데이터로 매물 필터링 적용
 function applyCustomerFilter(customer) {
-  console.log('applyCustomerFilter 호출:', customer);
-  
   // 현재 선택된 고객 저장
   window.selectedCustomer = customer;
   
@@ -624,16 +568,12 @@ function applyCustomerFilter(customer) {
   const modeButtons = document.querySelector('.listing-mode-buttons');
   if (modeButtons) {
     modeButtons.classList.remove('hidden');
-    console.log('버튼들 표시됨:', modeButtons.className);
-  } else {
-    console.log('버튼 요소를 찾을 수 없음');
   }
   
   // 모바일에서 고객 필터 해제 버튼 표시
   const clearCustomerFilterBtn = document.getElementById('clearCustomerFilterBtn');
   if (clearCustomerFilterBtn) {
     clearCustomerFilterBtn.style.display = 'flex';
-    console.log('🔧 모바일 고객 필터 해제 버튼 표시');
   }
   
   // 고객 선택 시 매물리스트 모드로 기본 설정
@@ -675,7 +615,10 @@ function applyCustomerFilter(customer) {
     // 고객의 저장된 필터데이터 파싱
     let filterData = {};
     if (customer.filter_data) {
-      filterData = JSON.parse(customer.filter_data);
+      // 문자열이면 파싱, 객체면 그대로 사용
+      filterData = typeof customer.filter_data === 'string'
+        ? JSON.parse(customer.filter_data)
+        : customer.filter_data;
     } else {
       // 기존 방식 호환성 (filter_data가 없는 경우)
       filterData = {
@@ -727,11 +670,9 @@ function applyCustomerFilter(customer) {
           // 결과 설정
           if (regionList.length > 0) {
             CUSTOMER_FILTERS['region'] = regionList.join(',');
-            console.log('읍면동리 단위 지역을 region에 설정:', regionList.join(','));
           }
           if (region2List.length > 0) {
             CUSTOMER_FILTERS['region2'] = region2List.join(',');
-            console.log('시군구 단위 지역을 region2에 설정:', region2List.join(','));
           }
         } else {
           // floor 필드 특별 처리 (지역명이 잘못 들어간 경우 처리)
@@ -741,7 +682,6 @@ function applyCustomerFilter(customer) {
               // 지역명이 잘못 들어간 경우 region2로 이동
               const normalizedRegion = normalizeRegion(value);
               CUSTOMER_FILTERS['region2'] = normalizedRegion;
-              console.log('floor 필드에 지역명이 들어있어 region2로 이동:', value);
             } else {
               // 숫자나 층수 정보인 경우 그대로 사용
               CUSTOMER_FILTERS[key] = value;
@@ -775,13 +715,6 @@ function applyCustomerFilter(customer) {
           }
         }
       }
-    });
-
-    // 디버깅을 위한 로그 추가
-    console.log('고객 필터 적용:', {
-      customerName: customer.name,
-      originalFilterData: filterData,
-      normalizedFilters: CUSTOMER_FILTERS
     });
     
     // 필터 적용

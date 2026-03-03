@@ -28,7 +28,6 @@ run/
 │   │   └── listings.py         # 매물 API
 │   ├── services/                # 비즈니스 로직
 │   │   ├── data_manager.py     # 중앙 데이터 관리자
-│   │   ├── customer_service.py # 고객 서비스
 │   │   ├── briefing_service.py # 브리핑 서비스
 │   │   ├── listings_loader.py  # 매물 로더
 │   │   └── store.py            # 기존 저장소 (호환성)

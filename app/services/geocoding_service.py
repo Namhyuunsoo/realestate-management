@@ -10,6 +10,13 @@ from flask import current_app
 from .sheet_fetcher import read_local_listing_sheet
 from .geocode_cache import load_geocode_cache, save_geocode_cache
 
+# Supabase 클라이언트 (선택적 import)
+try:
+    from supabase import create_client, Client
+    SUPABASE_AVAILABLE = True
+except ImportError:
+    SUPABASE_AVAILABLE = False
+
 class GeocodingService:
     """지오코딩 자동화 서비스"""
     
@@ -97,74 +104,124 @@ class GeocodingService:
             self.data_dir = "./data"
             self.logger.info(f"data_dir이 설정되지 않아 기본값 사용: {self.data_dir}")
     
-    def extract_addresses_from_listings(self) -> List[str]:
-        """상가임대차.xlsx에서 현황이 '생'인 매물의 주소만 추출"""
+    def extract_housing_addresses_from_supabase(self) -> List[str]:
+        """Supabase 주택매물 테이블에서 현황이 '생'인 매물의 주소만 추출"""
         try:
-            # 파일 경로 직접 확인
+            supabase = self._get_supabase_client()
+            if not supabase:
+                self.logger.warning("Supabase 클라이언트를 생성할 수 없습니다. 주택매물 주소 추출 건너뜀.")
+                return []
+            
+            addresses = []
+            housing_tables = ["listings_housing_sale", "listings_housing_lease", "listings_housing_oneroom"]
+            
+            for table_name in housing_tables:
+                try:
+                    # 현황이 '생'인 매물만 조회
+                    # status_raw 필드 또는 fields->>'현황' 필드 확인
+                    result = supabase.table(table_name).select("address_full, status_raw, fields").execute()
+                    
+                    for row in result.data:
+                        # 현황 확인 (status_raw 우선, 없으면 fields에서)
+                        status = row.get("status_raw", "")
+                        if not status and row.get("fields"):
+                            status = row.get("fields", {}).get("현황", "")
+                        
+                        # 현황이 '생'인 매물만 처리
+                        if status != "생":
+                            continue
+                        
+                        # address_full 추출
+                        address_full = row.get("address_full", "").strip()
+                        if address_full and address_full not in addresses:
+                            addresses.append(address_full)
+                    
+                    self.logger.info(f"{table_name}에서 {len([r for r in result.data if (r.get('status_raw') == '생' or r.get('fields', {}).get('현황') == '생')])}개 '생' 매물 발견")
+                    
+                except Exception as e:
+                    self.logger.error(f"{table_name}에서 주소 추출 실패: {e}")
+                    continue
+            
+            self.logger.info(f"Supabase 주택매물에서 현황이 '생'인 매물 {len(addresses)}개 주소 추출 완료")
+            return addresses
+            
+        except Exception as e:
+            self.logger.error(f"주택매물 주소 추출 실패: {e}")
+            return []
+    
+    def extract_commercial_addresses_from_supabase(self) -> List[str]:
+        """Supabase 상가매물 테이블에서 현황이 '생'인 매물의 주소 추출"""
+        try:
+            supabase = self._get_supabase_client()
+            if not supabase:
+                return []
+            
+            addresses = []
+            commercial_tables = ["listings_rent", "listings_sale_unit", "listings_sale_land"]
+            
+            for table_name in commercial_tables:
+                try:
+                    # Pagination 처리 (대량 데이터 대비)
+                    offset = 0
+                    page_size = 1000
+                    while True:
+                        result = supabase.table(table_name).select("address_full").eq("status_raw", "생").range(offset, offset + page_size - 1).execute()
+                        if not result.data:
+                            break
+                        
+                        for row in result.data:
+                            addr = (row.get("address_full") or "").strip()
+                            if addr and addr not in addresses:
+                                addresses.append(addr)
+                        
+                        if len(result.data) < page_size:
+                            break
+                        offset += page_size
+                        
+                    self.logger.info(f"{table_name}에서 '생' 매물 주소 추출 중... 현재 누적: {len(addresses)}개")
+                    
+                except Exception as e:
+                    self.logger.error(f"{table_name}에서 주소 추출 실패: {e}")
+                    continue
+            
+            return addresses
+        except Exception as e:
+            self.logger.error(f"상가매물 주소 추출 실패: {e}")
+            return []
+
+    def extract_addresses_from_listings(self) -> List[str]:
+        """
+        [Legacy/Sync] 상가임대차.xlsx 및 Supabase에서 주소 추출
+        이제는 Supabase 데이터를 우선적으로 사용하도록 권장됩니다.
+        """
+        # 1. Supabase에서 먼저 추출 (새로운 표준)
+        supabase_addresses = self.extract_commercial_addresses_from_supabase()
+        
+        # 2. 로컬 파일에서 추가 추출 (하위 호환성 유지)
+        local_addresses = []
+        try:
             filename = os.getenv("LISTING_SHEET_FILENAME", "상가임대차.xlsx")
             data_dir = os.getenv("DATA_DIR", "./data")
             source_path = os.path.join(data_dir, "raw", filename)
             
-            self.logger.info(f"상가임대차 파일 경로: {source_path}")
-            
-            if not os.path.exists(source_path):
-                self.logger.error(f"상가임대차 파일이 존재하지 않습니다: {source_path}")
-                return []
-            
-            try:
+            if os.path.exists(source_path):
                 rows = read_local_listing_sheet()
-            except Exception as e:
-                self.logger.error(f"상가임대차 파일 읽기 실패: {e}")
-                # 직접 파일 읽기 시도
-                try:
-                    self.logger.info("직접 파일 읽기 시도...")
-                    df = pd.read_excel(source_path, dtype=str, engine='openpyxl').fillna("")
-                    rows = [df.columns.tolist()] + df.values.tolist()
-                    self.logger.info(f"직접 파일 읽기 성공: {len(rows)}행")
-                except Exception as e2:
-                    self.logger.error(f"직접 파일 읽기도 실패: {e2}")
-                    return []
-                
-            if not rows or len(rows) < 2:
-                self.logger.warning("상가임대차 데이터가 없습니다.")
-                return []
-            
-            header = rows[0]
-            hdr_map = self._normalize_headers(header)
-            
-            addresses = []
-            for i, row in enumerate(rows[1:], start=1):
-                try:
-                    # 현황이 '생'인 매물만 처리
-                    status = row[hdr_map.get("현황", -1)] if "현황" in hdr_map else ""
-                    if status != "생":
-                        continue  # 현황이 '생'이 아닌 매물은 건너뛰기
-                    
-                    # 주소 구성: 지역2 + 지역 + 지번
-                    region2 = row[hdr_map.get("지역2", -1)] if "지역2" in hdr_map else ""
-                    region = row[hdr_map.get("지역", -1)] if "지역" in hdr_map else ""
-                    lot = row[hdr_map.get("지번", -1)] if "지번" in hdr_map else ""
-                    
-                    # 주소가 완성된 경우만 추가
-                    if region2 and region and lot:
-                        address = f"{region2} {region} {lot}".strip()
-                        # 줄바꿈 문자 제거 및 정리
-                        address = address.replace('\n', ' ').replace('\r', ' ').strip()
-                        # 연속된 공백을 하나로
-                        address = ' '.join(address.split())
-                        if address and address not in addresses:
-                            addresses.append(address)
-                            
-                except Exception as e:
-                    self.logger.warning(f"Row {i} 주소 파싱 실패: {e}")
-                    continue
-            
-            self.logger.info(f"상가임대차에서 현황이 '생'인 매물 {len(addresses)}개 주소 추출 완료")
-            return addresses
-            
+                if rows and len(rows) >= 2:
+                    header = rows[0]
+                    hdr_map = self._normalize_headers(header)
+                    for row in rows[1:]:
+                        if row[hdr_map.get("현황", -1)] == "생":
+                            r2 = row[hdr_map.get("지역2", -1)] if "지역2" in hdr_map else ""
+                            r1 = row[hdr_map.get("지역", -1)] if "지역" in hdr_map else ""
+                            lot = row[hdr_map.get("지번", -1)] if "지번" in hdr_map else ""
+                            if r2 and r1 and lot:
+                                addr = f"{r2} {r1} {lot}".strip()
+                                if addr not in local_addresses:
+                                    local_addresses.append(addr)
         except Exception as e:
-            self.logger.error(f"주소 추출 실패: {e}")
-            return []
+            self.logger.warning(f"로컬 파일 주소 추출 실패 (Supabase 데이터 사용): {e}")
+            
+        return list(set(supabase_addresses + local_addresses))
     
     def _normalize_headers(self, header_row: List[str]) -> Dict[str, int]:
         """헤더 정규화"""
@@ -286,8 +343,73 @@ class GeocodingService:
             self.logger.error(f"❌ 지오코딩 API 호출 실패 ({address}): {e}")
             return None
     
+    def _get_supabase_client(self) -> Optional[Client]:
+        """Supabase 클라이언트 생성 (설정이 없으면 None 반환)"""
+        if not SUPABASE_AVAILABLE:
+            return None
+        
+        try:
+            supabase_url = os.getenv("SUPABASE_URL")
+            supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+            
+            if not supabase_url or not supabase_key:
+                return None
+            
+            return create_client(supabase_url, supabase_key)
+        except Exception as e:
+            self.logger.warning(f"Supabase 클라이언트 생성 실패: {e}")
+            return None
+    
+    def sync_coords_to_supabase_listings(self):
+        """캐시된 좌표를 상가 매물 테이블의 coords 컬럼에 영구적으로 채워넣기"""
+        try:
+            supabase = self._get_supabase_client()
+            if not supabase:
+                return
+            
+            self.logger.info("🔄 지오코드 캐시 -> 매물 테이블 좌표 동기화 시작")
+            
+            # 1. 캐시 데이터 로드
+            result = supabase.table("address_geocode_cache").select("address_full, lat, lng").execute()
+            if not result.data: return
+            
+            cache = {r["address_full"]: {"lat": r["lat"], "lng": r["lng"]} for r in result.data if r["lat"] and r["lng"]}
+            
+            # 2. 각 테이블 업데이트 (상가 + 주택)
+            target_tables = [
+                "listings_rent", "listings_sale_unit", "listings_sale_land",
+                "listings_housing_sale", "listings_housing_lease", "listings_housing_oneroom"
+            ]
+            
+            for table in target_tables:
+                # 좌표가 null인 데이터 조회 (현황이 '생'인 매물 우선)
+                res = supabase.table(table).select("id, address_full").is_("coords", "null").execute()
+                if not res.data: continue
+                
+                updated_count = 0
+                for row in res.data:
+                    addr = (row.get("address_full") or "").strip()
+                    if addr in cache:
+                        try:
+                            supabase.table(table).update({
+                                "coords": cache[addr],
+                                "geocoded": True
+                            }).eq("id", row["id"]).execute()
+                            updated_count += 1
+                        except Exception: continue
+                
+                if updated_count > 0:
+                    self.logger.info(f"✅ {table}: {updated_count}개 매물 좌표 영구 반영 완료")
+                
+        except Exception as e:
+            self.logger.error(f"좌표 DB 동기화 실패: {e}")
+
     def update_map_cache(self, new_coordinates: Dict[str, Tuple[float, float]]):
-        """지도 캐시 파일 업데이트 (기존 파일 덮어쓰기 방지)"""
+        """지도 캐시 파일 업데이트 (엑셀 + Supabase 동시 저장)"""
+        excel_success = False
+        supabase_success = False
+        
+        # 1. 엑셀 파일 저장 (기존 로직)
         try:
             # 기존 지도캐시 파일 읽기
             map_cache_path = os.path.join(self.data_dir, "raw", self.map_cache_file)
@@ -333,35 +455,136 @@ class GeocodingService:
             cache_df = pd.DataFrame(existing_data)
             cache_df.to_excel(map_cache_path, index=False)
             
-            self.logger.info(f"지도 캐시 업데이트 완료: 기존 {len(existing_data) - added_count}개, 새로 추가 {added_count}개")
+            excel_success = True
+            self.logger.info(f"✅ 엑셀 지도 캐시 업데이트 완료: 기존 {len(existing_data) - added_count}개, 새로 추가 {added_count}개")
             
         except Exception as e:
-            self.logger.error(f"지도 캐시 업데이트 실패: {e}")
-            raise
+            self.logger.error(f"❌ 엑셀 지도 캐시 업데이트 실패: {e}")
+            excel_success = False
+        
+        # 2. Supabase 저장 (엑셀 저장 성공 여부와 관계없이 시도)
+        try:
+            supabase = self._get_supabase_client()
+            if supabase:
+                # 배치로 Supabase에 저장 (배치 크기: 100)
+                batch_size = 100
+                coordinates_list = list(new_coordinates.items())
+                supabase_inserted = 0
+                
+                for i in range(0, len(coordinates_list), batch_size):
+                    batch = coordinates_list[i:i + batch_size]
+                    batch_data = []
+                    
+                    for addr, (lat, lng) in batch:
+                        batch_data.append({
+                            "address_full": addr,
+                            "lat": lat,
+                            "lng": lng
+                        })
+                    
+                    try:
+                        # Upsert 실행 (address_full이 PK이므로 중복 시 업데이트)
+                        supabase.table("address_geocode_cache").upsert(
+                            batch_data,
+                            on_conflict="address_full"
+                        ).execute()
+                        
+                        supabase_inserted += len(batch)
+                        self.logger.info(f"✅ Supabase 배치 저장 완료: {len(batch)}개")
+                        
+                    except Exception as e:
+                        self.logger.error(f"❌ Supabase 배치 저장 실패: {e}")
+                        # 개별 저장 시도
+                        for addr, (lat, lng) in batch:
+                            try:
+                                supabase.table("address_geocode_cache").upsert({
+                                    "address_full": addr,
+                                    "lat": lat,
+                                    "lng": lng
+                                }, on_conflict="address_full").execute()
+                                supabase_inserted += 1
+                            except Exception as e2:
+                                self.logger.error(f"❌ Supabase 개별 저장 실패: {addr} - {e2}")
+                
+                supabase_success = True
+                self.logger.info(f"✅ Supabase 지도 캐시 업데이트 완료: {supabase_inserted}개 저장")
+                
+                # 추가: 매물 테이블에도 전파
+                self.sync_coords_to_supabase_listings()
+            else:
+                self.logger.warning("⚠️ Supabase 클라이언트를 생성할 수 없습니다. 엑셀만 저장됩니다.")
+                
+        except Exception as e:
+            self.logger.error(f"❌ Supabase 지도 캐시 업데이트 실패: {e}")
+            supabase_success = False
+        
+        # 3. 최종 결과 확인
+        if not excel_success and not supabase_success:
+            raise Exception("엑셀과 Supabase 모두 저장 실패")
+        elif not excel_success:
+            self.logger.warning("⚠️ 엑셀 저장 실패했지만 Supabase 저장은 성공했습니다.")
+        elif not supabase_success:
+            self.logger.warning("⚠️ Supabase 저장 실패했지만 엑셀 저장은 성공했습니다.")
     
     def run_geocoding_update(self) -> Dict[str, int]:
-        """지오코딩 업데이트 실행 (새 매물만 처리)"""
+        """지오코딩 업데이트 실행 (상가 + 주택 매물, 새 매물만 처리)"""
         try:
             self.logger.info("🚀 지오코딩 업데이트 시작...")
             
-            # 1. 상가임대차에서 모든 주소 추출
-            all_addresses = self.extract_addresses_from_listings()
-            if not all_addresses:
-                return {"total": 0, "new": 0, "updated": 0, "failed": 0}
+            # 1. 상가임대차에서 주소 추출
+            commercial_addresses = self.extract_addresses_from_listings()
+            self.logger.info(f"상가임대차 주소: {len(commercial_addresses)}개")
             
-            # 2. 기존 지도캐시에서 좌표 가져오기 (기존 캐시 유지)
+            # 2. 주택매물에서 주소 추출 (Supabase)
+            housing_addresses = self.extract_housing_addresses_from_supabase()
+            self.logger.info(f"주택매물 주소: {len(housing_addresses)}개")
+            
+            # 3. 모든 주소 합치기 (중복 제거)
+            all_addresses = list(set(commercial_addresses + housing_addresses))
+            self.logger.info(f"전체 주소 (중복 제거 후): {len(all_addresses)}개")
+            
+            if not all_addresses:
+                return {"total": 0, "new": 0, "updated": 0, "failed": 0, "commercial": 0, "housing": 0}
+            
+            # 4. 기존 지도캐시에서 좌표 가져오기 (기존 캐시 유지)
             existing_coordinates = self.get_existing_coordinates()
             
-            # 3. 새로 지오코딩이 필요한 주소만 찾기 (기존에 없는 주소)
-            new_addresses = [addr for addr in all_addresses if addr not in existing_coordinates]
+            # 5. Supabase 캐시에서도 좌표 가져오기 (중복 체크용)
+            supabase_coordinates = {}
+            try:
+                supabase = self._get_supabase_client()
+                if supabase:
+                    result = supabase.table("address_geocode_cache").select("address_full, lat, lng").execute()
+                    for row in result.data:
+                        addr = row.get("address_full", "").strip()
+                        lat = row.get("lat")
+                        lng = row.get("lng")
+                        if addr and lat is not None and lng is not None:
+                            supabase_coordinates[addr] = (float(lat), float(lng))
+                    self.logger.info(f"Supabase 캐시에서 {len(supabase_coordinates)}개 좌표 로드")
+            except Exception as e:
+                self.logger.warning(f"Supabase 캐시 읽기 실패 (계속 진행): {e}")
             
-            self.logger.info(f"총 주소: {len(all_addresses)}, 기존 좌표: {len(existing_coordinates)}, 새 주소: {len(new_addresses)}")
+            # 6. 기존 좌표 통합 (엑셀 + Supabase)
+            all_existing_coordinates = {**existing_coordinates, **supabase_coordinates}
+            
+            # 7. 새로 지오코딩이 필요한 주소만 찾기 (기존에 없는 주소)
+            new_addresses = [addr for addr in all_addresses if addr not in all_existing_coordinates]
+            
+            self.logger.info(f"총 주소: {len(all_addresses)}, 기존 좌표: {len(all_existing_coordinates)}, 새 주소: {len(new_addresses)}")
             
             if not new_addresses:
-                self.logger.info("새로 지오코딩이 필요한 주소가 없습니다. 기존 지도캐시 유지.")
-                return {"total": len(all_addresses), "new": 0, "updated": 0, "failed": 0}
+                self.logger.info("새로 지오코딩이 필요한 주소가 없습니다. 기존 캐시 유지.")
+                return {
+                    "total": len(all_addresses),
+                    "new": 0,
+                    "updated": 0,
+                    "failed": 0,
+                    "commercial": len(commercial_addresses),
+                    "housing": len(housing_addresses)
+                }
             
-            # 4. 새 주소들만 지오코딩 (기존 매물은 건드리지 않음)
+            # 8. 새 주소들만 지오코딩 (기존 매물은 건드리지 않음)
             new_coordinates = {}
             failed_addresses = []
             
@@ -380,23 +603,26 @@ class GeocodingService:
                 if i < len(new_addresses):
                     time.sleep(1)
             
-            # 5. 새 매물만 지도캐시에 추가 (기존 캐시 덮어쓰지 않음)
+            # 9. 새 매물만 캐시에 추가 (엑셀 + Supabase)
             if new_coordinates:
-                self.logger.info(f"새 매물 {len(new_coordinates)}개를 기존 지도캐시에 추가합니다.")
+                self.logger.info(f"새 매물 {len(new_coordinates)}개를 캐시에 추가합니다.")
                 self.update_map_cache(new_coordinates)
             else:
                 self.logger.warning("새로 지오코딩된 매물이 없습니다.")
             
-            # 6. 결과 요약
+            # 10. 결과 요약
             result = {
                 "total": len(all_addresses),
                 "new": len(new_coordinates),
                 "updated": 0,  # 기존 매물은 업데이트하지 않음
-                "failed": len(failed_addresses)
+                "failed": len(failed_addresses),
+                "commercial": len(commercial_addresses),
+                "housing": len(housing_addresses)
             }
             
             self.logger.info(f"✅ 지오코딩 업데이트 완료: {result}")
-            self.logger.info(f"기존 지도캐시 유지: {len(existing_coordinates)}개 매물")
+            self.logger.info(f"기존 캐시 유지: {len(all_existing_coordinates)}개 매물")
+            self.logger.info(f"  - 상가: {len(commercial_addresses)}개, 주택: {len(housing_addresses)}개")
             
             if failed_addresses:
                 self.logger.warning(f"실패한 새 주소들: {failed_addresses}")
@@ -405,4 +631,4 @@ class GeocodingService:
             
         except Exception as e:
             self.logger.error(f"지오코딩 업데이트 실행 실패: {e}")
-            return {"total": 0, "new": 0, "updated": 0, "failed": 0}
+            return {"total": 0, "new": 0, "updated": 0, "failed": 0, "commercial": 0, "housing": 0}

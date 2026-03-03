@@ -32,18 +32,13 @@ function showCustomerDetail(c) {
 
 // 고객 상세정보 렌더링 함수
 function renderCustomerDetail(c) {
-  console.log('renderCustomerDetail 호출됨:', c);
-  
   const customerDetailContent = document.getElementById('customerDetailContent');
-  
-  console.log('customerDetailContent 요소:', customerDetailContent);
   
   if (!customerDetailContent) {
     console.error('고객 상세정보 컨테이너를 찾을 수 없습니다.');
     return;
   }
   
-  console.log('HTML 렌더링 시작');
   customerDetailContent.innerHTML = `
     <div style="background: white; border: 1px solid #e0e0e0; border-radius: 8px; padding: 8px; margin-bottom: 8px;">
       <div class="detail-row" style="margin-bottom: 6px;">
@@ -114,8 +109,6 @@ function renderCustomerDetail(c) {
     </div>
   `;
   
-  console.log('HTML 렌더링 완료');
-  
   // 버튼 이벤트 리스너 추가
   const selectBtn = document.getElementById('selectCustomerBtn');
   const backBtn = document.getElementById('backToListBtn');
@@ -123,9 +116,6 @@ function renderCustomerDetail(c) {
   const deleteBtn = document.getElementById('deleteCustomerDetailBtn');
   
   if (selectBtn) selectBtn.addEventListener('click', () => {
-    // 1차사이드바에 고객정보 입력
-    console.log('선택 버튼 클릭:', c);
-    
     // 1차사이드바에 고객정보 표시
     const selectedCustomerInfo = document.getElementById("selectedCustomerInfo");
     const customerInfoContent = document.getElementById("customerInfoContent");
@@ -176,7 +166,9 @@ function renderCustomerDetail(c) {
       const deleteBtn = document.getElementById('deleteCustomerBtn');
       const clearBtn = document.getElementById('clearCustomerSelectionBtn');
       
-      if (applyFilterBtn) applyFilterBtn.addEventListener('click', () => applyCustomerFilter(c));
+      if (applyFilterBtn) applyFilterBtn.addEventListener('click', () => {
+        window.applyCustomerFilter(c);
+      });
       if (editBtn) editBtn.addEventListener('click', () => window.editCustomerById(c.id));
       if (deleteBtn) deleteBtn.addEventListener('click', () => {
         if (confirm('정말로 이 고객을 삭제하시겠습니까?')) {
@@ -203,8 +195,6 @@ function renderCustomerDetail(c) {
   
   if (editBtn) editBtn.addEventListener('click', () => {
     // 수정 화면으로 이동
-    console.log('수정 버튼 클릭:', c);
-    
     // 현재 선택된 고객 저장 (취소 버튼용)
     window.selectedCustomer = c;
     
@@ -375,15 +365,6 @@ function renderCustomerEditForm(c = {}) {
   if (!detailTitleEl || !viewCustomerEdit) return;
 
   detailTitleEl.textContent = "고객 정보 수정";
-  
-  // 디버깅: 고객 데이터 확인
-  console.log('🔍 renderCustomerEditForm - 고객 데이터:', c);
-  console.log('🔍 floor 관련:', c.floor, c.floor_pref);
-  console.log('🔍 area 관련:', c.area, c.area_pref);
-  console.log('🔍 deposit 관련:', c.deposit, c.deposit_pref);
-  console.log('🔍 rent 관련:', c.rent, c.rent_pref);
-  console.log('🔍 premium 관련:', c.premium, c.premium_pref);
-  console.log('🔍 note 관련:', c.note, c.notes);
 
   viewCustomerEdit.innerHTML = `
     <div style="background: #f8f9fa; padding: 8px; border-radius: 8px; margin-bottom: 10px;">

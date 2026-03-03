@@ -68,7 +68,6 @@ function loadModuleLazy(modulePath, trigger = 'idle') {
     const loadLazyModule = () => {
       loadModule(modulePath)
         .then(() => {
-          console.log(`🔄 [LAZY] ${modulePath.split('/').pop()} 지연 로드 완료`);
           resolve();
         })
         .catch(reject);
@@ -130,7 +129,6 @@ async function loadModules() {
     }));
     
     // 3단계: 인증 및 데이터 모듈 (병렬 로딩)
-    console.log('📦 3단계: 인증/데이터 모듈 병렬 로딩...');
     const authDataModules = [
       '/static/js/modules/auth/auth.js',
       '/static/js/modules/filters/briefing.js',
@@ -144,7 +142,6 @@ async function loadModules() {
     }));
     
     // 4단계: 지도 관련 모듈 (순차 로딩 - 의존성 있음)
-    console.log('📦 4단계: 지도 모듈 순차 로딩...');
     const mapModules = [
       '/static/js/modules/map/map-clustering.js',
       '/static/js/modules/map/map-controls.js',
@@ -158,12 +155,12 @@ async function loadModules() {
     }
     
     // 5단계: 핵심 UI 모듈들 (우선 로딩)
-    console.log('📦 5단계: 핵심 UI 모듈 우선 로딩...');
     const criticalUIModules = [
       '/static/js/modules/ui/listing-list.js',
       '/static/js/modules/ui/panels.js',
       '/static/js/modules/ui/detail-panel.js',
       '/static/js/modules/ui/event-handlers.js',
+      '/static/js/modules/ui/listing-mode-controls.js',
       '/static/js/listing-list-modal.js'
     ];
     
@@ -172,7 +169,6 @@ async function loadModules() {
     }));
     
     // 6단계: 일반 UI 모듈들 (병렬 로딩)
-    console.log('📦 6단계: 일반 UI 모듈 병렬 로딩...');
     const normalUIModules = [
       '/static/js/modules/ui/full-list.js',
       '/static/js/modules/ui/full-briefing-list.js',
@@ -188,7 +184,6 @@ async function loadModules() {
     }));
     
     // 7단계: 관리자 전용 모듈들 (조건부 로딩)
-    console.log('📦 7단계: 관리자 모듈 조건부 로딩...');
     const adminModules = [
       '/static/js/modules/ui/user-management.js',
       '/static/js/modules/ui/user-sheets.js',
@@ -202,13 +197,11 @@ async function loadModules() {
     }));
     
     // 8단계: 초기화 모듈 (마지막에 로드)
-    console.log('📦 8단계: 초기화 모듈 로딩...');
     await loadModule('/static/js/modules/ui/initialization.js');
     // console.log('✅ initialization.js 로드 완료');
     
     // 매물리스트 모달 초기화 (이미 즉시 초기화됨)
     if (window.listingListModalManager) {
-        console.log('✅ 매물리스트 모달이 이미 초기화됨');
     } else {
         console.warn('⚠️ 매물리스트 모달이 초기화되지 않음');
     }
@@ -234,14 +227,12 @@ async function loadModules() {
     // 성능 데이터를 localStorage에 저장 (선택적)
     if (window.DEBUG) {
       localStorage.setItem('moduleLoadPerformance', JSON.stringify(performanceMetrics));
-      console.log('📊 성능 메트릭 저장됨:', performanceMetrics);
     }
     
     // 모든 모듈 로드 완료 후 앱 초기화 (모바일/PC 통합)
     await initializeApplication();
     
     // 9단계: 선택적 모듈 지연 로딩 (성능 최적화)
-    console.log('📦 9단계: 선택적 모듈 지연 로딩...');
     const optionalModules = [
       // 향후 추가될 선택적 기능들
     ];
@@ -265,7 +256,8 @@ async function loadModules() {
 // 앱 초기화 함수
 async function initializeApplication() {
   try {
-    console.log('🚀 앱 초기화 시작...');
+    // 🔥 성능 최적화: console.log 최소화
+    // console.log('🚀 앱 초기화 시작...');
     
     // 1. DOM이 준비될 때까지 대기
     if (document.readyState === 'loading') {
@@ -280,7 +272,8 @@ async function initializeApplication() {
     // 3. 모바일 감지 (안정화)
     const isMobile = window.innerWidth <= 768 || /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
     window.MOBILE_APP = isMobile;
-    console.log(`📱 모바일 감지: ${window.MOBILE_APP}`);
+    // 🔥 성능 최적화: console.log 최소화
+    // console.log(`📱 모바일 감지: ${window.MOBILE_APP}`);
     
     // 4. 사용자 세션 동기화 (모바일/PC 공통) - 통합된 초기화 로직
     try {
@@ -304,14 +297,16 @@ async function initializeApplication() {
         if (savedUser) {
           window.currentUser = savedUser;
           currentUser = savedUser;
-          console.log('🔄 localStorage에서 currentUser 복원:', savedUser);
+          // 🔥 성능 최적화: console.log 최소화
+          // console.log('🔄 localStorage에서 currentUser 복원:', savedUser);
         }
       }
       
       // 전역 변수 동기화 보장
       if (window.currentUser && !currentUser) {
         currentUser = window.currentUser;
-        console.log('🔄 currentUser 전역 변수 동기화:', currentUser);
+        // 🔥 성능 최적화: console.log 최소화
+        // console.log('🔄 currentUser 전역 변수 동기화:', currentUser);
       }
       
     } catch (error) {
@@ -322,76 +317,67 @@ async function initializeApplication() {
       if (savedUser) {
         window.currentUser = savedUser;
         currentUser = savedUser;
-        console.log('🔄 에러 후 localStorage에서 currentUser 복원:', savedUser);
+          // 🔥 성능 최적화: console.log 최소화
+          // console.log('🔄 에러 후 localStorage에서 currentUser 복원:', savedUser);
       }
     }
     
-    // 5. 지도 초기화 (모바일/PC 공통)
+    // 5. 앱 초기화 (모바일/PC 공통) - 옵션 1: map-ready 리스너를 먼저 등록하기 위해 initMap 전에 호출
+    if (window.initializeApp) {
+      await window.initializeApp();
+      // 🔥 성능 최적화: console.log 최소화
+      // console.log('✅ 앱 초기화 완료 (모바일/PC 공통)');
+    }
+    
+    // 6. 지도 초기화 (모바일/PC 공통) - map-ready 리스너 등록 후 실행
     if (typeof window.initMap === 'function') {
       window.initMap();
-      console.log('✅ 지도 초기화 완료');
+      // 🔥 성능 최적화: console.log 최소화
+      // console.log('✅ 지도 초기화 완료');
     } else {
       console.error('❌ initMap 함수를 찾을 수 없습니다');
     }
     
-    // 6. 앱 초기화 (모바일/PC 공통)
-    if (window.initializeApp) {
-      await window.initializeApp();
-      console.log('✅ 앱 초기화 완료 (모바일/PC 공통)');
-    }
-    
     // 7. 모바일 전용 추가 초기화
     if (window.MOBILE_APP) {
-      console.log('📱 모바일 전용 추가 초기화');
+      // 🔥 성능 최적화: console.log 최소화
+      // console.log('📱 모바일 전용 추가 초기화');
       
       // 모바일 버튼 초기화
       if (window.addMobileButtons) {
         window.addMobileButtons();
-        console.log('✅ 모바일 버튼 초기화 완료');
+        // 🔥 성능 최적화: console.log 최소화
+        // console.log('✅ 모바일 버튼 초기화 완료');
+      }
+      
+      // 모바일 매물 모드 버튼 초기화
+      if (window.initMobileListingModeButton) {
+        window.initMobileListingModeButton();
       }
     }
     
     // 7. 모바일 필터 모달 초기화
     if (window.MOBILE_APP) {
-      console.log('📱 모바일 환경: 필터 모달 초기화');
+      // 🔥 성능 최적화: console.log 최소화
+      // console.log('📱 모바일 환경: 필터 모달 초기화');
       if (typeof window.initializeFilterModal === 'function') {
         window.initializeFilterModal();
-        console.log('✅ 모바일 필터 모달 초기화 완료');
+        // 🔥 성능 최적화: console.log 최소화
+        // console.log('✅ 모바일 필터 모달 초기화 완료');
       }
       if (typeof window.setupMobileFilterReplacement === 'function') {
         window.setupMobileFilterReplacement();
-        console.log('✅ 모바일 필터 대체 설정 완료');
+        // 🔥 성능 최적화: console.log 최소화
+        // console.log('✅ 모바일 필터 대체 설정 완료');
       }
     }
     
     // 8. 데이터 로드 (모바일/PC 공통)
-    // 보안 강화: 사용자 정보 로깅 제거
-    // console.log('📊 데이터 로드 시작, currentUser:', window.currentUser);
-    
+    // 옵션 1: 이벤트 기반 통합 - 모든 데이터 로드는 map-ready 이벤트 리스너에서 처리됨
+    // main-new.js에서는 직접 호출하지 않고, initialization.js의 map-ready 리스너가 처리
     if (window.currentUser) {
-      // 추천 데이터 먼저 로드
-      if (typeof window.loadRecommendations === 'function') {
-        await window.loadRecommendations();
-        console.log('✅ 추천 데이터 로드 완료');
-      }
-      
-      // 매물 데이터 로드
-      if (typeof window.fetchListings === 'function') {
-        await window.fetchListings();
-        console.log('✅ 매물 데이터 로드 완료, FILTERED_LISTINGS:', window.FILTERED_LISTINGS?.length);
-        
-        // 모바일 환경에서 applyAllFilters 직접 호출
-        if (window.MOBILE_APP && typeof window.applyAllFilters === 'function') {
-          window.applyAllFilters();
-          console.log('📱 모바일 환경: applyAllFilters 직접 호출 완료, FILTERED_LISTINGS:', window.FILTERED_LISTINGS?.length);
-        }
-      }
-      
-      // 마커 배치
-      if (typeof window.placeMarkers === 'function' && window.FILTERED_LISTINGS && window.FILTERED_LISTINGS.length > 0) {
-        window.placeMarkers(window.FILTERED_LISTINGS);
-        console.log('✅ 마커 배치 완료, MARKERS:', window.MARKERS?.length);
-      }
+      // 🔥 성능 최적화: console.log 최소화
+      // console.log('📊 데이터 로드는 map-ready 이벤트 리스너에서 처리됩니다.');
     } else {
       console.warn('⚠️ currentUser가 없어서 데이터 로드 건너뜀');
     }
@@ -400,21 +386,33 @@ async function initializeApplication() {
     if (window.MOBILE_APP) {
       if (window.initTouchGestures) {
         window.initTouchGestures();
-        console.log('✅ 터치 제스처 초기화 완료');
+        // 🔥 성능 최적화: console.log 최소화
+        // console.log('✅ 터치 제스처 초기화 완료');
       }
       
       if (window.initializeHistory) {
         window.initializeHistory();
-        console.log('✅ 히스토리 관리 초기화 완료');
+        // 🔥 성능 최적화: console.log 최소화
+        // console.log('✅ 히스토리 관리 초기화 완료');
       }
     }
     
-    // 6. 화면 크기 변경 이벤트 리스너 설정
-    window.addEventListener('resize', () => {
-      if (window.handleResize) {
-        window.handleResize();
-      }
-    });
+    // 6. 화면 크기 변경 이벤트 리스너 설정 (실제 창 크기 변경만 감지)
+    // 🔥 성능 최적화: 중복 등록 방지 (initialization.js에서 이미 등록됨)
+    // window.addEventListener('resize', ...) 제거 - initialization.js에서 처리
+    // if (!window._mainResizeListenerRegistered) {
+    //   window.addEventListener('resize', () => {
+    //     // 실제 창 크기 변경인지 확인 (스크롤바 등으로 인한 가짜 리사이즈 무시)
+    //     if (typeof window.isRealWindowResize === 'function' && !window.isRealWindowResize()) {
+    //       return;
+    //     }
+    //     
+    //     if (window.handleResize) {
+    //       window.handleResize();
+    //     }
+    //   });
+    //   window._mainResizeListenerRegistered = true;
+    // }
     
   } catch (error) {
     console.error('❌ 앱 초기화 실패:', error);
@@ -432,7 +430,6 @@ function waitForNaverMaps() {
       attempts++;
       
       if (window.naver && window.naver.maps && typeof naver.maps.Map === 'function') {
-        console.log('✅ 네이버 지도 API 로드 완료');
         resolve();
       } else if (attempts >= maxAttempts) {
         console.error('❌ 네이버 지도 API 로드 실패 - 최대 대기 시간 초과');
@@ -444,7 +441,6 @@ function waitForNaverMaps() {
     
     // 이미 로드된 경우 즉시 resolve
     if (window.naver && window.naver.maps && typeof naver.maps.Map === 'function') {
-      console.log('✅ 네이버 지도 API가 이미 로드됨');
       resolve();
       return;
     }
@@ -570,7 +566,6 @@ function togglePrimarySidebar() {
 
 // 지도 크기 변경 후 리사이즈 및 마커 재표시
 function resizeMapAndRefreshMarkers() {
-  console.log('🔄 지도 리사이즈 및 마커 재표시 시작');
   
   // 네이버 지도 객체가 있는지 확인
   if (window.MAP && window.naver && window.naver.maps) {
@@ -585,17 +580,14 @@ function resizeMapAndRefreshMarkers() {
         window.naver.maps.Event.trigger(window.MAP, 'resize');
       }
       
-      console.log('✅ 지도 리사이즈 완료');
       
       // 마커 클러스터링이 있는 경우 재계산
       if (window.markerClustering) {
         window.markerClustering.redraw();
-        console.log('✅ 마커 클러스터링 재계산 완료');
       }
       
       // 마커들 재표시 (모바일 환경에서도 마커 재생성 허용)
       if (window.placeMarkers && typeof window.placeMarkers === 'function') {
-        console.log('🔄 마커 재표시 시작');
         
         const delay = 100;
         
@@ -608,7 +600,6 @@ function resizeMapAndRefreshMarkers() {
           } else {
             console.warn('⚠️ 마커 재표시: 매물 데이터를 찾을 수 없습니다.');
           }
-          console.log('✅ 마커 재표시 완료');
         }, delay);
       }
       
@@ -616,7 +607,6 @@ function resizeMapAndRefreshMarkers() {
       const center = window.MAP.getCenter();
       if (center) {
         window.MAP.setCenter(center);
-        console.log('✅ 지도 중심점 유지 완료');
       }
       
       // 추가로 한 번 더 리사이즈 트리거 (모바일 환경)
@@ -624,7 +614,6 @@ function resizeMapAndRefreshMarkers() {
         setTimeout(() => {
           if (window.naver && window.naver.maps && window.naver.maps.Event) {
             window.naver.maps.Event.trigger(window.MAP, 'resize');
-            console.log('✅ 모바일 환경 추가 리사이즈 완료');
           }
         }, 500);
       }
@@ -633,7 +622,6 @@ function resizeMapAndRefreshMarkers() {
       console.error('❌ 지도 리사이즈 중 오류:', error);
     }
   } else {
-    console.log('⚠️ 네이버 지도 객체가 아직 로드되지 않음');
   }
 }
 

@@ -4,6 +4,8 @@ from flask import Blueprint, request, jsonify, session, current_app
 from app.services.user_service import UserService
 from app.core.decorators import require_admin, require_user_management, require_stats_access, validate_json, handle_errors, log_access
 from app.core.security import log_security_event
+import os
+import json
 import time
 
 bp = Blueprint("admin", __name__, url_prefix="/api/admin")
@@ -15,6 +17,70 @@ def get_user_service() -> UserService:
 def get_current_admin_id() -> str:
     """현재 로그인한 관리자 ID 반환"""
     return session.get("user_id")
+
+@bp.post("/users")
+@require_user_management()
+@validate_json("email", "name", "password", "role")
+@handle_errors()
+@log_access()
+def create_user():
+    """관리자가 새 사용자 생성"""
+    admin_id = get_current_admin_id()
+    data = request.get_json()
+    
+    email = data["email"].strip().lower()
+    name = data["name"].strip()
+    password = data["password"]
+    role = data.get("role", "user")
+    manager_name = data.get("manager_name", "").strip()
+    job_title = data.get("job_title", "").strip()
+    
+    # 이메일 형식 검증
+    if "@" not in email:
+        return jsonify({"error": "올바른 이메일 형식이 아닙니다."}), 400
+    
+    # 비밀번호 강도 검증
+    if len(password) < 6:
+        return jsonify({"error": "비밀번호는 최소 6자 이상이어야 합니다."}), 400
+    
+    # 이름 검증
+    if len(name) < 2:
+        return jsonify({"error": "이름은 최소 2자 이상이어야 합니다."}), 400
+    
+    # 역할 검증
+    if role not in ["user", "manager", "admin"]:
+        return jsonify({"error": "올바르지 않은 역할입니다."}), 400
+    
+    user_service = get_user_service()
+    
+    # 이메일 중복 확인
+    if user_service.get_user_by_email(email):
+        return jsonify({"error": "이미 등록된 이메일입니다."}), 409
+    
+    # 새 사용자 생성 (승인 상태로 바로 생성)
+    user = user_service.register_user(email, password, name)
+    
+    if not user:
+        return jsonify({"error": "사용자 생성에 실패했습니다."}), 500
+    
+    # 역할, 직책, 담당자명 설정
+    user.role = role
+    user.status = "approved"  # 관리자가 생성한 사용자는 바로 승인
+    user.approved_at = time.time()
+    user.approved_by = admin_id
+    if job_title:
+        user.set_job_title(job_title)
+    if manager_name:
+        user.set_manager_name(manager_name)
+    
+    user_service._save_users()
+    
+    log_security_event('USER_CREATED_BY_ADMIN', f'User {email} created by admin {admin_id}')
+    
+    return jsonify({
+        "message": "사용자가 생성되었습니다.",
+        "user": user.to_dict()
+    }), 201
 
 @bp.get("/users")
 @handle_errors()
@@ -124,7 +190,7 @@ def reset_user_password(user_id):
     data = request.get_json()
     new_password = data["new_password"]
     
-    if user_service.reset_user_password(user_id, new_password, admin_id):
+    if user_service.reset_password(user_id, new_password, admin_id):
         user = user_service.get_user_by_id(user_id)
         log_security_event('USER_PASSWORD_RESET', f'Password reset for user {user.email} by {admin_id}')
         return jsonify({"message": "비밀번호가 재설정되었습니다."})
@@ -150,6 +216,59 @@ def set_user_sheet_url(user_id):
         return jsonify({"message": "시트 URL이 설정되었습니다."})
     else:
         return jsonify({"error": "시트 URL 설정에 실패했습니다."}), 400
+
+@bp.get("/sheet-slots")
+@require_user_management()
+@handle_errors()
+@log_access()
+def get_sheet_slots():
+    """시트 슬롯 레지스트리 조회"""
+    registry_file = "./data/sheet_registry.json"
+    if not os.path.exists(registry_file):
+        return jsonify({"slots": []})
+    
+    with open(registry_file, 'r', encoding='utf-8') as f:
+        data = json.load(f)
+    return jsonify(data)
+
+@bp.post("/sheet-slots")
+@require_user_management()
+@validate_json("slot_id")
+@handle_errors()
+@log_access()
+def update_sheet_slot():
+    """특정 슬롯의 담당자 배정 업데이트"""
+    data = request.get_json()
+    slot_id = str(data["slot_id"])
+    new_user_id = data.get("user_id")
+    new_manager_name = data.get("manager_name", "공석")
+    new_sheet_url = data.get("sheet_url")
+    
+    registry_file = "./data/sheet_registry.json"
+    if not os.path.exists(registry_file):
+        return jsonify({"error": "레지스트리 파일이 없습니다."}), 500
+    
+    with open(registry_file, 'r', encoding='utf-8') as f:
+        registry = json.load(f)
+    
+    found = False
+    for slot in registry.get("slots", []):
+        if str(slot["id"]) == slot_id:
+            slot["user_id"] = new_user_id
+            slot["manager_name"] = new_manager_name
+            if new_sheet_url is not None:
+                slot["sheet_url"] = new_sheet_url
+            slot["is_active"] = True if (new_user_id or new_manager_name != "공석" or slot.get("sheet_url")) else False
+            found = True
+            break
+            
+    if not found:
+        return jsonify({"error": "해당 슬롯을 찾을 수 없습니다."}), 404
+        
+    with open(registry_file, 'w', encoding='utf-8') as f:
+        json.dump(registry, f, ensure_ascii=False, indent=2)
+        
+    return jsonify({"message": "슬롯이 업데이트되었습니다.", "slot": next(s for s in registry["slots"] if str(s["id"]) == slot_id)})
 
 @bp.get("/users/<user_id>")
 @require_user_management()

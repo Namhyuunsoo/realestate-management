@@ -223,7 +223,7 @@ def check_session():
             user_service = get_user_service()
             if user_service:
                 user = user_service.get_user_by_id(session['user_id'])
-                if user and user.is_active:
+                if user and user.is_active():
                     current_app.logger.info(f"세션 확인 성공: {user.email}")
                     return jsonify({
                         "logged_in": True,
@@ -258,7 +258,7 @@ def auto_login():
             return jsonify({"error": "사용자 서비스를 사용할 수 없습니다."}), 500
         
         user = user_service.get_user_by_email(user_email)
-        if not user or not user.is_active:
+        if not user or not user.is_active():
             return jsonify({"error": "유효하지 않은 사용자입니다."}), 401
         
         # 세션에 사용자 정보 저장

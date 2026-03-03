@@ -1,5 +1,6 @@
 <!doctype html>
 <html lang="ko">
+
 <head>
   <meta charset="utf-8" />
   <title>매물 프로토타입 v0.3</title>
@@ -10,22 +11,22 @@
     // 브라우저/앱 속성으로 모바일 감지 (CSS 로드 전에 실행)
     function isMobileDevice() {
       const ua = navigator.userAgent;
-      
+
       // 모바일 기기 감지 (Android, iPhone, iPad 등)
       const isMobileOS = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua);
-      
+
       // 모바일 브라우저/앱 감지
       const isMobileBrowser = ua.includes('Mobile') || ua.includes('NAVER(inapp');
-      
+
       return isMobileOS || isMobileBrowser;
     }
-    
+
     // PC CSS 먼저 로드
     const pcLink = document.createElement('link');
     pcLink.rel = 'stylesheet';
     pcLink.href = '/static/css/style.css?v=20250924';
     document.head.appendChild(pcLink);
-    
+
     // 모바일이면 모바일 CSS 추가 로드 (오버라이드용)
     if (isMobileDevice()) {
       const mobileLink = document.createElement('link');
@@ -36,7 +37,7 @@
     } else {
       console.log('💻 PC 디바이스 감지 - PC CSS만 로드');
     }
-    
+
     // 모바일 환경에서는 매물리스트 모달 버튼 사용
     if (isMobileDevice()) {
       console.log('📱 모바일 환경 감지 - 매물리스트 모달 버튼 사용');
@@ -47,6 +48,7 @@
   <script src="/static/js/customer-add.js"></script>
   <script src="/static/js/modules/ui/mobile-buttons.js"></script>
   <script src="/static/js/customer-list-modal.js"></script>
+  <script src="/static/js/modules/admin/slot-management.js"></script>
   <script>
     async function loadNaverMapsAPI() {
       return new Promise(async (resolve, reject) => {
@@ -57,21 +59,21 @@
           if (!response.ok) {
             throw new Error(`API 설정 요청 실패: ${response.status} ${response.statusText}`);
           }
-          
+
           const config = await response.json();
           console.log('🔑 네이버 지도 API 설정 로드됨');
-          
+
           // API 키 유효성 검사
           if (!config.ncpKeyId) {
             throw new Error('API 키가 설정되지 않았습니다.');
           }
-          
+
           // 인증 실패 처리 함수 정의
           window.navermap_authFailure = function () {
             console.error('❌ 네이버 지도 API 인증 실패');
             showToast('네이버 지도 API 인증에 실패했습니다. 관리자에게 문의해주세요.', 'error');
           };
-          
+
           // 스크립트 생성 (문서에 따른 올바른 방식)
           const script = document.createElement('script');
           script.type = 'text/javascript';
@@ -79,72 +81,67 @@
           const apiUrl = `https://openapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=${config.ncpKeyId}&submodules=geocoder,panorama`;
           script.src = apiUrl;
           console.log('🔗 네이버 지도 API 로드 시작');
-          
+
           // 로드 성공 시
-          script.onload = function() {
+          script.onload = function () {
             console.log('✅ 네이버 지도 API 스크립트 로드 완료');
             window.naverMapLoadStatus = 'loaded';
-            
+
             // naver.maps API가 완전히 로드되었는지 확인
+            // 옵션 1: initMap 호출은 main-new.js의 initializeApplication()에서 처리
+            // 여기서는 API 로드만 확인하고 resolve
+            let attempts = 0;
+            const maxAttempts = 100; // 최대 10초 대기 (100ms * 100)
+
             const checkAPILoaded = () => {
-              if (window.naver && window.naver.maps && 
-                  typeof naver.maps.Map === 'function' && 
-                  typeof naver.maps.LatLng === 'function' &&
-                  typeof naver.maps.Size === 'function') {
+              attempts++;
+
+              if (window.naver && window.naver.maps &&
+                typeof naver.maps.Map === 'function' &&
+                typeof naver.maps.LatLng === 'function' &&
+                typeof naver.maps.Size === 'function') {
                 console.log('✅ 모든 naver.maps API가 로드됨');
-                
-                // initMap 함수가 정의될 때까지 대기
-                const checkInitMap = () => {
-                  if (typeof window.initMap === 'function') {
-                    console.log('✅ initMap 함수 발견, 지도 초기화 시작');
-                    // 약간의 지연을 두고 initMap 호출
-                    setTimeout(() => {
-                      try {
-                        window.initMap();
-                        resolve();
-                      } catch (error) {
-                        console.error('❌ initMap 실행 실패:', error);
-                        reject(error);
-                      }
-                    }, 100);
-                  } else {
-                    console.log('🔄 initMap 함수 대기 중...');
-                    setTimeout(checkInitMap, 100);
-                  }
-                };
-                checkInitMap();
+                // API 로드 완료 - initMap은 main-new.js에서 호출됨
+                resolve();
+              } else if (attempts >= maxAttempts) {
+                console.error('❌ 네이버 지도 API 로드 실패 - 최대 대기 시간 초과');
+                console.error('🔍 최종 상태 - naver:', !!window.naver);
+                console.error('🔍 최종 상태 - naver.maps:', !!window.naver?.maps);
+                console.error('🔍 최종 상태 - naver.maps.Map:', typeof window.naver?.maps?.Map);
+                console.error('🔍 최종 상태 - naver.maps.LatLng:', typeof window.naver?.maps?.LatLng);
+                console.error('🔍 최종 상태 - naver.maps.Size:', typeof window.naver?.maps?.Size);
+                window.naverMapLoadStatus = 'timeout';
+                reject(new Error('네이버 지도 API를 로드할 수 없습니다. 최대 대기 시간 초과.'));
               } else {
-                console.log('🔄 naver.maps API 로드 대기 중...');
-                console.log('🔍 naver:', !!window.naver);
-                console.log('🔍 naver.maps:', !!window.naver?.maps);
-                console.log('🔍 naver.maps.Map:', typeof window.naver?.maps?.Map);
-                console.log('🔍 naver.maps.LatLng:', typeof window.naver?.maps?.LatLng);
-                console.log('🔍 naver.maps.Size:', typeof window.naver?.maps?.Size);
+                // 로그 출력 빈도 줄이기 (10번마다 한 번씩)
+                if (attempts % 10 === 0) {
+                  console.log(`🔄 naver.maps API 로드 대기 중... (${attempts}/${maxAttempts})`);
+                }
                 setTimeout(checkAPILoaded, 100);
               }
             };
-            
+
             // 즉시 체크 시작
             checkAPILoaded();
           };
-          
+
           // 로드 실패 시
-          script.onerror = function(error) {
+          script.onerror = function (error) {
             console.error('❌ 네이버 지도 API 로드 실패:', error);
             window.naverMapLoadStatus = 'error';
             reject(new Error('네이버 지도 API를 로드할 수 없습니다.'));
           };
-          
+
           // 스크립트를 head에 추가
           document.head.appendChild(script);
-          
+
         } catch (error) {
           console.error('❌ API 설정 로드 실패:', error);
           reject(error);
         }
       });
     }
-    
+
     // 페이지 로드 시 네이버 지도 API 로드
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', loadNaverMapsAPI);
@@ -155,35 +152,35 @@
 </head>
 
 <body>
-      <!-- 로그인 필요 안내 화면 -->
-    <div id="loginRequiredScreen" class="login-required-screen hidden">
-      <div class="login-required-box">
-        <h2 style="margin-bottom:16px;">로그인이 필요합니다</h2>
-        <p style="margin-bottom:24px; color:#666;">매물 관리 시스템을 사용하려면 로그인해주세요.</p>
-        
-        <!-- 인라인 로그인 폼 -->
-        <form id="inlineLoginForm" class="login-form">
-          <div class="form-group">
-            <label for="inlineLoginEmail">이메일</label>
-            <input type="email" id="inlineLoginEmail" name="email" placeholder="email@example.com" required>
-          </div>
-          
-          <div class="form-group">
-            <label for="inlineLoginPassword">비밀번호</label>
-            <input type="password" id="inlineLoginPassword" name="password" placeholder="비밀번호를 입력하세요" required>
-          </div>
-          
-          <div id="inlineLoginErrorMsg" class="error-message"></div>
-          
-          <button type="submit" class="btn btn-primary">로그인</button>
-          
-          <div class="login-links">
-            <a href="/register">회원가입</a>
-            <a href="#" onclick="alert('관리자에게 문의하세요.')">비밀번호 찾기</a>
-          </div>
-        </form>
-      </div>
+  <!-- 로그인 필요 안내 화면 -->
+  <div id="loginRequiredScreen" class="login-required-screen hidden">
+    <div class="login-required-box">
+      <h2 style="margin-bottom:16px;">로그인이 필요합니다</h2>
+      <p style="margin-bottom:24px; color:#666;">매물 관리 시스템을 사용하려면 로그인해주세요.</p>
+
+      <!-- 인라인 로그인 폼 -->
+      <form id="inlineLoginForm" class="login-form">
+        <div class="form-group">
+          <label for="inlineLoginEmail">이메일</label>
+          <input type="email" id="inlineLoginEmail" name="email" placeholder="email@example.com" required>
+        </div>
+
+        <div class="form-group">
+          <label for="inlineLoginPassword">비밀번호</label>
+          <input type="password" id="inlineLoginPassword" name="password" placeholder="비밀번호를 입력하세요" required>
+        </div>
+
+        <div id="inlineLoginErrorMsg" class="error-message"></div>
+
+        <button type="submit" class="btn btn-primary">로그인</button>
+
+        <div class="login-links">
+          <a href="/register">회원가입</a>
+          <a href="#" onclick="alert('관리자에게 문의하세요.')">비밀번호 찾기</a>
+        </div>
+      </form>
     </div>
+  </div>
 
   <!-- 앱 종료 확인 다이얼로그 -->
   <div id="exitConfirmOverlay" class="exit-confirm-overlay hidden">
@@ -220,18 +217,19 @@
       <div class="auth-links">
         <!-- 사용자 정보 -->
         <span id="userRoleName" class="user-role-name">직책 / 사용자명</span>
-        
+
         <!-- 어드민 전용 메뉴 -->
         <div class="admin-only hidden">
           <button id="userManagementBtn" class="admin-btn" type="button">사용자 관리</button>
+          <button id="sheetSlotManagementBtn" class="admin-btn" type="button">슬롯 관리</button>
           <button id="adminStatsBtn" class="admin-btn" type="button">통계</button>
         </div>
 
         <!-- 모바일 로그아웃 버튼 -->
         <button id="mobileLogoutBtn" class="mobile-logout-btn hidden" type="button">로그아웃</button>
-        
+
         <!-- PC 로그아웃 버튼 -->
-        <a id="logoutBtn" href="/auth/logout" class="hidden">로그아웃</a>
+        <a id="logoutBtn" href="#" onclick="handleLogoutClick(event); return false;" class="hidden">로그아웃</a>
       </div>
     </header>
 
@@ -240,6 +238,23 @@
       <div class="count-info">
         총 <span id="countTotal">0</span>건 / 필터 후 <span id="countFiltered">0</span>건
         <button id="addListingBtn" class="btn-add-listing">📝 매물등록</button>
+        <!-- 상가/주택 모드 토글 -->
+        <div id="listingModeToggle" class="listing-mode-toggle">
+          <button id="modeCommercialBtn" class="mode-btn active" data-mode="commercial">상가</button>
+          <button id="modeHousingBtn" class="mode-btn" data-mode="housing">주택</button>
+        </div>
+        <!-- 상가 subtype 버튼 (상가 선택 시 표시) -->
+        <div id="commercialSubtypeButtons" class="subtype-buttons">
+          <button id="subtypeCommercialLeaseBtn" class="subtype-btn active" data-subtype="lease">임대차</button>
+          <button id="subtypeCommercialUnitBtn" class="subtype-btn" data-subtype="unit">구분상가</button>
+          <button id="subtypeCommercialLandBtn" class="subtype-btn" data-subtype="land">건물토지</button>
+        </div>
+        <!-- 주택 subtype 버튼 (주택 선택 시 표시) -->
+        <div id="housingSubtypeButtons" class="subtype-buttons hidden">
+          <button id="subtypeHousingSaleBtn" class="subtype-btn active" data-subtype="sale">매매</button>
+          <button id="subtypeHousingJeonseBtn" class="subtype-btn" data-subtype="jeonse">전세</button>
+          <button id="subtypeHousingMonthlyBtn" class="subtype-btn" data-subtype="monthly">월세</button>
+        </div>
       </div>
       <div class="sheet-controls">
         <div class="sheet-buttons">
@@ -248,7 +263,7 @@
         <button id="openGoogleSheetBtn" class="btn-sheet-open">
           선택된 시트 열기
         </button>
-        
+
         <!-- 새로 추가: 새로고침 버튼 그룹 -->
         <div class="refresh-controls">
           <button id="refreshDataBtn" class="refresh-btn" title="매물 데이터 새로고침">
@@ -258,7 +273,7 @@
         </div>
       </div>
     </div>
-    
+
     <!-- 매물등록 모달 -->
     <div id="listingAddModal" class="modal hidden">
       <div class="modal-content">
@@ -278,7 +293,7 @@
                 <input type="text" id="지역" name="지역" placeholder="예: 부평동">
               </div>
             </div>
-            
+
             <div class="form-row">
               <div class="form-group">
                 <label for="지번">지번</label>
@@ -289,7 +304,7 @@
                 <input type="text" id="건물명" name="건물명" placeholder="건물명">
               </div>
             </div>
-            
+
             <div class="form-row">
               <div class="form-group">
                 <label for="층수">층수</label>
@@ -300,7 +315,7 @@
                 <input type="text" id="가게명" name="가게명" placeholder="가게명">
               </div>
             </div>
-            
+
             <div class="form-row">
               <div class="form-group">
                 <label for="분양">분양</label>
@@ -311,7 +326,7 @@
                 <input type="text" id="실평수" name="실평수" placeholder="예: 15평">
               </div>
             </div>
-            
+
             <div class="form-row">
               <div class="form-group">
                 <label for="보증금">보증금</label>
@@ -322,21 +337,21 @@
                 <input type="text" id="월세" name="월세" placeholder="숫자만 입력">
               </div>
             </div>
-            
+
             <div class="form-row">
               <div class="form-group">
                 <label for="권리금">권리금</label>
                 <input type="text" id="권리금" name="권리금" placeholder="숫자만 입력">
               </div>
             </div>
-            
+
             <div class="form-row">
               <div class="form-group full-width">
                 <label for="비고">비고</label>
                 <textarea id="비고" name="비고" placeholder="비고사항" rows="3"></textarea>
               </div>
             </div>
-            
+
             <div class="form-row">
               <div class="form-group">
                 <label for="담당자">담당자</label>
@@ -347,7 +362,7 @@
                 <input type="text" id="연락처" name="연락처" placeholder="010-1234-5678" required>
               </div>
             </div>
-            
+
             <div class="form-row">
               <div class="form-group">
                 <label for="의뢰인">의뢰인</label>
@@ -358,7 +373,7 @@
                 <input type="text" id="비고3" name="비고3" placeholder="비고3">
               </div>
             </div>
-            
+
             <div class="form-row">
               <div class="form-group">
                 <label for="위반여부">위반여부</label>
@@ -369,7 +384,7 @@
                 <input type="text" id="현수막번호" name="현수막번호" placeholder="예: A-001">
               </div>
             </div>
-            
+
             <!-- 숨김 필드들 -->
             <input type="hidden" id="현황" name="현황" value="생">
             <input type="hidden" id="지역2" name="지역2" value="">
@@ -409,12 +424,12 @@
         <div class="drag-handle" id="listingListDragHandle">
           <div class="drag-indicator"></div>
         </div>
-        
+
         <div class="modal-header">
           <h2>매물리스트</h2>
           <button class="modal-close" id="closeListingListModal">&times;</button>
         </div>
-        
+
         <div class="modal-body">
           <div id="listingListContainer">
             <!-- PC버전의 renderListingList() 결과가 여기에 렌더링됩니다 -->
@@ -428,12 +443,17 @@
       <div class="modal-content filter-modal">
         <div class="modal-header">
           <h2>매물 필터</h2>
-          <button class="modal-close" id="closeFilterModal">&times;</button>
+          <div class="modal-header-buttons">
+            <button type="button" id="applyFilterBtn" class="btn-primary header-btn">적용</button>
+            <button type="button" id="resetFilterBtn" class="btn-secondary header-btn">초기화</button>
+            <button type="button" id="cancelFilterBtn" class="btn-secondary header-btn">취소</button>
+            <button class="modal-close" id="closeFilterModal">&times;</button>
+          </div>
         </div>
         <div class="modal-body">
           <form id="filterForm">
-            <!-- 필터 입력 필드들 -->
-            <div class="filter-grid">
+            <!-- 상가 필터 (상가 모드 시 표시) -->
+            <div id="modalCommercialFilter" class="filter-grid">
               <div class="filter-row">
                 <div class="filter-group">
                   <label for="modal_tf_region">지역</label>
@@ -448,7 +468,6 @@
                   <input type="text" id="modal_tf_building" placeholder="건물명">
                 </div>
               </div>
-              
               <div class="filter-row">
                 <div class="filter-group">
                   <label for="modal_tf_floor">층수</label>
@@ -459,15 +478,14 @@
                   <input type="text" id="modal_tf_store" placeholder="가게명">
                 </div>
                 <div class="filter-group">
-                  <label for="modal_tf_area_sale">분양</label>
+                  <label for="modal_tf_area_sale">분양(평)</label>
                   <input type="text" id="modal_tf_area_sale" placeholder="분양평 (>=값 또는 a‑b)">
                 </div>
               </div>
-              
               <div class="filter-row">
                 <div class="filter-group">
-                  <label for="modal_tf_area_real">실평수</label>
-                  <input type="text" id="modal_tf_area_real" placeholder="실평수 (>=값 또는 a‑b)">
+                  <label for="modal_tf_area_real">전용/실평</label>
+                  <input type="text" id="modal_tf_area_real" placeholder="전용/실평 (>=값 또는 a‑b)">
                 </div>
                 <div class="filter-group">
                   <label for="modal_tf_deposit">보증금</label>
@@ -478,11 +496,24 @@
                   <input type="text" id="modal_tf_rent" placeholder="월세 (<=값 또는 a‑b)">
                 </div>
               </div>
-              
               <div class="filter-row">
-                <div class="filter-group">
-                  <label for="modal_tf_premium">권리금</label>
-                  <input type="text" id="modal_tf_premium" placeholder="권리금 (<=값 또는 a‑b)">
+                <div class="filter-group comm-premium-field">
+                  <label for="modal_tf_premium" class="comm-premium-field">권리금</label>
+                  <input type="text" id="modal_tf_premium" class="comm-premium-field" placeholder="권리금 (<=값 또는 a‑b)">
+                </div>
+                <div class="filter-group comm-sale-only hidden">
+                  <label for="modal_tf_sale_price" class="comm-sale-only hidden">매매가</label>
+                  <input type="text" id="modal_tf_sale_price" class="comm-sale-only hidden" placeholder="매매가 (<=값)">
+                </div>
+                <div class="filter-group comm-sale-only hidden">
+                  <label for="modal_tf_yield" class="comm-sale-only hidden">수익율</label>
+                  <input type="text" id="modal_tf_yield" class="comm-sale-only hidden" placeholder="수익율 (%)">
+                </div>
+              </div>
+              <div class="filter-row">
+                <div class="filter-group comm-land-only hidden">
+                  <label for="modal_tf_area_land_py" class="comm-land-only hidden">대지(평)</label>
+                  <input type="text" id="modal_tf_area_land_py" class="comm-land-only hidden" placeholder="대지(평)">
                 </div>
                 <div class="filter-group">
                   <label for="modal_tf_note">비고</label>
@@ -493,7 +524,6 @@
                   <input type="text" id="modal_tf_manager" placeholder="담당자">
                 </div>
               </div>
-              
               <div class="filter-row">
                 <div class="filter-group">
                   <label for="modal_tf_region2">지역2</label>
@@ -508,7 +538,6 @@
                   <input type="text" id="modal_tf_client" placeholder="의뢰인">
                 </div>
               </div>
-              
               <div class="filter-row">
                 <div class="filter-group">
                   <label for="modal_tf_note3">비고3</label>
@@ -516,12 +545,107 @@
                 </div>
               </div>
             </div>
+            <!-- 주택 필터 (주택 모드 시 표시) -->
+            <div id="modalHousingFilter" class="filter-grid hidden">
+              <div class="filter-row">
+                <div class="filter-group">
+                  <label for="modal_tf_h_region">지역</label>
+                  <input type="text" id="modal_tf_h_region" placeholder="쉼표로 복수검색">
+                </div>
+                <div class="filter-group">
+                  <label for="modal_tf_h_jibun">지번</label>
+                  <input type="text" id="modal_tf_h_jibun" placeholder="예: 123-45, 12-3">
+                </div>
+                <div class="filter-group">
+                  <label for="modal_tf_h_region2">지역2</label>
+                  <input type="text" id="modal_tf_h_region2" placeholder="지역2">
+                </div>
+              </div>
+              <div class="filter-row">
+                <div class="filter-group">
+                  <label for="modal_tf_h_type">유형</label>
+                  <input type="text" id="modal_tf_h_type" placeholder="유형">
+                </div>
+                <div class="filter-group">
+                  <label for="modal_tf_h_building">건물명</label>
+                  <input type="text" id="modal_tf_h_building" placeholder="건물명">
+                </div>
+                <div class="filter-group">
+                  <label for="modal_tf_h_dong">동</label>
+                  <input type="text" id="modal_tf_h_dong" placeholder="동">
+                </div>
+              </div>
+              <div class="filter-row">
+                <div class="filter-group">
+                  <label for="modal_tf_h_ho">호수</label>
+                  <input type="text" id="modal_tf_h_ho" placeholder="호수">
+                </div>
+                <div class="filter-group">
+                  <label for="modal_tf_h_direction">향</label>
+                  <input type="text" id="modal_tf_h_direction" placeholder="향">
+                </div>
+                <div class="filter-group">
+                  <label for="modal_tf_h_floor">층수</label>
+                  <input type="text" id="modal_tf_h_floor" placeholder="단일 또는 a-b 또는 -1">
+                </div>
+              </div>
+              <div class="filter-row">
+                <div class="filter-group">
+                  <label for="modal_tf_h_supply">공급</label>
+                  <input type="text" id="modal_tf_h_supply" placeholder=">=값 또는 a-b">
+                </div>
+                <div class="filter-group">
+                  <label for="modal_tf_h_exclusive">전용</label>
+                  <input type="text" id="modal_tf_h_exclusive" placeholder=">=값 또는 a-b">
+                </div>
+                <div class="filter-group">
+                  <label for="modal_tf_h_deposit">보증금</label>
+                  <input type="text" id="modal_tf_h_deposit" placeholder="<=값 또는 a-b">
+                </div>
+              </div>
+              <div class="filter-row">
+                <div class="filter-group">
+                  <label for="modal_tf_h_rent">월세</label>
+                  <input type="text" id="modal_tf_h_rent" placeholder="<=값 또는 a-b">
+                </div>
+                <div class="filter-group">
+                  <label for="modal_tf_h_rooms">방</label>
+                  <input type="text" id="modal_tf_h_rooms" placeholder="단일 또는 a-b">
+                </div>
+                <div class="filter-group">
+                  <label for="modal_tf_h_bath">화장실</label>
+                  <input type="text" id="modal_tf_h_bath" placeholder="단일 또는 a-b">
+                </div>
+              </div>
+              <div class="filter-row">
+                <div class="filter-group">
+                  <label for="modal_tf_h_status">현황</label>
+                  <input type="text" id="modal_tf_h_status" placeholder="생" value="생" title="기본값 생, 초기화 시 생">
+                </div>
+                <div class="filter-group">
+                  <label for="modal_tf_h_client">의뢰인</label>
+                  <input type="text" id="modal_tf_h_client" placeholder="의뢰인">
+                </div>
+                <div class="filter-group">
+                  <label for="modal_tf_h_phone">연락처</label>
+                  <input type="text" id="modal_tf_h_phone" placeholder="연락처">
+                </div>
+              </div>
+              <div class="filter-row">
+                <div class="filter-group">
+                  <label for="modal_tf_h_tenant">임차인연락처</label>
+                  <input type="text" id="modal_tf_h_tenant" placeholder="임차인연락처">
+                </div>
+                <div class="filter-group">
+                  <label for="modal_tf_h_note">비고</label>
+                  <input type="text" id="modal_tf_h_note" placeholder="비고">
+                </div>
+              </div>
+            </div>
           </form>
         </div>
-        <div class="modal-footer">
-          <button type="button" id="applyFilterBtn" class="btn-primary">적용</button>
-          <button type="button" id="resetFilterBtn" class="btn-secondary">초기화</button>
-          <button type="button" id="cancelFilterBtn" class="btn-secondary">취소</button>
+        <div class="modal-footer" style="display: none;">
+          <!-- 버튼들은 헤더로 이동됨 -->
         </div>
       </div>
     </div>
@@ -539,31 +663,104 @@
 
     <!-- 상단 필터바 (모바일에서 숨김) -->
     <section id="topFilterBar" class="top-filter mobile-hidden">
-      <!-- 라벨 행 -->
-      <div class="tf-row tf-labels">
-        <div>지역</div><div>지번</div><div>건물명</div><div>층수</div><div>가게명</div>
-        <div>분양</div><div>실평수</div><div>보증금</div><div>월세</div><div>권리금</div>
-        <div>비고</div><div>담당자</div><div>지역2</div><div>연락처</div><div>의뢰인</div>
-        <div>비고3</div><div class="tf-actions"></div>
+      <!-- 상가 필터 (상가 모드 시 표시) -->
+      <div id="commercialFilterSection" class="filter-section">
+        <div class="tf-row tf-labels">
+          <div>지역</div>
+          <div>지번</div>
+          <div>건물명</div>
+          <div>층수</div>
+          <div>가게명</div>
+          <div>분양</div>
+          <div>실평수/전용</div>
+          <div>보증금</div>
+          <div>월세</div>
+          <div class="comm-premium-field">권리금</div>
+          <div class="comm-sale-only hidden">매매가</div>
+          <div class="comm-sale-only hidden">수익율</div>
+          <div class="comm-land-only hidden">대지(평)</div>
+          <div>비고</div>
+          <div>담당자</div>
+          <div>지역2</div>
+          <div>연락처</div>
+          <div>의뢰인</div>
+          <div>비고3</div>
+          <div class="tf-actions"></div>
+        </div>
+        <div class="tf-row tf-inputs">
+          <input id="tf_region" placeholder="쉼표로 복수검색">
+          <input id="tf_jibun" placeholder="예: 123-45, 12-3">
+          <input id="tf_building" placeholder="건물명">
+          <input id="tf_floor" placeholder="단일 또는 a-b">
+          <input id="tf_store" placeholder="가게명">
+          <input id="tf_area_sale" placeholder="분양평 (>=값 또는 a‑b)">
+          <input id="tf_area_real" placeholder="전용/실평 (>=값 또는 a‑b)">
+          <input id="tf_deposit" placeholder="보증금 (<=값 또는 a‑b)">
+          <input id="tf_rent" placeholder="월세 (<=값 또는 a‑b)">
+          <input id="tf_premium" class="comm-premium-field" placeholder="권리금 (<=값 또는 a‑b)">
+          <input id="tf_sale_price" class="comm-sale-only hidden" placeholder="매매가 (<=값)">
+          <input id="tf_yield" class="comm-sale-only hidden" placeholder="수익율 (%)">
+          <input id="tf_area_land_py" class="comm-land-only hidden" placeholder="대지(평)">
+          <input id="tf_note" placeholder="비고">
+          <input id="tf_manager" placeholder="담당자">
+          <input id="tf_region2" placeholder="지역2">
+          <input id="tf_phone" placeholder="연락처">
+          <input id="tf_client" placeholder="의뢰인">
+          <input id="tf_note3" placeholder="비고3">
+          <div class="tf-actions"></div>
+        </div>
       </div>
-      <!-- 입력 행 -->
-      <div class="tf-row tf-inputs">
-        <input id="tf_region"    placeholder="쉼표로 복수검색">
-        <input id="tf_jibun"     placeholder="예: 123-45, 12-3">
-        <input id="tf_building"  placeholder="건물명">
-        <input id="tf_floor"     placeholder="단일 또는 a-b">
-        <input id="tf_store"     placeholder="가게명">
-        <input id="tf_area_sale" placeholder="분양평 (>=값 또는 a‑b)">
-        <input id="tf_area_real" placeholder="실평수 (>=값 또는 a‑b)">
-        <input id="tf_deposit"   placeholder="보증금 (<=값 또는 a‑b)">
-        <input id="tf_rent"      placeholder="월세 (<=값 또는 a‑b)">
-        <input id="tf_premium"   placeholder="권리금 (<=값 또는 a‑b)">
-        <input id="tf_note"      placeholder="비고">
-        <input id="tf_manager"   placeholder="담당자">
-        <input id="tf_region2"   placeholder="지역2">
-        <input id="tf_phone"     placeholder="연락처">
-        <input id="tf_client"    placeholder="의뢰인">
-        <input id="tf_note3"     placeholder="비고3">
+      <!-- 주택 필터 (주택 모드 시 표시) -->
+      <div id="housingFilterSection" class="filter-section hidden">
+        <div class="tf-row tf-labels">
+          <div>지역</div>
+          <div>지번</div>
+          <div>지역2</div>
+          <div>유형</div>
+          <div>건물명</div>
+          <div>동</div>
+          <div>호수</div>
+          <div>향</div>
+          <div>층수</div>
+          <div>공급</div>
+          <div>전용</div>
+          <div>보증금</div>
+          <div>월세</div>
+          <div>방</div>
+          <div>화장실</div>
+          <div>현황</div>
+          <div>의뢰인</div>
+          <div>연락처</div>
+          <div>임차인연락처</div>
+          <div>비고</div>
+          <div class="tf-actions"></div>
+        </div>
+        <div class="tf-row tf-inputs">
+          <input id="tf_h_region" placeholder="쉼표로 복수검색">
+          <input id="tf_h_jibun" placeholder="예: 123-45, 12-3">
+          <input id="tf_h_region2" placeholder="지역2">
+          <input id="tf_h_type" placeholder="유형">
+          <input id="tf_h_building" placeholder="건물명">
+          <input id="tf_h_dong" placeholder="동">
+          <input id="tf_h_ho" placeholder="호수">
+          <input id="tf_h_direction" placeholder="향">
+          <input id="tf_h_floor" placeholder="단일 또는 a-b 또는 -1">
+          <input id="tf_h_supply" placeholder=">=값 또는 a-b">
+          <input id="tf_h_exclusive" placeholder=">=값 또는 a-b">
+          <input id="tf_h_deposit" placeholder="<=값 또는 a-b">
+          <input id="tf_h_rent" placeholder="<=값 또는 a-b">
+          <input id="tf_h_rooms" placeholder="단일 또는 a-b">
+          <input id="tf_h_bath" placeholder="단일 또는 a-b">
+          <input id="tf_h_status" placeholder="생" value="생" title="기본값 생, 초기화 시 생">
+          <input id="tf_h_client" placeholder="의뢰인">
+          <input id="tf_h_phone" placeholder="연락처">
+          <input id="tf_h_tenant" placeholder="임차인연락처">
+          <input id="tf_h_note" placeholder="비고">
+          <div class="tf-actions"></div>
+        </div>
+      </div>
+      <!-- 공통 적용/초기화 버튼 -->
+      <div class="tf-row tf-actions-row">
         <div class="tf-actions">
           <button id="topFilterApplyBtn" type="button">적용</button>
           <button id="topFilterResetBtn" type="button">초기화</button>
@@ -575,28 +772,28 @@
     <div id="layout">
       <!-- 모바일 노치 (하단에 항상 보이는 노치) -->
       <div class="mobile-notch"></div>
-      
+
       <!-- 1차 사이드바 -->
       <aside id="sidebar">
         <!-- 사이드바 토글 버튼 -->
         <div class="sidebar-toggle">
           <button id="sidebarToggleBtn" class="toggle-btn" title="사이드바 접기/펼치기">◀</button>
         </div>
-        
+
         <!-- 고객 컨트롤 -->
         <div id="customerControls" class="block">
           <div class="button-row">
             <button id="customerListBtn" type="button">고객List</button>
             <button id="newCustomerBtn" type="button">신규등록</button>
           </div>
-          
+
           <!-- 고객 목록 (고객List 클릭 시 표시) -->
           <div id="customerListContainer" class="customer-list-container hidden">
             <div id="customerListContent1">
               <!-- 고객 목록이 여기에 동적으로 로드됩니다 -->
             </div>
           </div>
-          
+
           <!-- 선택된 고객 정보 (고객 선택 시 표시) -->
           <div id="selectedCustomerInfo" class="selected-customer-info hidden">
             <div id="customerInfoContent">
@@ -618,17 +815,17 @@
           <div class="listing-actions">
             <button id="viewAllBtn" type="button">전체보기</button>
             <button class="sortBtn" data-sort="latest" type="button">최신</button>
-            <button class="sortBtn" data-sort="area"   type="button">면적</button>
+            <button class="sortBtn" data-sort="area" type="button">면적</button>
             <button class="sortBtn" data-sort="deposit" type="button">보증금</button>
-            <button class="sortBtn" data-sort="rent"    type="button">월세</button>
-            <button class="sortBtn" data-sort="index"   type="button">색인</button>
+            <button class="sortBtn" data-sort="rent" type="button">월세</button>
+            <button class="sortBtn" data-sort="index" type="button">색인</button>
           </div>
         </div>
 
         <!-- 매물 목록 -->
         <div id="listingSidebarWrap" class="block listings-block">
           <ul id="listingList"></ul>
-          
+
           <!-- 클러스터 매물 목록 -->
           <div id="clusterList" class="cluster-list hidden">
             <div class="cluster-list-header">
@@ -646,29 +843,30 @@
           <span id="secondaryPanelTitle">상세정보</span>
           <div class="panel-controls">
             <button id="secondaryPanelToggleBtn" class="toggle-btn" title="2차 사이드바 접기/펼치기">◀</button>
-            <button id="secondaryPanelClose" class="panel-close" type="button" onclick="closeSecondaryPanel(); return false;">×</button>
+            <button id="secondaryPanelClose" class="panel-close" type="button"
+              onclick="closeSecondaryPanel(); return false;">×</button>
           </div>
         </div>
-  <div class="panel-body" id="secondaryPanelBody">
-    <div id="viewCustomerList" class="panel-view hidden">
-      <div class="customer-list-container">
-        <div id="customerListContent2"></div>
-      </div>
-    </div>
-    <div id="viewCustomerDetail" class="panel-view hidden">
-      <div class="customer-detail-container">
-        <div id="customerDetailContent"></div>
-      </div>
-    </div>
-    <div id="viewCustomerForm" class="panel-view hidden">
-      <form id="customerForm"></form>
-    </div>
-    <div id="viewCustomerEdit" class="panel-view hidden">
-      <form id="customerEditForm"></form>
-    </div>
-    <div id="viewListingDetail" class="panel-view hidden"></div>
-  </div>
-</aside>
+        <div class="panel-body" id="secondaryPanelBody">
+          <div id="viewCustomerList" class="panel-view hidden">
+            <div class="customer-list-container">
+              <div id="customerListContent2"></div>
+            </div>
+          </div>
+          <div id="viewCustomerDetail" class="panel-view hidden">
+            <div class="customer-detail-container">
+              <div id="customerDetailContent"></div>
+            </div>
+          </div>
+          <div id="viewCustomerForm" class="panel-view hidden">
+            <form id="customerForm"></form>
+          </div>
+          <div id="viewCustomerEdit" class="panel-view hidden">
+            <form id="customerEditForm"></form>
+          </div>
+          <div id="viewListingDetail" class="panel-view hidden"></div>
+        </div>
+      </aside>
 
 
       <!-- 메인 콘텐츠(지도) -->
@@ -676,7 +874,23 @@
         <div id="mapWrap">
           <div id="map"></div>
           <div id="mapCenterCross"></div>
-          
+
+          <!-- 모바일 전용 매물 모드 선택 버튼 -->
+          <div id="mobileListingModeBtnWrap" class="mobile-listing-mode-btn-wrap">
+            <button id="mobileListingModeBtn" class="mobile-listing-mode-btn">
+              <span id="mobileListingModeText">상가임대차</span>
+              <span class="dropdown-arrow">▼</span>
+            </button>
+            <div id="mobileListingModeDropdown" class="mobile-listing-mode-dropdown hidden">
+              <div class="dropdown-item" data-mode="commercial" data-subtype="lease">상가 임대차</div>
+              <div class="dropdown-item" data-mode="commercial" data-subtype="unit">구분상가 매매</div>
+              <div class="dropdown-item" data-mode="commercial" data-subtype="land">건물토지 매매</div>
+              <div class="dropdown-item" data-mode="housing" data-subtype="sale">주택 매매</div>
+              <div class="dropdown-item" data-mode="housing" data-subtype="jeonse">주택 전세</div>
+              <div class="dropdown-item" data-mode="housing" data-subtype="monthly">주택 월세</div>
+            </div>
+          </div>
+
           <!-- 지도 컨트롤 -->
           <div id="mapControls" class="map-controls">
             <div class="map-control-group">
@@ -708,7 +922,7 @@
                   </label>
                 </div>
               </div>
-              
+
               <button id="roadviewBtn" class="map-control-btn" title="로드뷰">
                 <span class="control-icon">🛣️</span>
               </button>
@@ -723,15 +937,15 @@
               </button>
             </div>
           </div>
-          
+
           <!-- 로드뷰 컨테이너 -->
           <div id="roadviewContainer" class="roadview-container hidden">
             <!-- 로드뷰 닫기 버튼 -->
             <button id="roadviewCloseBtn" class="roadview-close-btn">×</button>
-            
+
             <!-- 로드뷰 메인 콘텐츠 -->
             <div id="roadview" class="roadview-content"></div>
-            
+
             <!-- 주소 정보 박스 (미니맵 위에 배치) -->
             <div class="roadview-address-box">
               <div class="address-icon">📍</div>
@@ -744,7 +958,7 @@
                 <span class="view-mode">3D</span>
               </div>
             </div>
-            
+
             <!-- 로드뷰 미니맵 -->
             <div id="roadviewMiniMap" class="roadview-minimap">
               <div class="minimap-label">🗺️ 미니맵</div>
@@ -767,7 +981,8 @@
         <div id="fullListPanel" class="full-list-panel hidden">
           <div class="full-list-header">
             <span>전체보기</span>
-            <button id="fullListCloseBtn" type="button" style="background: #dc3545; color: white; border: none; padding: 4px 8px; border-radius: 4px; font-size: 11px; cursor: pointer; margin-left: auto;">닫기</button>
+            <button id="fullListCloseBtn" type="button"
+              style="background: #dc3545; color: white; border: none; padding: 4px 8px; border-radius: 4px; font-size: 11px; cursor: pointer; margin-left: auto;">닫기</button>
           </div>
           <div id="fullListContent" class="full-list-body">
             <div style="padding:12px;color:#666;">(전체보기 내용이 여기 표시됩니다)</div>
@@ -778,7 +993,8 @@
         <div id="fullBriefingListPanel" class="full-list-panel hidden">
           <div class="full-list-header">
             <span>전체 브리핑 리스트</span>
-            <button id="fullBriefingListCloseBtn" type="button" style="background: #dc3545; color: white; border: none; padding: 4px 8px; border-radius: 4px; font-size: 11px; cursor: pointer; margin-left: auto;">닫기</button>
+            <button id="fullBriefingListCloseBtn" type="button"
+              style="background: #dc3545; color: white; border: none; padding: 4px 8px; border-radius: 4px; font-size: 11px; cursor: pointer; margin-left: auto;">닫기</button>
           </div>
           <div id="fullBriefingListContent" class="full-list-body">
             <div style="padding:12px;color:#666;">(전체 브리핑 리스트 내용이 여기 표시됩니다)</div>
@@ -794,7 +1010,10 @@
       <div class="modal-content user-management-modal">
         <div class="modal-header">
           <h2>사용자 관리</h2>
-          <button class="modal-close-btn">&times;</button>
+          <div style="display: flex; gap: 10px; align-items: center;">
+            <button id="addUserBtn" class="admin-btn" style="padding: 8px 16px; font-size: 14px;">➕ 사용자 추가</button>
+            <button class="modal-close-btn">&times;</button>
+          </div>
         </div>
         <div class="modal-body">
           <div class="table-container">
@@ -854,14 +1073,19 @@
                 일반 사용자의 경우 담당자명을 설정하면 해당 담당자 매물만 조회됩니다.
               </small>
             </div>
-            <div class="form-group">
+            <div class="form-group" id="userPasswordGroup">
+              <label for="userPassword">비밀번호 <span id="passwordRequired" style="color: red;">*</span></label>
+              <input type="password" id="userPassword" name="password" placeholder="비밀번호 (6자 이상)" minlength="6">
+              <small style="color: #666; font-size: 12px;">새 사용자 추가 시 필수입니다.</small>
+            </div>
+            <div class="form-group" id="userStatusGroup">
               <label>상태</label>
-              <div id="userStatusGroup" class="radio-group">
-                <label style="margin-right:12px;"><input type="radio" name="is_active" value="true"> 활성</label>
+              <div class="radio-group">
+                <label style="margin-right:12px;"><input type="radio" name="is_active" value="true" checked> 활성</label>
                 <label><input type="radio" name="is_active" value="false"> 비활성</label>
               </div>
             </div>
-            <div class="form-group">
+            <div class="form-group" id="userPasswordResetGroup" style="display: none;">
               <label>비밀번호 재설정</label>
               <div style="display: flex; gap: 10px; align-items: center;">
                 <input type="password" id="userNewPassword" placeholder="새 비밀번호 (6자 이상)" style="flex: 1;">
@@ -893,35 +1117,47 @@
       </div>
     </div>
 
-    <!-- 시트지정 모달 -->
+    <!-- 시트지정 모달 (개별 사용자용 - 레거시 유지 또는 폐쇄 예정) -->
     <div id="sheetUrlModal" class="modal hidden">
-      <div class="modal-content">
+      <!-- ... (내용 생략) ... -->
+    </div>
+
+    <!-- 통합 슬롯 관리 모달 -->
+    <div id="slotManagementModal" class="modal hidden">
+      <div class="modal-content slot-management-modal">
         <div class="modal-header">
-          <h3>시트지정</h3>
-          <button class="modal-close-btn" id="closeSheetUrlModal">&times;</button>
+          <h2>통합 슬롯 관리 (7개 고정)</h2>
+          <button class="modal-close-btn">&times;</button>
         </div>
         <div class="modal-body">
-          <form id="sheetUrlForm">
-            <div class="form-group">
-              <label for="sheetUrl">Google Sheets URL</label>
-              <input type="url" id="sheetUrl" name="sheet_url" 
-                     placeholder="https://docs.google.com/spreadsheets/d/..." required>
-              <small style="color: #666; font-size: 12px;">
-                사용자의 개인 매물장 시트 URL을 입력하세요.
-              </small>
-            </div>
-            <div class="form-actions">
-              <button type="submit" class="admin-btn">확인</button>
-              <button type="button" id="sheetUrlCancelBtn" class="btn-secondary">취소</button>
-            </div>
-          </form>
+          <div class="alert alert-info"
+            style="margin-bottom: 15px; background: #e7f3ff; padding: 10px; border-radius: 4px; font-size: 13px;">
+            💡 퇴사한 직원의 슬롯은 담당자를 '공석'으로 변경하세요. 데이터는 그대로 유지되며 필터에서 공석 매물로 조회됩니다.
+          </div>
+          <div class="table-container">
+            <table class="slot-table">
+              <thead>
+                <tr>
+                  <th style="width: 60px;">슬롯</th>
+                  <th>담당 유저</th>
+                  <th>표시 이름 (관리명)</th>
+                  <th>구글 시트 URL</th>
+                  <th style="width: 80px;">상태</th>
+                  <th style="width: 80px;">작업</th>
+                </tr>
+              </thead>
+              <tbody id="slotListTableBody">
+                <!-- 슬롯 목록이 여기에 동적으로 로드됩니다 -->
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>
 
     <script>
       // MarkerClustering 로딩 확인
-      document.addEventListener('DOMContentLoaded', function() {
+      document.addEventListener('DOMContentLoaded', function () {
         console.log('🔍 초기 MarkerClustering 상태:', typeof MarkerClustering);
         if (typeof MarkerClustering !== 'undefined') {
           console.log('✅ MarkerClustering이 정상적으로 로드되었습니다.');
@@ -937,7 +1173,7 @@
       // 중복 제거 - auth.js의 showExitConfirmDialog 사용
 
       // 페이지 로드 시 히스토리 상태 설정 (모바일에서만)
-      window.addEventListener('load', function() {
+      window.addEventListener('load', function () {
         // 모바일 환경에서만 히스토리 상태 설정
         if (window.location.pathname === '/' && typeof window.isMobileApp === 'function' && window.isMobileApp()) {
           window.history.replaceState({ page: 'main', preventBack: true }, '', '/');
@@ -946,12 +1182,12 @@
       });
 
       // 페이지 초기 로드 시 히스토리 스택 정리 (모바일에서만)
-      document.addEventListener('DOMContentLoaded', function() {
+      document.addEventListener('DOMContentLoaded', function () {
         // 모바일 환경에서만 히스토리 스택 정리
         if (window.location.pathname === '/' && typeof window.isMobileApp === 'function' && window.isMobileApp()) {
           // 현재 히스토리 상태를 메인 페이지로 설정
           window.history.replaceState({ page: 'main', preventBack: true }, '', '/');
-          
+
           // 히스토리 길이가 1보다 크면 추가 히스토리 항목들을 제거
           if (window.history.length > 1) {
             console.log('📱 히스토리 스택 정리 중...');
@@ -967,19 +1203,19 @@
       });
 
       // 페이지 떠나기 방지 (모바일에서만)
-      window.addEventListener('beforeunload', function(event) {
+      window.addEventListener('beforeunload', function (event) {
         // 모바일 환경에서만 페이지 떠나기 방지
         if (typeof window.isMobileApp === 'function' && window.isMobileApp()) {
           // 로그인 화면이 아닌 메인 앱 화면에서만 적용
           const loginScreen = document.getElementById('loginRequiredScreen');
           const appRoot = document.getElementById('appRoot');
-          
-          if (loginScreen && !loginScreen.classList.contains('hidden') && 
-              appRoot && appRoot.classList.contains('hidden')) {
+
+          if (loginScreen && !loginScreen.classList.contains('hidden') &&
+            appRoot && appRoot.classList.contains('hidden')) {
             // 로그인 화면에서는 기본 동작 허용
             return;
           }
-          
+
           // 메인 앱 화면에서는 페이지 떠나기 방지
           console.log('📱 페이지 떠나기 시도 감지');
           event.preventDefault();
@@ -990,23 +1226,23 @@
 
       // 히스토리 변경 감지 및 강제 복원 (모바일에서만)
       let isHistoryManipulation = false;
-      
+
       function forceMainPage() {
         if (isHistoryManipulation) return;
-        
+
         isHistoryManipulation = true;
         console.log('📱 강제 메인 페이지 복원');
-        
+
         // URL이 메인 페이지가 아니면 강제로 변경
         if (window.location.pathname !== '/') {
           window.history.replaceState({ page: 'main', preventBack: true }, '', '/');
         }
-        
+
         // 앱이 초기화되지 않았다면 초기화
         if (typeof window.initializeApp === 'function') {
           window.initializeApp();
         }
-        
+
         setTimeout(() => {
           isHistoryManipulation = false;
         }, 100);
@@ -1027,39 +1263,39 @@
       }
 
       // 인라인 로그인 폼 이벤트 리스너
-      document.addEventListener('DOMContentLoaded', function() {
+      document.addEventListener('DOMContentLoaded', function () {
         const inlineLoginForm = document.getElementById('inlineLoginForm');
         if (inlineLoginForm) {
-          inlineLoginForm.addEventListener('submit', async function(e) {
+          inlineLoginForm.addEventListener('submit', async function (e) {
             e.preventDefault();
-            
+
             const email = document.getElementById('inlineLoginEmail').value.trim();
             const password = document.getElementById('inlineLoginPassword').value;
             const errorMsg = document.getElementById('inlineLoginErrorMsg');
             const loginBtn = e.target.querySelector('button[type="submit"]');
-            
+
             // 입력 검증
             if (!email || !password) {
               showInlineError('이메일과 비밀번호를 모두 입력해주세요.');
               return;
             }
-            
+
             const EMAIL_RE = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
             if (!EMAIL_RE.test(email)) {
               showInlineError('올바른 이메일 형식이 아닙니다.');
               return;
             }
-            
+
             if (password.length < 6) {
               showInlineError('비밀번호는 최소 6자 이상이어야 합니다.');
               return;
             }
-            
+
             // 로그인 버튼 비활성화
             const originalText = loginBtn.textContent;
             loginBtn.disabled = true;
             loginBtn.textContent = '로그인 중...';
-            
+
             try {
               const response = await fetch('/api/auth/login', {
                 method: 'POST',
@@ -1072,12 +1308,12 @@
                   password: password
                 })
               });
-              
+
               const data = await response.json();
-              
+
               if (response.ok) {
                 console.log('인라인 로그인 성공');
-                
+
                 // localStorage에 사용자 정보 저장
                 try {
                   const userEmail = (data && data.user && data.user.email) ? data.user.email : email;
@@ -1099,18 +1335,18 @@
                 if (window.hideLoginScreen) {
                   window.hideLoginScreen();
                 }
-                
+
                 // 히스토리 초기화 및 고정
                 if (window.initializeHistory && window.fixHistoryAfterLogin) {
                   window.initializeHistory();
                   window.fixHistoryAfterLogin();
                 }
-                
+
               } else {
                 console.log('인라인 로그인 실패:', data.error);
                 showInlineError(data.error || '로그인에 실패했습니다.');
               }
-              
+
             } catch (error) {
               console.error('인라인 로그인 요청 중 오류:', error);
               showInlineError('서버 연결에 실패했습니다.');
@@ -1121,7 +1357,7 @@
             }
           });
         }
-        
+
         function showInlineError(message) {
           const errorMsg = document.getElementById('inlineLoginErrorMsg');
           if (errorMsg) {
@@ -1136,4 +1372,5 @@
     </script>
   </div>
 </body>
+
 </html>

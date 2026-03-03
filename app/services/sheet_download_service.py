@@ -9,6 +9,7 @@ from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseDownload
 import io
 import pandas as pd
+from .sheet_fetcher import clear_listing_cache
 
 class SheetDownloadService:
     """Google Sheets를 Excel로 다운로드하는 서비스"""
@@ -110,6 +111,15 @@ class SheetDownloadService:
             df.to_excel(file_path, index=False)
             
             logging.info(f"시트 다운로드 성공: {sheet_name} → {file_path}")
+            
+            # 🔥 핵심 수정: 상가임대차 시트 다운로드 시 매물 데이터 캐시 강제 삭제
+            if sheet_name == '상가임대차':
+                try:
+                    clear_listing_cache()
+                    logging.info("✅ 매물 데이터 캐시 강제 삭제 완료 (Excel 업데이트 반영)")
+                except Exception as cache_error:
+                    logging.warning(f"⚠️ 캐시 삭제 중 오류 발생 (무시하고 계속): {cache_error}")
+            
             return True
             
         except Exception as e:

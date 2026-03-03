@@ -14,22 +14,20 @@ async function renderDetailPanel(item) {
     const isMobileBrowser = ua.includes('Mobile') || ua.includes('NAVER(inapp');
     return isMobileOS || isMobileBrowser;
   }
-  
+
   // 모바일 환경에서는 기존 매물리스트 모달 사용
   if (isMobileDevice() || window.MOBILE_APP) {
-    console.log('📱 모바일 환경에서 매물리스트 모달 내 상세정보 표시');
-    
     // 기존 매물리스트 모달 매니저 사용
     if (window.listingListModalManager && typeof window.listingListModalManager.showListingDetail === 'function') {
       // 모달이 열려있지 않으면 먼저 모달 열기
       const listingListModal = document.getElementById('listingListModal');
       const isModalOpen = listingListModal && !listingListModal.classList.contains('hidden');
-      
+
       if (!isModalOpen) {
         await window.listingListModalManager.openModal();
-        // 모달이 열린 후 상세정보 표시
+        // 모달이 열린 후 상세정보 표시 (단일 마커 진입 플래그)
         setTimeout(() => {
-          window.listingListModalManager.showListingDetail(item);
+          window.listingListModalManager.showListingDetail(item, { fromMarker: true });
         }, 100);
       } else {
         window.listingListModalManager.showListingDetail(item);
@@ -39,131 +37,114 @@ async function renderDetailPanel(item) {
     }
     return;
   }
-  
+
   // PC버전: 2차 사이드바 열기
   showSecondaryPanel('viewListingDetail');
-  
+
   const viewListingDetail = document.getElementById('viewListingDetail');
   if (!viewListingDetail) {
     console.error('매물상세 뷰 요소를 찾을 수 없습니다');
     return;
   }
-  
+
   const detailTitleEl = document.getElementById("secondaryPanelTitle");
   const detailEl = document.getElementById('viewListingDetail');
-  
+
   if (!detailTitleEl || !detailEl) return;
-  
+
   detailTitleEl.textContent = "매물 상세 정보";
-  
+
   const fields = item.fields || {};
   const addr = item.address_full || '';
-  
+  const isHousing = (typeof item.id === 'string' && item.id.startsWith('h_')) || (window.UI_STATE && window.UI_STATE.listingMode === "housing");
+
+  const sensitiveFields = ['비고', '연락처', '비고3'];
+  const dr = (label, val) => {
+    const isSensitive = sensitiveFields.includes(label);
+    const dataFieldAttr = isSensitive ? `data-field="${label}"` : '';
+    const sensitiveValueClass = isSensitive ? 'sensitive-value' : '';
+    const toggleIcon = isSensitive ? `<span class="field-toggle" style="cursor: pointer; margin-left: 8px; font-size: 14px;" onclick="toggleSensitiveField('${label}')">📋</span>` : '';
+    return `<div class="detail-row" ${dataFieldAttr} style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #f0f0f0;">
+        <span class="label" style="font-weight: 600; color: #333; min-width: 70px; font-size: 13px;">${label}${toggleIcon}</span>
+        <span class="value ${sensitiveValueClass}" style="color: #666; font-size: 13px;">${escapeHtml(val || '-')}</span>
+      </div>`;
+  };
+
+  const formatSupplyExcl = typeof window.formatSupplyExclusive === 'function' ? window.formatSupplyExclusive : (s, e) => (s || e) ? `${s || '-'}/${e || '-'}` : '-/-';
+  let detailRows = "";
+  if (isHousing) {
+    detailRows = dr('접수일', fields['접수일']) + dr('지역', fields['지역']) + dr('지번', fields['지번']) + dr('유형', fields['유형']) +
+      dr('건물명', fields['건물명']) + dr('동', fields['동']) + dr('층수', fields['층수']) + dr('호수', fields['호수']) + dr('향', fields['향']) +
+      dr('공급/전용', formatSupplyExcl(fields['공급'], fields['전용'])) +
+      dr('보증금', fields['보증금']) + dr('월세', fields['월세']) + dr('관리비', fields['관리비']) + dr('매매가', fields['매매가']) +
+      dr('방', fields['방']) + dr('화장실', fields['화장실']) + dr('거래유형', fields['거래유형']) +
+      dr('의뢰인', fields['의뢰인']) + dr('관계', fields['관계']) + dr('연락처', fields['연락처']) + dr('임차인 연락처', fields['임차인 연락처']) +
+      dr('비고', fields['비고']) + dr('현황', getStatusDisplay(item.status_raw)) + dr('지역2', fields['지역2']);
+  } else {
+    // 상가 모드: 서브타입별 분기
+    const subtype = (window.UI_STATE && window.UI_STATE.commercialSubtype) || "lease";
+
+    if (subtype === "lease") {
+      // 상가 임대차 전문 필드
+      detailRows = dr('접수일', fields['접수일']) + dr('지역', fields['지역']) + dr('지번', fields['지번']) + dr('건물명', fields['건물명']) + dr('가게명', fields['가게명']) +
+        dr('층수', fields['층수']) + dr('실평수', fields['실평수'] ? fields['실평수'] + '평' : '') + dr('보증금', fields['보증금']) + dr('월세', fields['월세']) + dr('권리금', fields['권리금']);
+    } else if (subtype === "unit") {
+      // 구분상가 매매 (실제 시트 헤더 순서 반영)
+      detailRows = dr('접수일', fields['접수일']) + dr('지역', fields['지역']) + dr('지번', fields['지번']) +
+        dr('건물명', fields['건물명']) + dr('층수', fields['층수']) + dr('가게명', fields['가게명']) +
+        dr('분양(㎡)', fields['분양(㎡)']) + dr('분양(평)', fields['분양(평)']) + dr('전용(평)', fields['전용(평)']) +
+        dr('보증금', fields['보증금']) + dr('월세', fields['월세']) + dr('매매가', fields['매매가']) +
+        dr('평당가격', fields['평당가격']) + dr('LTV', fields['LTV']) + dr('이율', fields['이율']) + dr('수익율', fields['수익율']);
+    } else if (subtype === "land") {
+      // 건물토지 매매 (실제 시트 헤더 순서 반영)
+      detailRows = dr('접수일', fields['접수일']) + dr('지역', fields['지역']) + dr('지번', fields['지번']) +
+        dr('건물명', fields['건물명']) + dr('지하총층', fields['지하총층']) + dr('지상총층', fields['지상총층']) +
+        dr('대지(㎡)', fields['대지(㎡)']) + dr('대지(평)', fields['대지(평)']) +
+        dr('건축(㎡)', fields['건축(㎡)']) + dr('연(㎡)', fields['연(㎡)']) +
+        dr('보증금', fields['보증금']) + dr('월세', fields['월세']) + dr('매매가', fields['매매가']) +
+        dr('평당가격', fields['평당가격']) + dr('LTV', fields['LTV']) + dr('이율', fields['이율']) + dr('수익율', fields['수익율']);
+    }
+
+    // 소유자 정보 및 공통 마무리
+    detailRows += dr('비고', fields['비고']) + dr('담당자', fields['담당자'] || fields['manager']) +
+      dr('현황', getStatusDisplay(item.status_raw)) +
+      dr('소유자', fields['소유자']) + dr('소유자관계', fields['소유자관계']) + dr('연락처', fields['연락처']) +
+      (fields['비고3'] ? dr('비고3', fields['비고3']) : '');
+  }
+
+  const titleName = isHousing
+    ? ((fields['건물명'] || '') + (fields['동'] ? ' ' + fields['동'] : '') + (fields['호수'] ? ' ' + fields['호수'] : '') || '매물명 없음')
+    : (fields['가게명'] || fields['건물명'] || '매물명 없음');
+
   detailEl.innerHTML = `
     <div style="background: #f8f9fa; padding: 12px; border-radius: 8px; margin-bottom: 15px;">
-      <div style="font-size: 16px; font-weight: bold; color: #333; margin-bottom: 6px;">${escapeHtml(fields['가게명'] || fields['건물명'] || '매물명 없음')}</div>
+      <div style="font-size: 16px; font-weight: bold; color: #333; margin-bottom: 6px;">${escapeHtml(titleName)}</div>
       <div style="color: #666; font-size: 13px;">📍 ${escapeHtml(addr || '주소 없음')} <span class="listing-detail-briefing-status briefing-${getBriefingStatus(item.id)}" onclick="cycleBriefingStatus('${item.id}')">${getBriefingStatusText(getBriefingStatus(item.id))}</span></div>
     </div>
-    
-    <div style="background: white; border: 1px solid #e0e0e0; border-radius: 8px; padding: 12px; height: calc(100vh - 200px); overflow-y: auto;">
-      <div class="detail-row" style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #f0f0f0;">
-        <span class="label" style="font-weight: 600; color: #333; min-width: 70px; font-size: 13px;">접수일</span>
-        <span class="value" style="color: #666; font-size: 13px;">${escapeHtml(fields['접수일'] || '접수일 없음')}</span>
-      </div>
-      <div class="detail-row" style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #f0f0f0;">
-        <span class="label" style="font-weight: 600; color: #333; min-width: 70px; font-size: 13px;">지역</span>
-        <span class="value" style="color: #666; font-size: 13px;">${escapeHtml(fields['지역'] || '지역 정보 없음')}</span>
-      </div>
-      <div class="detail-row" style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #f0f0f0;">
-        <span class="label" style="font-weight: 600; color: #333; min-width: 70px; font-size: 13px;">지번</span>
-        <span class="value" style="color: #666; font-size: 13px;">${escapeHtml(fields['지번'] || '지번 정보 없음')}</span>
-      </div>
-      <div class="detail-row" style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #f0f0f0;">
-        <span class="label" style="font-weight: 600; color: #333; min-width: 70px; font-size: 13px;">건물명</span>
-        <span class="value" style="color: #666; font-size: 13px;">${escapeHtml(fields['건물명'] || '건물명 없음')}</span>
-      </div>
-      <div class="detail-row" style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #f0f0f0;">
-        <span class="label" style="font-weight: 600; color: #333; min-width: 70px; font-size: 13px;">가게명</span>
-        <span class="value" style="color: #666; font-size: 13px;">${escapeHtml(fields['가게명'] || '가게명 없음')}</span>
-      </div>
-      <div class="detail-row" style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #f0f0f0;">
-        <span class="label" style="font-weight: 600; color: #333; min-width: 70px; font-size: 13px;">층수</span>
-        <span class="value" style="color: #666; font-size: 13px;">${escapeHtml(fields['층수'] || '층수 정보 없음')}</span>
-      </div>
-      <div class="detail-row" style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #f0f0f0;">
-        <span class="label" style="font-weight: 600; color: #333; min-width: 70px; font-size: 13px;">실평수</span>
-        <span class="value" style="color: #666; font-size: 13px;">${escapeHtml(fields['실평수'] || '실평수 정보 없음')}평</span>
-      </div>
-      <div class="detail-row" style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #f0f0f0;">
-        <span class="label" style="font-weight: 600; color: #333; min-width: 70px; font-size: 13px;">보증금</span>
-        <span class="value" style="color: #666; font-size: 13px;">${escapeHtml(fields['보증금'] || '보증금 정보 없음')}</span>
-      </div>
-      <div class="detail-row" style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #f0f0f0;">
-        <span class="label" style="font-weight: 600; color: #333; min-width: 70px; font-size: 13px;">월세</span>
-        <span class="value" style="color: #666; font-size: 13px;">${escapeHtml(fields['월세'] || '월세 정보 없음')}</span>
-      </div>
-      <div class="detail-row" style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #f0f0f0;">
-        <span class="label" style="font-weight: 600; color: #333; min-width: 70px; font-size: 13px;">권리금</span>
-        <span class="value" style="color: #666; font-size: 13px;">${escapeHtml(fields['권리금'] || '권리금 정보 없음')}</span>
-      </div>
-      <div class="detail-row sensitive-field" data-field="비고" style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #f0f0f0;">
-        <span class="label" style="font-weight: 600; color: #333; min-width: 70px; font-size: 13px;">
-          ${window.APP_MODE && window.APP_MODE.current === 'briefing' ? '<span class="field-toggle" onclick="toggleSensitiveField(\'비고\')" style="cursor: pointer; color: #007bff;">📋</span>' : ''} 비고
-        </span>
-        <span class="value sensitive-value" style="color: #666; flex: 1; font-size: 13px;">${escapeHtml(fields['비고'] || '비고 없음')}</span>
-      </div>
-      <div class="detail-row" style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #f0f0f0;">
-        <span class="label" style="font-weight: 600; color: #333; min-width: 70px; font-size: 13px;">의뢰인</span>
-        <span class="value" style="color: #666; font-size: 13px;">${escapeHtml(fields['의뢰인'] || '의뢰인 정보 없음')}</span>
-      </div>
-      <div class="detail-row sensitive-field" data-field="연락처" style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #f0f0f0;">
-        <span class="label" style="font-weight: 600; color: #333; min-width: 70px; font-size: 13px;">
-          ${window.APP_MODE && window.APP_MODE.current === 'briefing' ? '<span class="field-toggle" onclick="toggleSensitiveField(\'연락처\')" style="cursor: pointer; color: #007bff;">��</span>' : ''} 연락처
-        </span>
-        <span class="value sensitive-value" style="color: #666; font-size: 13px;">${escapeHtml(fields['연락처'] || '연락처 정보 없음')}</span>
-      </div>
-      ${fields['비고3'] ? `<div class="detail-row sensitive-field" data-field="비고3" style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #f0f0f0;">
-        <span class="label" style="font-weight: 600; color: #333; min-width: 70px; font-size: 13px;">
-          ${window.APP_MODE && window.APP_MODE.current === 'briefing' ? '<span class="field-toggle" onclick="toggleSensitiveField(\'비고3\')" style="cursor: pointer; color: #007bff;">📋</span>' : ''} 비고3
-        </span>
-        <span class="value sensitive-value" style="color: #666; flex: 1; font-size: 13px;">${escapeHtml(fields['비고3'])}</span>
-      </div>` : ''}
-      <div class="detail-row" style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #f0f0f0;">
-        <span class="label" style="font-weight: 600; color: #333; min-width: 70px; font-size: 13px;">현황</span>
-        <span class="value" style="color: #666; font-size: 13px;">${escapeHtml(getStatusDisplay(item.status_raw))}</span>
-      </div>
-      <div class="detail-row" style="display: flex; justify-content: space-between; padding: 6px 0;">
-        <span class="label" style="font-weight: 600; color: #333; min-width: 70px; font-size: 13px;">담당자</span>
-        <span class="value" style="color: #666; font-size: 13px;">${escapeHtml(fields['담당자'] || fields['manager'] || '담당자 정보 없음')}</span>
-      </div>
+    <div style="background: white; border: 1px solid #e0e0e0; border-radius: 8px; padding: 12px;">
+      ${detailRows}
     </div>
   `;
-  
-  // 브리핑 모드인 경우 민감한 정보 자동 접기
+
+  // 브리핑 모드인 경우 민감한 정보 자동 접기 (동기 실행)
   if (window.APP_MODE && window.APP_MODE.current === 'briefing') {
-    setTimeout(() => {
-      const sensitiveFields = ['비고', '연락처', '비고3'];
-      sensitiveFields.forEach(fieldName => {
-        const fieldElement = document.querySelector(`[data-field="${fieldName}"]`);
-        if (fieldElement) {
-          fieldElement.classList.add('collapsed');
-          
-          // 내용만 숨기기 (항목명은 그대로 표시)
-          const valueElement = fieldElement.querySelector('.sensitive-value');
-          if (valueElement) {
-            valueElement.style.display = 'none';
-            valueElement.style.opacity = '0';
-          }
-          
-          // 아이콘도 잠금 상태로 변경
-          const toggleIcon = fieldElement.querySelector('.field-toggle');
-          if (toggleIcon) {
-            toggleIcon.textContent = '🔒';
-            toggleIcon.style.color = '#dc3545';
-          }
+    const sensitiveFields = ['비고', '연락처', '비고3'];
+    sensitiveFields.forEach(fieldName => {
+      const fieldElement = document.querySelector(`[data-field="${fieldName}"]`);
+      if (fieldElement) {
+        fieldElement.classList.add('collapsed');
+        const valueElement = fieldElement.querySelector('.sensitive-value');
+        if (valueElement) {
+          valueElement.style.display = 'none';
+          valueElement.style.opacity = '0';
         }
-      });
-    }, 50);
+        const toggleIcon = fieldElement.querySelector('.field-toggle');
+        if (toggleIcon) {
+          toggleIcon.textContent = '🔒';
+          toggleIcon.style.color = '#dc3545';
+        }
+      }
+    });
   }
 }
 
@@ -171,20 +152,20 @@ async function renderDetailPanel(item) {
 function toggleSensitiveField(fieldName) {
   const fieldElement = document.querySelector(`[data-field="${fieldName}"]`);
   if (!fieldElement) return;
-  
+
   const isCollapsed = fieldElement.classList.contains('collapsed');
-  
+
   if (isCollapsed) {
     // 접힌 상태면 펼치기
     fieldElement.classList.remove('collapsed');
-    
+
     // 내용 표시
     const valueElement = fieldElement.querySelector('.sensitive-value');
     if (valueElement) {
       valueElement.style.display = '';
       valueElement.style.opacity = '1';
     }
-    
+
     // 아이콘 변경
     const toggleIcon = fieldElement.querySelector('.field-toggle');
     if (toggleIcon) {
@@ -194,14 +175,14 @@ function toggleSensitiveField(fieldName) {
   } else {
     // 펼쳐진 상태면 접기
     fieldElement.classList.add('collapsed');
-    
+
     // 내용만 숨기기
     const valueElement = fieldElement.querySelector('.sensitive-value');
     if (valueElement) {
       valueElement.style.display = 'none';
       valueElement.style.opacity = '0';
     }
-    
+
     // 아이콘 변경
     const toggleIcon = fieldElement.querySelector('.field-toggle');
     if (toggleIcon) {

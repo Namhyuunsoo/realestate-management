@@ -43,6 +43,14 @@ class CustomerAddManager {
     }
     
     openModal() {
+        // 🔥 모바일 토글 기능: 이미 열려있으면 닫기
+        if (window.MOBILE_APP || (window.innerWidth <= 768)) {
+            if (this.modal && !this.modal.classList.contains('hidden')) {
+                this.closeModal();
+                return;
+            }
+        }
+        
         if (this.modal && this.formContainer) {
             // PC버전의 renderCustomerForm() 함수를 사용해서 폼 렌더링
             if (typeof window.renderCustomerForm === 'function') {

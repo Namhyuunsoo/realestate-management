@@ -14,45 +14,36 @@ window.initializeApp = async function() {
   dbg("DOMContentLoaded");
 
   // CSS Grid 레이아웃을 사용하므로 setLayoutHeight 호출 제거
-  // 대신 resize 이벤트 리스너만 등록
-  window.addEventListener("resize", () => {
-    // 지도가 준비된 경우에만 리사이즈 트리거
-    if (MAP_READY && MAP) {
-      requestAnimationFrame(() => {
-        naver.maps.Event.trigger(MAP, 'resize');
-      });
-    }
-  });
+  // 대신 resize 이벤트 리스너만 등록 (실제 창 크기 변경만 감지)
+  // 🔥 성능 최적화: 중복 등록 방지
+  if (!window._resizeListenerRegistered) {
+    window.addEventListener("resize", () => {
+      // 실제 창 크기 변경인지 확인 (스크롤바 등으로 인한 가짜 리사이즈 무시)
+      // isRealWindowResize 함수가 없으면 기본 동작 (하위 호환성)
+      if (typeof isRealWindowResize === 'function' && !isRealWindowResize()) {
+        return;
+      }
+      
+      // 지도가 준비된 경우에만 리사이즈 트리거
+      if (MAP_READY && MAP) {
+        requestAnimationFrame(() => {
+          naver.maps.Event.trigger(MAP, 'resize');
+        });
+      }
+    });
+    window._resizeListenerRegistered = true;
+  }
 
   if (typeof ENABLE_TEMP_LOGIN !== 'undefined' && !ENABLE_TEMP_LOGIN) {
     const tempSection = document.getElementById("tempLoginSection");
     if (tempSection) tempSection.remove();
   }
 
-  // 사용자 세션 동기화 (다른 컴퓨터에서 접속 시에도 작동)
-  try {
-    if (window.checkSessionAndAutoLogin) {
-      await window.checkSessionAndAutoLogin();
-      // console.log('✅ 세션 체크 및 자동 로그인 완료');
-    } else if (window.syncUserFromSession) {
-      await window.syncUserFromSession();
-      // console.log('✅ 사용자 세션 동기화 완료');
-    } else if (window.loadUserFromStorage) {
-      window.loadUserFromStorage();
-      console.log('ℹ️ localStorage에서 사용자 정보 로드');
-    }
-  } catch (error) {
-    console.warn('⚠️ 사용자 세션 동기화 실패:', error);
-    
-    // 에러 발생 시에도 localStorage에서 사용자 정보 복원 시도
-    if (!currentUser) {
-      const savedUser = localStorage.getItem('X-USER');
-      if (savedUser) {
-        currentUser = savedUser;
-        window.currentUser = savedUser;
-        console.log('🔄 에러 후 localStorage에서 currentUser 복원:', savedUser);
-      }
-    }
+  // 옵션 1: 사용자 세션 동기화는 main-new.js의 initializeApplication()에서 이미 처리됨
+  // 중복 호출 방지를 위해 여기서는 제거
+  // currentUser가 이미 설정되어 있는지 확인만 함
+  if (!currentUser && window.currentUser) {
+    currentUser = window.currentUser;
   }
 
   // 고객 패널 관련 DOM 요소들
@@ -85,8 +76,6 @@ window.initializeApp = async function() {
 
   // 2) 일괄 뷰 전환 함수
   function showSecondaryPanel(viewId) {
-    console.log('🔍 showSecondaryPanel 호출됨 - viewId:', viewId);
-    
     hideAllSecondaryViews();
     const panel = document.getElementById('secondaryPanel');
     const view  = document.getElementById(viewId);
@@ -103,12 +92,8 @@ window.initializeApp = async function() {
     
     // 뷰 표시
     view.classList.remove('hidden');
-    console.log('✅ 뷰 표시됨:', viewId);
-    
     // 패널 열 때 히스토리 상태 추가
     window.history.pushState({ panel: 'secondaryPanel', view: viewId }, '', '/');
-    console.log('📱 2차 사이드바 열기 - 히스토리 상태 추가:', viewId);
-    
     // CSS 클래스 변경
     panel.classList.remove('hidden');
     panel.classList.add('visible');
@@ -118,14 +103,15 @@ window.initializeApp = async function() {
     panel.style.transform = 'translateX(280px)';
     panel.style.visibility = 'visible';
     panel.style.opacity = '1';
-    
-    console.log('✅ 패널 클래스 변경됨 - hidden 제거, visible 추가');
-    console.log('✅ 강제 스타일 설정됨 - display: block, transform: translateX(280px)');
-    
     // 1차 사이드바는 그대로 유지 (크기나 위치 변경하지 않음)
     // 기존 UI 요소들의 크기나 위치는 절대 변경하지 않음
     
-    console.log('🔍 2차 사이드바 열기 완료:', viewId);
+    // PC 환경에서 레이아웃 재계산 후 높이 재설정
+    if (window.innerWidth > 768 && typeof window.setPCLayoutHeight === 'function') {
+      requestAnimationFrame(() => {
+        window.setPCLayoutHeight();
+      });
+    }
   }
   
   // 전역 함수로 노출
@@ -135,8 +121,6 @@ window.initializeApp = async function() {
   
   // 2차 사이드바 닫기 함수
   function closeSecondaryPanel() {
-    console.log('🔍 closeSecondaryPanel 함수 호출됨!');
-    
     const secondaryPanel = document.getElementById('secondaryPanel');
     
     if (!secondaryPanel) {
@@ -153,20 +137,13 @@ window.initializeApp = async function() {
     secondaryPanel.style.transform = 'translateX(-100%)';
     secondaryPanel.style.visibility = 'hidden';
     secondaryPanel.style.opacity = '0';
-    
-    console.log('✅ 패널 클래스 변경됨 - hidden 추가, visible 제거');
-    console.log('✅ 강제 스타일 초기화됨 - display: none, transform: translateX(-100%)');
-    
     hideAllSecondaryViews();
-    console.log('✅ 모든 뷰 숨김 처리됨');
-    
     // 1차 사이드바는 항상 보이도록 유지 (크기나 위치 변경하지 않음)
     // 기존 UI 요소들의 크기나 위치는 절대 변경하지 않음
     
     const customerListButtonArea = document.getElementById('customerListButtonArea');
     if (customerListButtonArea) {
       customerListButtonArea.remove();
-      console.log('✅ customerListButtonArea 제거됨');
     }
     
     // console.log('✅ 2차 사이드바 닫기 완료');
@@ -176,7 +153,6 @@ window.initializeApp = async function() {
   document.addEventListener('click', function(event) {
     // 전체브리핑리스트 닫기 버튼 클릭 감지
     if (event.target && event.target.id === 'fullBriefingListCloseBtn') {
-      console.log('🔍 전체브리핑리스트 닫기 버튼 클릭 감지');
       event.preventDefault();
       event.stopPropagation();
       toggleFullBriefingList(false);
@@ -185,7 +161,6 @@ window.initializeApp = async function() {
     
     // 전체리스트 닫기 버튼 클릭 감지
     if (event.target && event.target.id === 'fullListCloseBtn') {
-      console.log('🔍 전체리스트 닫기 버튼 클릭 감지');
       event.preventDefault();
       event.stopPropagation();
       toggleFullList(false);
@@ -196,12 +171,8 @@ window.initializeApp = async function() {
   // 4) 고객목록/신규등록/매물상세 등 진입점에서 showSecondaryPanel만 사용하도록 리팩토링
   // 고객List 버튼
   if (customerListBtn) {
-    console.log('🔍 고객List 버튼 발견, 이벤트 리스너 등록 중...');
-    
     // 즉시 이벤트 리스너 등록 (함수 로딩 대기 없이)
     customerListBtn.addEventListener('click', () => {
-      console.log('🔍 고객List 버튼 클릭됨!');
-      
       clearSelection();
       hideClusterList();
       
@@ -218,10 +189,7 @@ window.initializeApp = async function() {
       
       // 고객 목록 로드 (함수가 있으면 호출)
       if (typeof window.loadCustomerList === 'function') {
-        console.log('✅ loadCustomerList 함수 호출 시작');
         window.loadCustomerList(isUserAdmin() ? 'all' : 'own');
-      } else {
-        console.log('⚠️ loadCustomerList 함수가 아직 로드되지 않음');
       }
     });
     
@@ -229,11 +197,15 @@ window.initializeApp = async function() {
   }
   // 신규등록 버튼
   if (newCustomerBtn) {
-    console.log('🔍 신규등록 버튼 발견, 이벤트 리스너 등록 중...');
-    
     // 즉시 이벤트 리스너 등록 (함수 로딩 대기 없이)
     newCustomerBtn.addEventListener('click', () => {
-      console.log('🔍 신규등록 버튼 클릭됨!');
+      // 🔥 모바일 토글 기능: 이미 열려있으면 닫기
+      if (window.MOBILE_APP || (window.innerWidth <= 768)) {
+        if (window.customerAddManager && window.customerAddManager.modal && !window.customerAddManager.modal.classList.contains('hidden')) {
+          window.customerAddManager.closeModal();
+          return;
+        }
+      }
       
       clearSelection();
       hideClusterList();
@@ -251,10 +223,7 @@ window.initializeApp = async function() {
       
       // 고객 폼 렌더링 (함수가 있으면 호출)
       if (typeof window.renderCustomerForm === 'function') {
-        console.log('✅ renderCustomerForm 함수 호출 시작');
         window.renderCustomerForm();
-      } else {
-        console.log('⚠️ renderCustomerForm 함수가 아직 로드되지 않음');
       }
     });
     
@@ -296,7 +265,16 @@ window.initializeApp = async function() {
   if (topApply) topApply.addEventListener("click", applyAllFilters);
   const topReset = document.getElementById("topFilterResetBtn");
   if (topReset) topReset.addEventListener("click", () => {
-    document.querySelectorAll("#topFilterBar input").forEach(inp => inp.value = "");
+    if (UI_STATE.listingMode === "housing") {
+      document.querySelectorAll("#housingFilterSection input").forEach(inp => {
+        inp.value = inp.id === "tf_h_status" ? "생" : "";
+      });
+      document.querySelectorAll("#modalHousingFilter input").forEach(inp => {
+        inp.value = inp.id === "modal_tf_h_status" ? "생" : "";
+      });
+    } else {
+      document.querySelectorAll("#commercialFilterSection input").forEach(inp => { inp.value = ""; });
+    }
     applyAllFilters();
   });
   
@@ -389,7 +367,6 @@ window.initializeApp = async function() {
     // console.log("✅ 사용자 로그인됨:", currentUser);
   } else {
     showLoginScreen("");
-    console.log("✅ 로그인 화면 표시");
   }
 
   // 상단바 사용자 정보 설정
@@ -429,38 +406,51 @@ window.initializeApp = async function() {
   }
 
   // 3) 지도 준비 후 fetchListings
-  let FETCH_CALLED_ONCE = false; // 변수 정의 추가
+  // FETCH_CALLED_ONCE는 globals.js에서 전역 변수로 관리됨
   
   document.addEventListener('map-ready', async () => {
     // 보안 강화: 사용자 정보 로깅 제거
-    // console.log('🗺️ map-ready 이벤트 발생, currentUser:', currentUser, 'FETCH_CALLED_ONCE:', FETCH_CALLED_ONCE);
-    if (currentUser && !FETCH_CALLED_ONCE) {
-      FETCH_CALLED_ONCE = true;
+    // console.log('🗺️ map-ready 이벤트 발생, currentUser:', currentUser, 'FETCH_CALLED_ONCE:', window.FETCH_CALLED_ONCE);
+    if (currentUser && !window.FETCH_CALLED_ONCE) {
+      window.FETCH_CALLED_ONCE = true;
+      FETCH_CALLED_ONCE = true; // 전역 변수 동기화
       
       // 추천 데이터가 로드되었는지 확인하고, 없으면 로드
       if (typeof window.loadRecommendations === 'function' && (!window.USER_RECOMMENDATIONS || window.USER_RECOMMENDATIONS.size === 0)) {
-        console.log('🔄 추천 데이터가 없어서 로드 중...');
+        // 🔥 성능 최적화: console.log 최소화
+        // console.log('🔄 추천 데이터가 없어서 로드 중...');
         await window.loadRecommendations();
         // console.log('✅ 추천 데이터 로드 완료, USER_RECOMMENDATIONS:', window.USER_RECOMMENDATIONS?.size);
       }
       
-      console.log('🚀 fetchListings 호출 시작');
+      // 🔥 성능 최적화: console.log 최소화
+      // console.log('🚀 fetchListings 호출 시작');
       await fetchListings();
       
       // 모바일 환경에서도 지도 영역 필터링 적용
       if (window.MOBILE_APP) {
         // applyAllFilters가 실행되어 FILTERED_LISTINGS가 설정되었는지 확인
         if (window.FILTERED_LISTINGS && window.FILTERED_LISTINGS.length > 0) {
-          console.log('📱 모바일 환경: FILTERED_LISTINGS 설정 완료, 개수:', window.FILTERED_LISTINGS.length);
+          // 🔥 성능 최적화: console.log 최소화
+          // console.log('📱 모바일 환경: FILTERED_LISTINGS 설정 완료, 개수:', window.FILTERED_LISTINGS.length);
         } else if (window.LISTINGS && window.LISTINGS.length > 0) {
           // FILTERED_LISTINGS가 없으면 LISTINGS 사용 (지도 영역 필터링 적용됨)
           window.FILTERED_LISTINGS = [...window.LISTINGS];
-          console.log('📱 모바일 환경: LISTINGS에서 FILTERED_LISTINGS 설정 완료, 개수:', window.FILTERED_LISTINGS.length);
+          // 🔥 성능 최적화: console.log 최소화
+          // console.log('📱 모바일 환경: LISTINGS에서 FILTERED_LISTINGS 설정 완료, 개수:', window.FILTERED_LISTINGS.length);
         } else {
           // LISTINGS가 없으면 빈 배열로 설정
           window.FILTERED_LISTINGS = [];
-          console.log('📱 모바일 환경: LISTINGS 없음 - FILTERED_LISTINGS 빈 배열 설정');
+          // 🔥 성능 최적화: console.log 최소화
+          // console.log('📱 모바일 환경: LISTINGS 없음 - FILTERED_LISTINGS 빈 배열 설정');
         }
+      }
+      
+      // 마커 배치 (옵션 1: 이벤트 기반 통합)
+      if (typeof window.placeMarkers === 'function' && window.FILTERED_LISTINGS && window.FILTERED_LISTINGS.length > 0) {
+        window.placeMarkers(window.FILTERED_LISTINGS);
+        // 🔥 성능 최적화: console.log 최소화
+        // console.log('✅ 마커 배치 완료 (map-ready 이벤트), MARKERS:', window.MARKERS?.length);
       }
       
       // 초기 로딩 완료 후 추천 상태 동기화 (한 번만)
@@ -472,18 +462,28 @@ window.initializeApp = async function() {
     }
   });
   
-  if (MAP_READY && currentUser && !FETCH_CALLED_ONCE) {
-    FETCH_CALLED_ONCE = true;
+  if (MAP_READY && currentUser && !window.FETCH_CALLED_ONCE) {
+    window.FETCH_CALLED_ONCE = true;
+    FETCH_CALLED_ONCE = true; // 전역 변수 동기화
     
     // 추천 데이터가 로드되었는지 확인하고, 없으면 로드
     if (typeof window.loadRecommendations === 'function' && (!window.USER_RECOMMENDATIONS || window.USER_RECOMMENDATIONS.size === 0)) {
-      console.log('🔄 추천 데이터가 없어서 로드 중...');
+      // 🔥 성능 최적화: console.log 최소화
+      // console.log('🔄 추천 데이터가 없어서 로드 중...');
       await window.loadRecommendations();
       // console.log('✅ 추천 데이터 로드 완료, USER_RECOMMENDATIONS:', window.USER_RECOMMENDATIONS?.size);
     }
     
-    console.log('🚀 fetchListings 호출 시작 (MAP_READY)');
+    // 🔥 성능 최적화: console.log 최소화
+    // console.log('🚀 fetchListings 호출 시작 (MAP_READY)');
     await fetchListings();
+    
+    // 마커 배치 (옵션 1: 이벤트 기반 통합)
+    if (typeof window.placeMarkers === 'function' && window.FILTERED_LISTINGS && window.FILTERED_LISTINGS.length > 0) {
+      window.placeMarkers(window.FILTERED_LISTINGS);
+      // 🔥 성능 최적화: console.log 최소화
+      // console.log('✅ 마커 배치 완료 (MAP_READY 체크), MARKERS:', window.MARKERS?.length);
+    }
     
     // 초기 로딩 완료 후 추천 상태 동기화 (한 번만)
     setTimeout(() => {
@@ -546,6 +546,16 @@ window.initializeApp = async function() {
     }
   }
   
+  // 9-1) 상가/주택 모드 컨트롤 초기화
+  if (typeof initListingModeControls === 'function') {
+    try {
+      initListingModeControls();
+      // console.log('✅ 상가/주택 모드 컨트롤 초기화 완료');
+    } catch (error) {
+      console.error('상가/주택 모드 컨트롤 초기화 실패:', error);
+    }
+  }
+  
   // 10) 새로고침 컨트롤 초기화
   initializeRefreshControls();
   
@@ -556,8 +566,6 @@ window.initializeApp = async function() {
  **************************************/
 
 function initializeRefreshControls() {
-  console.log('🔧 새로고침 컨트롤 초기화 시작...');
-  
   // 새로고침 버튼 초기화
   if (typeof initRefreshButton === 'function') {
     initRefreshButton();

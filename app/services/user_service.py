@@ -335,14 +335,44 @@ class UserService:
         self._save_users()
         return True
     
+    def _release_slots_for_user(self, user_id: str):
+        """사용자 퇴사/비활성화 시 할당된 슬롯을 '공석'으로 전환하여 데이터 유지"""
+        registry_file = os.path.join(self.data_dir, "sheet_registry.json")
+        if not os.path.exists(registry_file):
+            return
+            
+        try:
+            with open(registry_file, 'r', encoding='utf-8') as f:
+                registry = json.load(f)
+            
+            changed = False
+            for slot in registry.get("slots", []):
+                if slot.get("user_id") == user_id:
+                    # 사용자 ID는 제거하되, 데이터 자체는 '공석' 명의로 유지되도록 함
+                    slot["user_id"] = None
+                    slot["manager_name"] = "공석"
+                    # 슬롯은 계속 활성 상태로 두어 데이터 동기화가 유지되게 함 (사용자가 원할 경우)
+                    slot["is_active"] = True 
+                    changed = True
+            
+            if changed:
+                with open(registry_file, 'w', encoding='utf-8') as f:
+                    json.dump(registry, f, ensure_ascii=False, indent=2)
+                print(f"✅ 사용자 {user_id}가 비활성화되어 관련 슬롯이 '공석'으로 전환되었습니다.")
+        except Exception as e:
+            print(f"❌ 슬롯 상태 전환 중 오류: {e}")
+
     def deactivate_user(self, user_id: str, deactivated_by: str) -> bool:
-        """사용자 비활성화"""
+        """사용자 비활성화 (데이터 삭제 없이 슬롯만 재조정)"""
         user = self.get_user_by_id(user_id)
         if not user:
             return False
         
         user.status = "inactive"
         user.approved_by = deactivated_by
+        
+        # 슬롯 관리자만 '공석'으로 변경 (데이터는 보존)
+        self._release_slots_for_user(user_id)
         
         self._save_users()
         return True

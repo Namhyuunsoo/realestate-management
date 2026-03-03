@@ -29,7 +29,6 @@ const touchState = {
 
 // 터치 제스처 초기화
 function initTouchGestures() {
-  console.log('📱 터치 제스처 초기화 시작...');
   
   // 모바일 환경에서만 활성화
   if (window.innerWidth <= 768) {
@@ -38,9 +37,7 @@ function initTouchGestures() {
     touchState.maxHeight = window.innerHeight; // 최대 높이 설정
     touchState.halfHeight = window.innerHeight * 0.5; // 화면 절반 높이 설정
     setupTouchEventListeners();
-    console.log('✅ 터치 제스처 활성화됨 (모바일 환경 - 드래그 가능한 하단바)');
   } else {
-    console.log('📱 터치 제스처 비활성화됨 (PC 환경)');
   }
 }
 
@@ -58,7 +55,6 @@ function setupTouchEventListeners() {
   // 노치에 직접 클릭 이벤트 추가
   if (mobileNotch) {
     mobileNotch.addEventListener('click', handleNotchClick);
-    console.log('✅ 노치 클릭 이벤트 리스너 설정 완료');
   }
   
   // 사이드바 터치 이벤트 (모든 이벤트를 passive: true로 설정)
@@ -71,12 +67,10 @@ function setupTouchEventListeners() {
   mainContent.addEventListener('touchmove', handleTouchMove, { passive: true });
   mainContent.addEventListener('touchend', handleTouchEnd, { passive: true });
   
-  console.log('✅ 터치 이벤트 리스너 설정 완료');
 }
 
 // 노치 클릭 처리
 function handleNotchClick(event) {
-  console.log('📱 노치 클릭 감지');
   event.preventDefault();
   event.stopPropagation();
   
@@ -93,14 +87,12 @@ function handleNotchClick(event) {
     sidebar.style.transform = `translateY(calc(100% - 40px))`;
     sidebar.style.height = '40px';
     sidebar.style.maxHeight = '40px';
-    console.log('📱 사이드바 닫힘 (노치만 보임)');
   } else {
     // 닫힌 상태 -> 열기 (화면 절반 크기)
     sidebar.classList.add('collapsed');
     sidebar.style.transform = 'translateY(0)';
     sidebar.style.height = '50vh';
     sidebar.style.maxHeight = '50vh';
-    console.log('📱 사이드바 열림 (화면 절반 크기)');
   }
   
   // 지도 크기 변경 후 마커 재표시
@@ -221,12 +213,10 @@ function handleTouchEnd(event) {
        // 대부분 열린 상태 -> 완전히 열기
        sidebar.style.transform = 'translateY(0)';
        sidebar.classList.add('collapsed');
-       console.log('📱 사이드바 완전 열림');
      } else {
        // 대부분 닫힌 상태 -> 노치만 보이게
        sidebar.style.transform = 'translateY(calc(100% - 40px))';
        sidebar.classList.remove('collapsed');
-       console.log('📱 사이드바 노치 상태');
      }
     
     // 지도 크기 변경 후 마커 재표시
@@ -244,7 +234,6 @@ function handleTouchEnd(event) {
       // 스와이프 방향에 따라 사이드바 토글
       if (deltaX > 0) {
         // 오른쪽으로 스와이프 → 사이드바 펼치기
-        console.log('📱 오른쪽 스와이프 감지: 사이드바 펼치기');
         if (window.togglePrimarySidebar && document.getElementById('sidebar').classList.contains('collapsed')) {
           window.togglePrimarySidebar();
           // 지도 크기 변경 후 마커 재표시
@@ -256,7 +245,6 @@ function handleTouchEnd(event) {
         }
       } else {
         // 왼쪽으로 스와이프 → 사이드바 접기
-        console.log('📱 왼쪽 스와이프 감지: 사이드바 접기');
         if (window.togglePrimarySidebar && !document.getElementById('sidebar').classList.contains('collapsed')) {
           window.togglePrimarySidebar();
           // 지도 크기 변경 후 마커 재표시
@@ -283,7 +271,6 @@ function handleTouchEnd(event) {
 // 터치 제스처 활성화/비활성화 토글
 function toggleTouchGestures() {
   touchState.isEnabled = !touchState.isEnabled;
-  console.log(`📱 터치 제스처 ${touchState.isEnabled ? '활성화' : '비활성화'}됨`);
   
   if (touchState.isEnabled) {
     setupTouchEventListeners();
@@ -324,11 +311,9 @@ function handleResize() {
     if (shouldBeEnabled) {
       touchState.isEnabled = true;
       setupTouchEventListeners();
-      console.log('📱 터치 제스처 활성화됨 (화면 크기 변경)');
     } else {
       touchState.isEnabled = false;
       removeTouchEventListeners();
-      console.log('📱 터치 제스처 비활성화됨 (화면 크기 변경)');
     }
   }
 }
@@ -338,4 +323,3 @@ window.initTouchGestures = initTouchGestures;
 window.toggleTouchGestures = toggleTouchGestures;
 window.handleResize = handleResize;
 
-console.log('📱 터치 제스처 모듈 로드 완료');
