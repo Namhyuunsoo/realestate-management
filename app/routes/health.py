@@ -10,26 +10,6 @@ from app.services.commercial_listings_service import fetch_all_commercial_listin
 
 bp = Blueprint('health', __name__)
 
-@bp.route("/api/test-db")
-def test_db():
-    try:
-        supabase = get_supabase_client()
-        result = {}
-        if not supabase:
-            result['supabase'] = "Failed to initialize client"
-            result['url'] = os.getenv("SUPABASE_URL", "MISSING")
-            result['key_len'] = len(os.getenv("SUPABASE_SERVICE_ROLE_KEY", ""))
-            return jsonify(result)
-            
-        res = supabase.table('user_sheets').select('*').limit(1).execute()
-        result['user_sheets_test'] = len(res.data)
-        
-        data = fetch_all_commercial_listings()
-        result['listings_count'] = len(data)
-        return jsonify(result)
-    except Exception as e:
-        return jsonify({"error": str(e), "trace": traceback.format_exc()})
-
 @bp.get("/api/health")
 @handle_errors()
 def health_check():
