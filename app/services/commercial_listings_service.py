@@ -17,9 +17,10 @@ def get_supabase_client() -> Optional[Client]:
     if not SUPABASE_AVAILABLE:
         return None
     try:
-        url = os.getenv("SUPABASE_URL")
+        url = os.getenv("SUPABASE_REAL_URL") or os.getenv("SUPABASE_URL")
         key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
         if not url or not key:
+            print("Supabase Config error: no URL or KEY")
             return None
         return create_client(url, key)
     except Exception:
@@ -38,27 +39,27 @@ MAP_DISPLAY_TABLES = [
 ]
 
 def _load_sheet_registry() -> Dict[str, Dict[str, Any]]:
-    """sheet_registry.json을 읽어 user_id별 슬롯 정보를 맵으로 반환"""
-    registry_path = os.path.join(os.getcwd(), "data", "sheet_registry.json")
+    """SheetRegistryRepository를 활용하여 user_id별 슬롯 정보를 맵으로 반환"""
     mapping = {}
     try:
-        if os.path.exists(registry_path):
-            with open(registry_path, 'r', encoding='utf-8') as f:
-                data = json.load(f)
-                for slot in data.get("slots", []):
-                    uid = slot.get("user_id")
-                    if uid:
-                        mapping[uid] = {
-                            "manager_name": slot.get("manager_name"),
-                            "slot_id": slot.get("id")
-                        }
-                    # 슬롯 ID 기반 매핑도 추가 (동기화 시 slot_X 형태로 저장될 경우 대비)
-                    sid = slot.get("id")
-                    if sid:
-                        mapping[f"slot_{sid}"] = {
-                            "manager_name": slot.get("manager_name"),
-                            "slot_id": sid
-                        }
+        from app.services.repositories import get_sheet_registry_repository
+        registry_repo = get_sheet_registry_repository()
+        slots = registry_repo.get_all_slots()
+        
+        for slot in slots:
+            uid = slot.get("user_id")
+            if uid:
+                mapping[uid] = {
+                    "manager_name": slot.get("manager_name"),
+                    "slot_id": slot.get("id")
+                }
+            # 슬롯 ID 기반 매핑도 추가 (동기화 시 slot_X 형태로 저장될 경우 대비)
+            sid = slot.get("id")
+            if sid:
+                mapping[f"slot_{sid}"] = {
+                    "manager_name": slot.get("manager_name"),
+                    "slot_id": sid
+                }
     except Exception as e:
         print(f"Error loading sheet registry: {e}")
     return mapping

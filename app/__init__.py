@@ -16,6 +16,15 @@ env_path = os.path.join(os.getcwd(), '.env')
 # 환경변수 로드 시도
 load_dotenv(env_path)
 
+# -------------------------------------------------------------
+# Vercel 환경변수 등록/삭제 인터랙티브 CLI 이슈 우회용 트릭
+# SUPABASE_URL 대신 Vercel에 등록한 SUPABASE_REAL_URL을 표준 변수화합니다.
+# -------------------------------------------------------------
+real_url = os.getenv("SUPABASE_REAL_URL")
+if real_url:
+    os.environ["SUPABASE_URL"] = real_url
+    print("🔄 Vercel 환경용 SUPABASE_REAL_URL 패치 적용 완료")
+
 # 로드된 환경변수 확인 (보안을 위해 마스킹 처리)
 naver_client_id = os.getenv("NAVER_MAPS_NCP_CLIENT_ID")
 naver_client_secret = os.getenv("NAVER_MAPS_NCP_CLIENT_SECRET")
