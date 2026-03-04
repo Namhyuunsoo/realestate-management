@@ -48,7 +48,7 @@ def create_app(config_object=None):
     require_https = os.getenv("REQUIRE_HTTPS", "false").lower() == "true"
     app.config['SESSION_COOKIE_SECURE'] = require_https  # HTTPS 환경에서만 Secure 쿠키
     app.config['SESSION_COOKIE_HTTPONLY'] = True  # XSS 방지
-    app.config['SESSION_COOKIE_SAMESITE'] = 'Strict'  # CSRF 방지 강화
+    app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'  # CSRF 방지 완화 (Vercel 교차 도메인 및 401 이슈 대응)
     
     if require_https:
         print("🔒 HTTPS 모드 활성화 - Secure 쿠키 사용")
