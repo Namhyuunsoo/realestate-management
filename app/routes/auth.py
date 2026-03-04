@@ -179,8 +179,7 @@ def login():
         
         # 로그인 성공
         user.record_login_attempt(True)
-        # 해시가 마이그레이션되었을 수 있으므로 항상 저장
-        user_service._save_users()  # 로그인 기록 저장
+        # Repository 기반에서는 상태가 자동 업데이트됨
         
         # 기존 세션 완전 정리 (다른 사용자로 로그인 시 충돌 방지)
         session.clear()

@@ -73,7 +73,7 @@ def create_user():
     if manager_name:
         user.set_manager_name(manager_name)
     
-    user_service._save_users()
+    user_service.repository.save_user(user)
     
     log_security_event('USER_CREATED_BY_ADMIN', f'User {email} created by admin {admin_id}')
     
@@ -223,13 +223,11 @@ def set_user_sheet_url(user_id):
 @log_access()
 def get_sheet_slots():
     """시트 슬롯 레지스트리 조회"""
-    registry_file = "./data/sheet_registry.json"
-    if not os.path.exists(registry_file):
-        return jsonify({"slots": []})
+    from app.services.repositories import get_sheet_registry_repository
+    registry_repo = get_sheet_registry_repository()
+    slots = registry_repo.get_all_slots()
     
-    with open(registry_file, 'r', encoding='utf-8') as f:
-        data = json.load(f)
-    return jsonify(data)
+    return jsonify({"slots": slots})
 
 @bp.post("/sheet-slots")
 @require_user_management()
@@ -244,15 +242,14 @@ def update_sheet_slot():
     new_manager_name = data.get("manager_name", "공석")
     new_sheet_url = data.get("sheet_url")
     
-    registry_file = "./data/sheet_registry.json"
-    if not os.path.exists(registry_file):
-        return jsonify({"error": "레지스트리 파일이 없습니다."}), 500
+    from app.services.repositories import get_sheet_registry_repository
+    registry_repo = get_sheet_registry_repository()
     
-    with open(registry_file, 'r', encoding='utf-8') as f:
-        registry = json.load(f)
+    slots = registry_repo.get_all_slots()
     
     found = False
-    for slot in registry.get("slots", []):
+    updated_slot = None
+    for slot in slots:
         if str(slot["id"]) == slot_id:
             slot["user_id"] = new_user_id
             slot["manager_name"] = new_manager_name
@@ -260,15 +257,16 @@ def update_sheet_slot():
                 slot["sheet_url"] = new_sheet_url
             slot["is_active"] = True if (new_user_id or new_manager_name != "공석" or slot.get("sheet_url")) else False
             found = True
+            updated_slot = slot
             break
             
     if not found:
         return jsonify({"error": "해당 슬롯을 찾을 수 없습니다."}), 404
         
-    with open(registry_file, 'w', encoding='utf-8') as f:
-        json.dump(registry, f, ensure_ascii=False, indent=2)
+    if not registry_repo.save_slots(slots):
+        return jsonify({"error": "레지스트리 업데이트에 실패했습니다."}), 500
         
-    return jsonify({"message": "슬롯이 업데이트되었습니다.", "slot": next(s for s in registry["slots"] if str(s["id"]) == slot_id)})
+    return jsonify({"message": "슬롯이 업데이트되었습니다.", "slot": updated_slot})
 
 @bp.get("/users/<user_id>")
 @require_user_management()
@@ -309,7 +307,7 @@ def update_user_role(user_id):
         return jsonify({"error": "자기 자신의 역할을 변경할 수 없습니다."}), 400
     
     user.role = role
-    user_service._save_users()
+    user_service.repository.save_user(user)
     
     log_security_event('USER_ROLE_CHANGED', f'User {user.email} role changed to {role} by {admin_id}')
     return jsonify({"message": "사용자 역할이 변경되었습니다."})
@@ -368,7 +366,7 @@ def update_user_manager_name(user_id):
         current_app.logger.info(f"담당자명 설정 완료: '{manager_name}'")
         
         # 사용자 데이터 저장
-        user_service._save_users()
+        user_service.repository.save_user(user)
         print(f"✅ 사용자 데이터 저장 완료")
         current_app.logger.info(f"사용자 데이터 저장 완료")
         
