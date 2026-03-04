@@ -22,6 +22,7 @@ load_dotenv(env_path)
 # -------------------------------------------------------------
 real_url = os.getenv("SUPABASE_REAL_URL")
 if real_url:
+    real_url = real_url.strip()
     os.environ["SUPABASE_URL"] = real_url
     print("🔄 Vercel 환경용 SUPABASE_REAL_URL 패치 적용 완료")
 
