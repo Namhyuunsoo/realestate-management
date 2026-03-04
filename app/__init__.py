@@ -251,6 +251,7 @@ def register_blueprints(app):
     from .routes.listing_add import bp as listing_add_bp
     from .routes.recommendations import bp as recommendations_bp
     from .routes.webhooks import bp as webhooks_bp
+    from .routes.crons import bp as crons_bp
 
     app.register_blueprint(health_bp)
     app.register_blueprint(listings_bp)
@@ -265,3 +266,4 @@ def register_blueprints(app):
     app.register_blueprint(listing_add_bp)
     app.register_blueprint(recommendations_bp)
     app.register_blueprint(webhooks_bp)
+    app.register_blueprint(crons_bp)
