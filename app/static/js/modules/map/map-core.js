@@ -19,7 +19,12 @@ function initMap() {
       setTimeout(initMap, 500);
     } else {
       console.error("❌ 네이버 지도 API 로드 실패");
-      showToast("네이버 지도 API를 로드할 수 없습니다.", "error");
+      showToast("지도 API 로드 실패로 지도가 표시되지 않습니다. 데이터 목록만 확인 가능합니다.", "warning");
+
+      // 지도 없이도 앱이 동작할 수 있도록 강제 이벤트 발생
+      window.MAP = null;
+      window.MAP_READY = false;
+      document.dispatchEvent(new CustomEvent('map-ready'));
     }
     return;
   }
