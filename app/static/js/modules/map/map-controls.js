@@ -1048,7 +1048,7 @@ window.activateDistanceMeasureFromPoint = activateDistanceMeasureFromPoint;
 window.clearRadiusMeasure = clearRadiusMeasure;
 window.deactivateAllMeasureModes = deactivateAllMeasureModes;
 window.activateRadiusMeasureFromPoint = activateRadiusMeasureFromPoint;
-window.assignTempCoords = assignTempCoords;
+
 window.handleRadiusMouseMove = handleRadiusMouseMove;
 window.handleRadiusClick = handleRadiusClick;
 window.handleRadiusRightClick = handleRadiusRightClick;
