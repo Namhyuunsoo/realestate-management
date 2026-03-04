@@ -22,7 +22,7 @@ def get_supabase_client() -> Optional[Client]:
         if not url or not key:
             print("Supabase Config error: no URL or KEY")
             return None
-        return create_client(url, key)
+        return create_client(url.strip(), key.strip())
     except Exception:
         return None
 
