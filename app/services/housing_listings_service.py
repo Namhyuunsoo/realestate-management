@@ -24,11 +24,11 @@ def _get_supabase_client() -> Optional[Client]:
     if not SUPABASE_AVAILABLE:
         return None
     try:
-        url = os.getenv("SUPABASE_URL")
+        url = os.getenv("SUPABASE_REAL_URL") or os.getenv("SUPABASE_URL")
         key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
         if not url or not key:
             return None
-        return create_client(url, key)
+        return create_client(url.strip(), key.strip())
     except Exception:
         return None
 
