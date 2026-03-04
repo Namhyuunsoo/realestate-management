@@ -1047,7 +1047,7 @@ window.handleDistanceRightClick = handleDistanceRightClick;
 window.activateDistanceMeasureFromPoint = activateDistanceMeasureFromPoint;
 window.clearRadiusMeasure = clearRadiusMeasure;
 window.deactivateAllMeasureModes = deactivateAllMeasureModes;
-window.activateRadiusMeasureFromPoint = actwindow.enableDrawingMode = enableDrawingMode;
+window.activateRadiusMeasureFromPoint = activateRadiusMeasureFromPoint;
 window.assignTempCoords = assignTempCoords;
 window.handleRadiusMouseMove = handleRadiusMouseMove;
 window.handleRadiusClick = handleRadiusClick;
