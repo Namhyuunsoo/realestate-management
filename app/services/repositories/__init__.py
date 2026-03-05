@@ -139,7 +139,7 @@ def get_sheet_registry_repository() -> SheetRegistryRepository:
     """
     환경변수에 따라 적절한 SheetRegistry Repository 반환
     """
-    use_supabase = os.getenv('USE_SUPABASE_USERS', 'false').lower() in ('true', '1')
+    use_supabase = os.getenv('USE_SUPABASE_USERS', 'false').strip().lower() in ('true', '1')
     
     if use_supabase:
         try:
