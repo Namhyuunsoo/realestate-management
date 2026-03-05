@@ -79,7 +79,7 @@
             const slots = data.slots || [];
 
             tbody.innerHTML = '';
-            slots.sort((a, b) => a.id - b.id).forEach(slot => {
+            slots.sort((a, b) => parseInt(a.slot_id) - parseInt(b.slot_id)).forEach(slot => {
                 const tr = document.createElement('tr');
 
                 // 유저 선택 드롭다운 생성
@@ -90,9 +90,9 @@
                 });
 
                 tr.innerHTML = `
-                    <td style="text-align:center; font-weight:bold;">${slot.id}</td>
+                    <td style="text-align:center; font-weight:bold;">${slot.slot_id}</td>
                     <td>
-                        <select class="slot-user-select" data-slot-id="${slot.id}" style="width:100%; padding:5px;">
+                        <select class="slot-user-select" data-slot-id="${slot.slot_id}" style="width:100%; padding:5px;">
                             ${userOptions}
                         </select>
                     </td>
@@ -110,7 +110,7 @@
                         </span>
                     </td>
                     <td style="text-align:center;">
-                        <button class="btn-save-slot admin-btn" data-slot-id="${slot.id}" style="padding:4px 10px;">저장</button>
+                        <button class="btn-save-slot admin-btn" data-slot-id="${slot.slot_id}" style="padding:4px 10px;">저장</button>
                     </td>
                 `;
                 tbody.appendChild(tr);
@@ -130,7 +130,7 @@
                 });
 
                 // 저장 버튼 이벤트
-                tr.querySelector('.btn-save-slot').addEventListener('click', () => saveSlot(slot.id, tr));
+                tr.querySelector('.btn-save-slot').addEventListener('click', () => saveSlot(slot.slot_id, tr));
             });
         } catch (error) {
             console.error('슬롯 로드 실패:', error);

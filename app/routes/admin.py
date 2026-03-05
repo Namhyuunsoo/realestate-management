@@ -250,7 +250,7 @@ def update_sheet_slot():
     found = False
     updated_slot = None
     for slot in slots:
-        slot_key = str(slot.get("id") or slot.get("slot_id"))
+        slot_key = str(slot.get("slot_id") or slot.get("id"))
         if slot_key == slot_id:
             slot["user_id"] = new_user_id
             slot["manager_name"] = new_manager_name
