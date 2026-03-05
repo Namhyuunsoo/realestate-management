@@ -17,12 +17,25 @@ def mask_email(email: str) -> str:
     return email
 
 class FileUserRepository(UserRepository):
-    """파일 기반 사용자 저장소 (기존 uses.json 의존 유지)"""
+    """파일 기반 사용자 저장소 (기존 users.json 의존 유지)"""
     
     def __init__(self, data_dir: str = "./data"):
-        self.data_dir = data_dir
-        self.users_file = os.path.join(data_dir, "users.json")
+        # Vercel Serverless (Read-only OS) 지원을 위해 /tmp 로 경로 우회 처리
+        is_vercel = os.environ.get("VERCEL", "0") == "1"
+        if is_vercel and not data_dir.startswith("/tmp"):
+            self.data_dir = "/tmp/data"
+        else:
+            self.data_dir = data_dir
+            
+        self.users_file = os.path.join(self.data_dir, "users.json")
         self.users: Dict[str, User] = {}
+        
+        # 파일 저장 권한이 가능한 경우에만 폴더 생성 시도 (혹은 실패 무시)
+        try:
+            os.makedirs(self.data_dir, exist_ok=True)
+        except OSError:
+            pass
+            
         self._load_users()
     
     def _load_users(self):

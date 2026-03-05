@@ -10,6 +10,14 @@ def parse_csv_env(env_var: str) -> List[str]:
     raw = env_var or ""
     return [s.strip().lower() for s in raw.split(",") if s.strip()]
 
+def is_vercel() -> bool:
+    return os.environ.get("VERCEL", "0") == "1"
+
+def get_path(env_name: str, default: str, vercel_fallback: str) -> str:
+    val = os.getenv(env_name)
+    if val: return val
+    return vercel_fallback if is_vercel() else default
+
 @dataclass
 class AppConfig:
     """애플리케이션 설정을 관리하는 클래스"""
@@ -33,20 +41,20 @@ class AppConfig:
     CSRF_PROTECTION: bool = os.getenv("CSRF_PROTECTION", "true").lower() == "true"
     
     # 데이터 경로 설정
-    DATA_DIR: str = os.getenv("DATA_DIR", "./data")
+    DATA_DIR: str = get_path("DATA_DIR", "./data", "/tmp/data")
     LISTING_SHEET_FILENAME: str = os.getenv("LISTING_SHEET_FILENAME", "상가임대차.xlsx")
     MAP_CACHE_FILENAME: str = os.getenv("MAP_CACHE_FILENAME", "지도캐시.xlsx")
     
     # 캐시 파일 설정
-    LISTING_CACHE_FILE: str = os.getenv("LISTING_CACHE_FILE", "./data/cache/listings_normalized.json")
-    GEOCODE_CACHE_FILE: str = os.getenv("GEOCODE_CACHE_FILE", "./data/cache/geocode_cache.json")
+    LISTING_CACHE_FILE: str = get_path("LISTING_CACHE_FILE", "./data/cache/listings_normalized.json", "/tmp/cache/listings_normalized.json")
+    GEOCODE_CACHE_FILE: str = get_path("GEOCODE_CACHE_FILE", "./data/cache/geocode_cache.json", "/tmp/cache/geocode_cache.json")
     
     # Google Sheets 설정
     SPREADSHEET_NAME: str = os.getenv("SPREADSHEET_NAME", "")
     SERVICE_ACCOUNT_FILE: str = os.getenv("SERVICE_ACCOUNT_FILE", "../config/service_account.json")
     SPREADSHEET_ID: str = os.getenv("SPREADSHEET_ID", "1D14iWPeTuHAMf9m_LrtsILYEd2Z8dpjAbIfpx-WR8eY")
     HOUSING_SHEET_ID: str = os.getenv("HOUSING_SHEET_ID", "1KZ7aLN_Vzfnp0MhnOsJXuCtPtGIPuVj-UaHB2xP7JRs")
-    SHEET_DOWNLOAD_DIR: str = os.getenv("SHEET_DOWNLOAD_DIR", "./data/raw")
+    SHEET_DOWNLOAD_DIR: str = get_path("SHEET_DOWNLOAD_DIR", "./data/raw", "/tmp/raw")
     SHEET_DOWNLOAD_INTERVAL: int = int(os.getenv("SHEET_DOWNLOAD_INTERVAL", "5"))
     
     # Naver 지도 API 설정

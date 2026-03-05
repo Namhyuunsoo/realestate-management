@@ -2,6 +2,7 @@
 
 import os
 from typing import Optional
+from app.config import AppConfig
 from flask import current_app, has_app_context
 from app.services.repositories.base import CustomerRepository, BriefingRepository, RecommendationRepository, UserRepository, UserSheetRepository, SheetRegistryRepository
 from app.services.repositories.file.customer_repository import FileCustomerRepository
@@ -36,11 +37,11 @@ def get_user_repository() -> UserRepository:
         except Exception as e:
             if has_app_context() and current_app:
                 current_app.logger.error(f"❌ Supabase 연결 실패, File Repository로 폴백: {e}", exc_info=True)
-            return FileUserRepository()
+            return FileUserRepository(data_dir=AppConfig.DATA_DIR)
 
     if has_app_context() and current_app:
         current_app.logger.info("📁 FileUserRepository 사용 (USE_SUPABASE_USERS=false)")
-    return FileUserRepository()
+    return FileUserRepository(data_dir=AppConfig.DATA_DIR)
 
 def get_customer_repository() -> CustomerRepository:
     """
@@ -64,11 +65,11 @@ def get_customer_repository() -> CustomerRepository:
             # Supabase 연결 실패 시 File Repository로 폴백
             if has_app_context() and current_app:
                 current_app.logger.error(f"❌ Supabase 연결 실패, File Repository로 폴백: {e}", exc_info=True)
-            return FileCustomerRepository()
+            return FileCustomerRepository(data_dir=AppConfig.DATA_DIR)
 
     if has_app_context() and current_app:
         current_app.logger.info("📁 FileCustomerRepository 사용 (USE_SUPABASE_CUSTOMERS=false)")
-    return FileCustomerRepository()
+    return FileCustomerRepository(data_dir=AppConfig.DATA_DIR)
 
 def get_briefing_repository() -> BriefingRepository:
     """
@@ -87,9 +88,9 @@ def get_briefing_repository() -> BriefingRepository:
             # Supabase 연결 실패 시 File Repository로 폴백
             if has_app_context() and current_app:
                 current_app.logger.warning(f"Supabase 연결 실패, File Repository 사용: {e}")
-            return FileBriefingRepository()
+            return FileBriefingRepository(data_dir=AppConfig.DATA_DIR)
     
-    return FileBriefingRepository()
+    return FileBriefingRepository(data_dir=AppConfig.DATA_DIR)
 
 def get_recommendation_repository(data_dir: str = "./data") -> RecommendationRepository:
     """
@@ -108,9 +109,9 @@ def get_recommendation_repository(data_dir: str = "./data") -> RecommendationRep
             # Supabase 연결 실패 시 File Repository로 폴백
             if has_app_context() and current_app:
                 current_app.logger.warning(f"Supabase 연결 실패, File Repository 사용: {e}")
-            return FileRecommendationRepository(data_dir)
+            return FileRecommendationRepository(data_dir=AppConfig.DATA_DIR)
     
-    return FileRecommendationRepository(data_dir)
+    return FileRecommendationRepository(data_dir=AppConfig.DATA_DIR)
 
 def get_user_sheet_repository() -> UserSheetRepository:
     """
@@ -130,9 +131,9 @@ def get_user_sheet_repository() -> UserSheetRepository:
         except Exception as e:
             if has_app_context() and current_app:
                 current_app.logger.warning(f"Supabase 연결 실패(UserSheet), File Repository 사용: {e}")
-            return FileUserSheetRepository()
+            return FileUserSheetRepository(data_store_path=os.path.join(AppConfig.DATA_DIR, "user_sheets.json"))
             
-    return FileUserSheetRepository()
+    return FileUserSheetRepository(data_store_path=os.path.join(AppConfig.DATA_DIR, "user_sheets.json"))
 
 def get_sheet_registry_repository() -> SheetRegistryRepository:
     """
@@ -151,6 +152,6 @@ def get_sheet_registry_repository() -> SheetRegistryRepository:
         except Exception as e:
             if has_app_context() and current_app:
                 current_app.logger.warning(f"Supabase 연결 실패(SheetRegistry), File Repository 사용: {e}")
-            return FileSheetRegistryRepository()
+            return FileSheetRegistryRepository(data_store_path=os.path.join(AppConfig.DATA_DIR, "sheet_registry.json"))
             
-    return FileSheetRegistryRepository()
+    return FileSheetRegistryRepository(data_store_path=os.path.join(AppConfig.DATA_DIR, "sheet_registry.json"))
