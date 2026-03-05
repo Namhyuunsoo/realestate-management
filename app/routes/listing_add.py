@@ -59,24 +59,38 @@ def add_listing():
                 current_app.logger.warning("HOUSING_SHEET_ID 설정이 없습니다. 하드코딩된 기본값을 사용합니다.")
                 target_sheet_id_or_url = "1KZ7aLN_Vzfnp0MhnOsJXuCtPtGIPuVj-UaHB2xP7JRs"
         else:
-            # 상가는 사용자 이름(user.name)을 기반으로 sheet_registry 슬롯에서 시트 URL 매핑
-            manager_name = getattr(user, 'name', None)
-            if not manager_name:
-                return jsonify({"error": "사용자 이름이 설정되어 있지 않아 매물을 등록할 수 없습니다."}), 400
-                
+            # 상가는 사용자 정보를 기반으로 sheet_registry 슬롯에서 시트 URL 매핑
+            user_manager_name = getattr(user, 'manager_name', '')
+            user_real_name = getattr(user, 'name', '')
+            
             from app.services.repositories import get_sheet_registry_repository
             repo = get_sheet_registry_repository()
             slots = repo.get_all_slots()
             
-            # 활성화된 슬롯 중 작성자와 담당자명이 일치하는 슬롯 찾기
-            user_slot = next((slot for slot in slots if slot.get('manager_name') == manager_name and slot.get('is_active')), None)
+            # 1순위: user_id가 직접 연결되어 있는 활성 슬롯 찾기
+            user_slot = next((slot for slot in slots if slot.get('user_id') == user_id and slot.get('is_active')), None)
+            
+            # 2순위: user_id 매칭이 없을 경우 이름 기반 매칭 (약어 포함)
+            if not user_slot:
+                for slot in slots:
+                    if not slot.get('is_active'): continue
+                    slot_manager = slot.get('manager_name', '')
+                    
+                    # 사용자의 약칭(manager_name: '남', '정')이 슬롯 담당자명(manager_name: '남현수', '정한나')에 포함되거나
+                    # 사용자의 전체 이름(name: '남대표')이 슬롯 담당자명을 포함하는지 확인
+                    if user_manager_name and user_manager_name in slot_manager:
+                        user_slot = slot
+                        break
+                    if user_real_name and (user_real_name in slot_manager or slot_manager in user_real_name):
+                        user_slot = slot
+                        break
             
             if not user_slot or not user_slot.get('sheet_url'):
-                current_app.logger.error(f"담당자 '{manager_name}'에 할당된 활성 시트 슬롯을 찾을 수 없습니다.")
-                return jsonify({"error": f"담당자 '{manager_name}'에 할당된 매물장 시트를 찾을 수 없습니다. 슬롯 관리를 확인해주세요."}), 400
+                current_app.logger.error(f"담당자 '{user_real_name}'({user_id})에 할당된 활성 시트 슬롯을 찾을 수 없습니다. (약칭: {user_manager_name})")
+                return jsonify({"error": f"담당자 '{user_real_name}'님께 할당된 매물장 시트를 찾을 수 없습니다. 슬롯 관리를 확인해주세요."}), 400
                 
             target_sheet_id_or_url = user_slot.get('sheet_url')
-            current_app.logger.info(f"상가 매물 타겟 시트 매핑 완료: {manager_name} -> {target_sheet_id_or_url}")
+            current_app.logger.info(f"상가 매물 타겟 시트 매핑 완료: {user_real_name} -> {target_sheet_id_or_url} (슬롯ID: {user_slot.get('slot_id')})")
         
         # 매물등록 서비스 호출
         listing_service = get_listing_service()
