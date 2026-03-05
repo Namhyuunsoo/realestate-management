@@ -34,10 +34,7 @@ def add_listing():
         if not user:
             return jsonify({"error": "사용자를 찾을 수 없습니다."}), 404
         
-        # 시트 URL 확인
-        if not user.sheet_url:
-            return jsonify({"error": "시트 URL이 설정되지 않았습니다. 관리자에게 문의하세요."}), 400
-        
+
         # 매물 데이터 받기
         data = request.get_json()
         if not data:
@@ -62,10 +59,10 @@ def add_listing():
                 current_app.logger.warning("HOUSING_SHEET_ID 설정이 없습니다. 하드코딩된 기본값을 사용합니다.")
                 target_sheet_id_or_url = "1KZ7aLN_Vzfnp0MhnOsJXuCtPtGIPuVj-UaHB2xP7JRs"
         else:
-            # 상가는 담당자(manager_name)를 기반으로 sheet_registry 슬롯에서 시트 URL 매핑
-            manager_name = getattr(user, 'manager_name', None)
+            # 상가는 사용자 이름(user.name)을 기반으로 sheet_registry 슬롯에서 시트 URL 매핑
+            manager_name = getattr(user, 'name', None)
             if not manager_name:
-                return jsonify({"error": "사용자의 담당자명(manager_name)이 설정되어 있지 않아 매물을 등록할 수 없습니다."}), 400
+                return jsonify({"error": "사용자 이름이 설정되어 있지 않아 매물을 등록할 수 없습니다."}), 400
                 
             from app.services.repositories import get_sheet_registry_repository
             repo = get_sheet_registry_repository()
