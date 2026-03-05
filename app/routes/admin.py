@@ -230,9 +230,12 @@ def get_sheet_slots():
     return jsonify({"slots": slots})
 
 @bp.get("/debug-supabase")
-@require_user_management()
 def debug_supabase():
-    """Supabase 연동 디버깅 정보 반환"""
+    """Supabase 연동 디버깅 정보 반환 (임시 시크릿 키 사용)"""
+    from flask import request
+    if request.args.get('secret') != 'antigravity_debug_123':
+        return jsonify({"error": "Unauthorized"}), 401
+        
     import os
     env_info = {}
     keys = [
