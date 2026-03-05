@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="ko">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -145,9 +146,10 @@
         }
     </style>
 </head>
+
 <body>
     <a href="/" class="back-link">← 메인으로 돌아가기</a>
-    
+
     <div class="login-container">
         <div class="logo">
             <h1>SK공인중개사사무소</h1>
@@ -159,7 +161,7 @@
                 <label for="loginEmail">이메일</label>
                 <input type="email" id="loginEmail" name="email" placeholder="email@example.com" required>
             </div>
-            
+
             <div class="form-group">
                 <label for="loginPassword">비밀번호</label>
                 <input type="password" id="loginPassword" name="password" placeholder="비밀번호를 입력하세요" required>
@@ -178,63 +180,50 @@
 
     <script>
         // 페이지 로드 시 히스토리 정리
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('📱 로그인 페이지 히스토리 정리 시작');
-            
+        document.addEventListener('DOMContentLoaded', function () {
+            console.log('📱 로그인 페이지 로드');
+
             // 현재 히스토리 상태를 로그인 페이지로 설정
             window.history.replaceState({ page: 'login' }, '', '/login');
-            
-            // 히스토리 길이가 1보다 크면 추가 히스토리 항목들을 제거
-            if (window.history.length > 1) {
-                console.log('📱 로그인 페이지 히스토리 스택 정리 중...');
-                // 히스토리 스택을 정리하기 위해 현재 상태를 유지하면서 불필요한 항목들 제거
-                window.history.go(-(window.history.length - 1));
-                // 다시 로그인 페이지 상태로 설정
-                setTimeout(() => {
-                    window.history.replaceState({ page: 'login' }, '', '/login');
-                    console.log('✅ 로그인 페이지 히스토리 스택 정리 완료');
-                }, 100);
-            }
         });
 
-        // 뒤로가기 버튼 처리 - 로그인 페이지에서 뒤로가기 시 메인 페이지로 이동
-        window.addEventListener('popstate', function(event) {
-            console.log('🔍 로그인 페이지에서 뒤로가기 감지:', event);
-            
-            // 메인 페이지로 강제 이동
-            window.location.href = '/';
+        // 뒤로가기 버튼 처리 - 로그인 페이지에서 뒤로가기 시 로그인 페이지 유지
+        window.addEventListener('popstate', function (event) {
+            console.log('🔍 로그인 페이지에서 뒤로가기 감지');
+            // 로그인 페이지에 머무르도록 (세션 만료 후 뒤로가기 방지)
+            window.history.replaceState({ page: 'login' }, '', '/login');
         });
 
-        document.getElementById('loginForm').addEventListener('submit', async function(e) {
+        document.getElementById('loginForm').addEventListener('submit', async function (e) {
             e.preventDefault();
-            
+
             const email = document.getElementById('loginEmail').value.trim();
             const password = document.getElementById('loginPassword').value;
             const errorMsg = document.getElementById('loginErrorMsg');
             const loginBtn = e.target.querySelector('button[type="submit"]');
-            
+
             // 입력 검증
             if (!email || !password) {
                 showError('이메일과 비밀번호를 모두 입력해주세요.');
                 return;
             }
-            
+
             const EMAIL_RE = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
             if (!EMAIL_RE.test(email)) {
                 showError('올바른 이메일 형식이 아닙니다.');
                 return;
             }
-            
+
             if (password.length < 6) {
                 showError('비밀번호는 최소 6자 이상이어야 합니다.');
                 return;
             }
-            
+
             // 로그인 버튼 비활성화
             const originalText = loginBtn.textContent;
             loginBtn.disabled = true;
             loginBtn.textContent = '로그인 중...';
-            
+
             try {
                 const response = await fetch('/api/auth/login', {
                     method: 'POST',
@@ -247,9 +236,9 @@
                         password: password
                     })
                 });
-                
+
                 const data = await response.json();
-                
+
                 if (response.ok) {
                     console.log('로그인 성공');
                     // localStorage에 사용자 및 어드민 정보 저장
@@ -268,21 +257,21 @@
 
                     // 로그인 성공 시 브라우저 히스토리 완전 정리 후 메인 페이지로 이동
                     console.log('📱 로그인 성공 - 히스토리 정리 후 메인 페이지 이동');
-                    
+
                     // 히스토리에서 모든 기록 제거하고 메인 페이지로 설정
                     window.history.replaceState({ loggedIn: true, timestamp: Date.now() }, '', '/');
-                    
+
                     // 추가 히스토리 엔트리 생성 (뒤로가기 시 메인 페이지 유지)
                     window.history.pushState({ loggedIn: true, timestamp: Date.now() }, '', '/');
-                    
+
                     // 메인 페이지로 이동
                     window.location.href = '/';
-                    
+
                 } else {
                     console.log('로그인 실패:', data.error);
                     showError(data.error || '로그인에 실패했습니다.');
                 }
-                
+
             } catch (error) {
                 console.error('로그인 요청 중 오류:', error);
                 showError('서버 연결에 실패했습니다.');
@@ -292,7 +281,7 @@
                 loginBtn.textContent = originalText;
             }
         });
-        
+
         function showError(message) {
             const errorMsg = document.getElementById('loginErrorMsg');
             errorMsg.textContent = message;
@@ -303,4 +292,5 @@
         }
     </script>
 </body>
+
 </html>
