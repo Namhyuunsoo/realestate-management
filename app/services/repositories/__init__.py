@@ -147,11 +147,17 @@ def get_sheet_registry_repository() -> SheetRegistryRepository:
             supabase_url = os.environ.get("SUPABASE_URL", "").strip()
             supabase_key = os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "").strip()
             if supabase_url and supabase_key:
+                print(f"DEBUG: Creating Supabase client with URL={supabase_url[:20]}...")
                 client = create_client(supabase_url, supabase_key)
+                print(f"DEBUG: Returning SupabaseSheetRegistryRepository")
                 return SupabaseSheetRegistryRepository(client)
+            else:
+                print(f"DEBUG: Missing SUPABASE_URL or KEY (URL_LEN={len(supabase_url)}, KEY_LEN={len(supabase_key)})")
         except Exception as e:
+            print(f"DEBUG: Supabase client creation failed: {e}")
             if has_app_context() and current_app:
                 current_app.logger.warning(f"Supabase 연결 실패(SheetRegistry), File Repository 사용: {e}")
             return FileSheetRegistryRepository(data_store_path=os.path.join(AppConfig.DATA_DIR, "sheet_registry.json"))
             
+    print(f"DEBUG: Returning FileSheetRegistryRepository (use_supabase={use_supabase})")
     return FileSheetRegistryRepository(data_store_path=os.path.join(AppConfig.DATA_DIR, "sheet_registry.json"))

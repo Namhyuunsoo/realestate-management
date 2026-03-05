@@ -54,10 +54,13 @@ class SupabaseSheetRegistryRepository(SheetRegistryRepository):
         
     def get_all_slots(self) -> List[Dict[str, Any]]:
         try:
+            print(f"DEBUG: Fetching slots from Supabase table: {self.table_name}")
             # user_id가 UUID로 외래키 잡혀있음
             res = self.client.table(self.table_name).select("*").order("slot_id").execute()
+            print(f"DEBUG: Fetched {len(res.data) if res.data else 0} slots from table")
             return res.data
         except Exception as e:
+            print(f"DEBUG: Supabase get_all_slots error: {e}")
             if has_app_context() and current_app: current_app.logger.error(f"Supabase get_all_slots error: {e}")
             return []
             

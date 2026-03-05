@@ -69,6 +69,7 @@
         tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">로딩 중...</td></tr>';
 
         try {
+            console.log('DEBUG: Fetching slots from /api/admin/sheet-slots...');
             const response = await fetch('/api/admin/sheet-slots', {
                 credentials: 'include',
                 headers: {
@@ -76,6 +77,7 @@
                 }
             });
             const data = await response.json();
+            console.log('DEBUG: Received slots data:', data);
             const slots = data.slots || [];
 
             tbody.innerHTML = '';
