@@ -123,8 +123,8 @@ def get_user_sheet_repository() -> UserSheetRepository:
     if use_supabase:
         try:
             from supabase import create_client
-            supabase_url = os.environ.get("SUPABASE_URL")
-            supabase_key = os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
+            supabase_url = os.environ.get("SUPABASE_URL", "").strip()
+            supabase_key = os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "").strip()
             if supabase_url and supabase_key:
                 client = create_client(supabase_url, supabase_key)
                 return SupabaseUserSheetRepository(client)
@@ -144,8 +144,8 @@ def get_sheet_registry_repository() -> SheetRegistryRepository:
     if use_supabase:
         try:
             from supabase import create_client
-            supabase_url = os.environ.get("SUPABASE_URL")
-            supabase_key = os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
+            supabase_url = os.environ.get("SUPABASE_URL", "").strip()
+            supabase_key = os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "").strip()
             if supabase_url and supabase_key:
                 client = create_client(supabase_url, supabase_key)
                 return SupabaseSheetRegistryRepository(client)
