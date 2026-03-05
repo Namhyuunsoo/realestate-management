@@ -45,6 +45,7 @@ class AppConfig:
     SPREADSHEET_NAME: str = os.getenv("SPREADSHEET_NAME", "")
     SERVICE_ACCOUNT_FILE: str = os.getenv("SERVICE_ACCOUNT_FILE", "../config/service_account.json")
     SPREADSHEET_ID: str = os.getenv("SPREADSHEET_ID", "1D14iWPeTuHAMf9m_LrtsILYEd2Z8dpjAbIfpx-WR8eY")
+    HOUSING_SHEET_ID: str = os.getenv("HOUSING_SHEET_ID", "1KZ7aLN_Vzfnp0MhnOsJXuCtPtGIPuVj-UaHB2xP7JRs")
     SHEET_DOWNLOAD_DIR: str = os.getenv("SHEET_DOWNLOAD_DIR", "./data/raw")
     SHEET_DOWNLOAD_INTERVAL: int = int(os.getenv("SHEET_DOWNLOAD_INTERVAL", "5"))
     
@@ -93,6 +94,7 @@ class AppConfig:
             'SPREADSHEET_NAME': self.SPREADSHEET_NAME,
             'SERVICE_ACCOUNT_FILE': self.SERVICE_ACCOUNT_FILE,
             'SPREADSHEET_ID': self.SPREADSHEET_ID,
+            'HOUSING_SHEET_ID': self.HOUSING_SHEET_ID,
             'SHEET_DOWNLOAD_DIR': self.SHEET_DOWNLOAD_DIR,
             'SHEET_DOWNLOAD_INTERVAL': self.SHEET_DOWNLOAD_INTERVAL,
             'NAVER_MAPS_NCP_KEY_ID': self.NAVER_MAPS_NCP_KEY_ID,

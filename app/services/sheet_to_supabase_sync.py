@@ -234,16 +234,14 @@ def sync_all_slots_to_supabase() -> Dict[str, Any]:
     sync_errors_list: List[str] = []
     
     try:
-        # sheet_registry.json 읽기
-        registry_file = "./data/sheet_registry.json"
-        if not os.path.exists(registry_file):
-            sync_errors_list.append(f"레지스트리 파일을 찾을 수 없습니다: {registry_file}")
+        # SheetRegistryRepository 활용
+        from app.services.repositories import get_sheet_registry_repository
+        registry_repo = get_sheet_registry_repository()
+        slots = registry_repo.get_all_slots()
+        
+        if not slots:
+            sync_errors_list.append("레지스트리(slots) 데이터를 찾을 수 없습니다.")
             return {"success": False, "errors": sync_errors_list}
-        
-        with open(registry_file, 'r', encoding='utf-8') as f:
-            registry_data = json.load(f)
-        
-        slots = registry_data.get("slots", [])
         
         # 각 슬롯 동기화
         for slot in slots:

@@ -194,8 +194,8 @@ class DataManager:
         self.briefings = {}
         
         if self.user_service:
-            self.users = self.user_service.users
-    
+            # list를 dict로 변환 (기존 호환성 유지)
+            self.users = {u.id: u for u in self.user_service.get_all_users()}
     def _next_id(self, prefix: str) -> str:
         """ID 생성 (기존 호환성)"""
         timestamp = int(time.time() * 1000)
@@ -205,8 +205,7 @@ class DataManager:
         """데이터 저장 (기존 호환성)"""
         if self.briefing_service:
             self.briefing_service._save_briefings()
-        if self.user_service:
-            self.user_service._save_users()
+        # UserService는 Repository 패턴이 적용되어 각 메서드 호출 시 자동 저장됨
     
     def is_admin(self, user_email: str) -> bool:
         """관리자 권한 확인 (기존 호환성)"""

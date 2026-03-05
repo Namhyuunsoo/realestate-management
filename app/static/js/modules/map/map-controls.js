@@ -944,6 +944,9 @@ function showAddressAtCoord(coord, options = {}) {
           <h4 style="margin:0 0 6px 0; color:#333;">📍 이 위치의 주소</h4>
           <div style="font-size:12px; line-height:1.5; color:#333;">${displayAddress}</div>
           <div style="margin-top:6px; font-size:11px; color:#666;">${jibunAddress ? '지번주소' : '도로명주소(지번 없음)'}</div>
+          <div style="margin-top:10px; padding-top:10px; border-top:1px solid #eee;">
+            <button type="button" onclick="event.preventDefault(); event.stopPropagation(); window.addListingFromInfoBtn(${coord.lat()}, ${coord.lng()});" style="width:100%; padding:8px 0; background:#007bff; color:#fff; border:none; border-radius:4px; font-size:12px; cursor:pointer;">📝 이 위치에 매물등록</button>
+          </div>
         </div>
       `,
       position: coord,
@@ -958,6 +961,101 @@ function showAddressAtCoord(coord, options = {}) {
     }
   });
 }
+
+function addListingAtCoord(coord, options = {}) {
+  const { isMobile = false } = options;
+  console.log('addListingAtCoord 실행:', { coord, isMobile });
+
+  if (!window.naver?.maps?.Service?.reverseGeocode) {
+    console.error('역지오코딩 실패: window.naver.maps.Service.reverseGeocode 모듈 부재');
+    alert('지도 주소 변환 서비스를 불러올 수 없습니다.');
+    return;
+  }
+
+  console.log('reverseGeocode API 호출 시도');
+  naver.maps.Service.reverseGeocode({
+    coords: coord,
+    orders: `${naver.maps.Service.OrderType.ADDR},${naver.maps.Service.OrderType.ROAD_ADDR}`
+  }, function (status, response) {
+    console.log('reverseGeocode 응답 상태:', status);
+    if (status !== naver.maps.Service.Status.OK || !response?.v2) {
+      console.error('reverseGeocode 실패 응답:', response);
+      alert('해당 위치의 주소를 찾지 못했습니다.');
+      return;
+    }
+
+    const addr = response.v2.address || {};
+    console.log('추출된 주소 데이터:', addr);
+
+    // 법정동 구조물 파싱 (안전한 접근 및 Fallback 처리)
+    let sido = '';
+    let sigugun = '';
+    let dong = '';
+    let jibunCode = '';
+
+    if (addr.elements && Array.isArray(addr.elements)) {
+      sido = addr.elements[0]?.types.includes('SIDO') ? addr.elements[0].longName : '';
+      sigugun = addr.elements[1]?.types.includes('SIGUGUN') ? addr.elements[1].longName : '';
+      dong = addr.elements[2]?.types.includes('DONGMYUN') ? addr.elements[2].longName : '';
+      jibunCode = (addr.jibunAddress || '').trim().split(' ').pop();
+    } else {
+      // elements 속성이 없는 경우 jibunAddress 문자열 기반 Fallback 파싱
+      // 예: "인천광역시 부평구 부평동  546-96"
+      const parts = (addr.jibunAddress || '').split(/\s+/).filter(Boolean);
+      if (parts.length >= 4) {
+        sido = parts[0];
+        sigugun = parts[1];
+        dong = parts[2];
+        jibunCode = parts[parts.length - 1]; // 마지막 요소를 지번으로 간주
+      } else if (parts.length === 3) {
+        sido = parts[0];
+        sigugun = parts[1];
+        jibunCode = parts[2]; // 동 부분이 생략된 경우
+      } else if (parts.length > 0) {
+        jibunCode = parts[parts.length - 1];
+      }
+    }
+
+    // 추출된 지번 정보가 진짜 지번 형식이 맞는지 검증
+    if (!jibunCode || jibunCode.includes('동') || jibunCode.includes('도') || jibunCode.includes('시') || jibunCode.includes('구') || jibunCode === (addr.jibunAddress || '').trim()) {
+      jibunCode = '';
+    }
+
+    const autoFillData = {
+      '지역2': sigugun, // 부평구
+      '지역': dong,     // 부평동
+      '지번': jibunCode  // 123-45
+    };
+
+    console.log('폼 자동 주입 데이터 구성:', autoFillData);
+
+    // 주소 정보창 닫기
+    closeAddressPopup();
+
+    // listing-add.js 에 정의될 전역 함수 호출 (초기화 및 자동 데이터 주입)
+    if (typeof window.openListingModalWithData === 'function') {
+      console.log('window.openListingModalWithData 호출');
+      window.openListingModalWithData(autoFillData);
+    } else {
+      console.error('CRITICAL: window.openListingModalWithData 함수를 찾을 수 없습니다.');
+      // Fallback: 기존 모달 열기 메커니즘
+      const modalObj = document.getElementById('listingAddModal');
+      if (modalObj) {
+        modalObj.classList.remove('hidden');
+        console.log('Fallback 모달 오픈 처리');
+      } else {
+        console.error('Fallback 모달 DOM마저 찾을 수 없음');
+      }
+    }
+  });
+}
+
+window.addListingFromInfoBtn = function (lat, lng) {
+  if (window.naver && window.naver.maps) {
+    const coord = new window.naver.maps.LatLng(lat, lng);
+    addListingAtCoord(coord, { isMobile: true });
+  }
+};
 
 function closeAddressPopup() {
   if (window.MAP_ADDRESS_INFO_WINDOW) {
@@ -990,16 +1088,23 @@ function ensureMapContextMenu() {
 
   menu.innerHTML = `
     <button type="button" data-action="address" style="width:100%; text-align:left; padding:10px 12px; border:0; background:#fff; cursor:pointer;">📍 이 위치의 주소는?</button>
+    <button type="button" data-action="addListing" style="width:100%; text-align:left; padding:10px 12px; border:0; border-top:1px solid #eee; background:#fff; cursor:pointer;">📝 이 위치에 매물등록</button>
     <button type="button" data-action="distance" style="width:100%; text-align:left; padding:10px 12px; border:0; border-top:1px solid #eee; background:#fff; cursor:pointer;">📏 거리측정</button>
     <button type="button" data-action="radius" style="width:100%; text-align:left; padding:10px 12px; border:0; border-top:1px solid #eee; background:#fff; cursor:pointer;">⭕ 반경측정</button>
   `;
 
   menu.addEventListener('click', (ev) => {
-    const action = ev.target?.dataset?.action;
+    // 버튼 내 이모지나 글자, 혹은 여백을 클릭해도 버튼 자체의 action을 안정적으로 인식하도록 수정
+    const btn = ev.target.closest('button');
+    if (!btn) return;
+
+    const action = btn.dataset?.action;
     if (!action || !window._MAP_CONTEXT_COORD) return;
 
     if (action === 'address') {
       showAddressAtCoord(window._MAP_CONTEXT_COORD);
+    } else if (action === 'addListing') {
+      addListingAtCoord(window._MAP_CONTEXT_COORD, { isMobile: false });
     } else if (action === 'distance') {
       activateDistanceMeasureFromPoint(window._MAP_CONTEXT_COORD);
     } else if (action === 'radius') {

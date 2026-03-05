@@ -29,10 +29,11 @@ def get_supabase_client() -> Client:
 
 
 def get_google_sheets_client() -> gspread.Client:
-    service_account_file = os.getenv("SERVICE_ACCOUNT_FILE", "service_account.json")
-    if not os.path.exists(service_account_file):
-        raise FileNotFoundError(f"서비스 계정 파일을 찾을 수 없습니다: {service_account_file}")
-    return gspread.service_account(filename=service_account_file)
+    from app.core.google_auth import get_gspread_client
+    client = get_gspread_client()
+    if not client:
+        raise Exception("Google 서비스 계정 인증 정보를 로드할 수 없습니다.")
+    return client
 
 
 def extract_sheet_id_from_url(url: str) -> Optional[str]:

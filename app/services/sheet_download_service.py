@@ -30,20 +30,12 @@ class SheetDownloadService:
     def _authenticate(self):
         """Google 서비스 계정 인증"""
         try:
-            if not os.path.exists(self.service_account_file):
-                logging.error(f"서비스 계정 파일을 찾을 수 없습니다: {self.service_account_file}")
+            from app.core.google_auth import get_google_auth_credentials
+            self.credentials = get_google_auth_credentials()
+            
+            if not self.credentials:
+                logging.error("Google 서비스 계정 인증 정보를 로드할 수 없습니다.")
                 return
-            
-            # 서비스 계정으로 인증
-            scopes = [
-                'https://www.googleapis.com/auth/drive',
-                'https://www.googleapis.com/auth/spreadsheets'
-            ]
-            
-            self.credentials = Credentials.from_service_account_file(
-                self.service_account_file, 
-                scopes=scopes
-            )
             
             # Drive API와 Sheets API 서비스 생성
             self.drive_service = build('drive', 'v3', credentials=self.credentials)

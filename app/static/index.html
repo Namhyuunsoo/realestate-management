@@ -282,114 +282,31 @@
           <button class="modal-close" id="closeListingModal">&times;</button>
         </div>
         <div class="modal-body">
+
+          <!-- 1단계: 매물 유형 선택 -->
+          <div id="listingTypeSelector" style="margin-bottom:20px;">
+            <h4 style="margin-bottom:10px; font-size:14px; color:#333;">1. 매물 종류 선택</h4>
+            <div class="type-buttons" style="display:flex; flex-wrap:wrap; gap:8px;">
+              <!-- 상가 그룹 -->
+              <button type="button" class="type-btn" data-type="상가임대차">상가임대차</button>
+              <button type="button" class="type-btn" data-type="구분상가매매">구분상가</button>
+              <button type="button" class="type-btn" data-type="건물토지매매">건물/토지</button>
+
+              <!-- 주택 그룹 -->
+              <button type="button" class="type-btn housing-type" data-type="주택 매매">주택매매</button>
+              <button type="button" class="type-btn housing-type" data-type="주택임대차">주택임대차</button>
+            </div>
+          </div>
+
+          <!-- 2단계: 동적 폼 컨테이너 -->
           <form id="listingAddForm">
-            <div class="form-row">
-              <div class="form-group">
-                <label for="접수일">접수일</label>
-                <input type="text" id="접수일" name="접수일" placeholder="자동입력" readonly>
-              </div>
-              <div class="form-group">
-                <label for="지역">지역</label>
-                <input type="text" id="지역" name="지역" placeholder="예: 부평동">
-              </div>
-            </div>
+            <!-- 자바스크립트에 의해 선택된 유형의 헤더에 맞게 폼 필드가 동적으로 렌더링 됩니다 -->
+            <div id="dynamicFormContainer" style="display:none;"></div>
 
-            <div class="form-row">
-              <div class="form-group">
-                <label for="지번">지번</label>
-                <input type="text" id="지번" name="지번" placeholder="예: 123-45">
-              </div>
-              <div class="form-group">
-                <label for="건물명">건물명</label>
-                <input type="text" id="건물명" name="건물명" placeholder="건물명">
-              </div>
-            </div>
-
-            <div class="form-row">
-              <div class="form-group">
-                <label for="층수">층수</label>
-                <input type="text" id="층수" name="층수" placeholder="예: 3층">
-              </div>
-              <div class="form-group">
-                <label for="가게명">가게명</label>
-                <input type="text" id="가게명" name="가게명" placeholder="가게명">
-              </div>
-            </div>
-
-            <div class="form-row">
-              <div class="form-group">
-                <label for="분양">분양</label>
-                <input type="text" id="분양" name="분양" placeholder="예: 임대">
-              </div>
-              <div class="form-group">
-                <label for="실평수">실평수</label>
-                <input type="text" id="실평수" name="실평수" placeholder="예: 15평">
-              </div>
-            </div>
-
-            <div class="form-row">
-              <div class="form-group">
-                <label for="보증금">보증금</label>
-                <input type="text" id="보증금" name="보증금" placeholder="숫자만 입력">
-              </div>
-              <div class="form-group">
-                <label for="월세">월세</label>
-                <input type="text" id="월세" name="월세" placeholder="숫자만 입력">
-              </div>
-            </div>
-
-            <div class="form-row">
-              <div class="form-group">
-                <label for="권리금">권리금</label>
-                <input type="text" id="권리금" name="권리금" placeholder="숫자만 입력">
-              </div>
-            </div>
-
-            <div class="form-row">
-              <div class="form-group full-width">
-                <label for="비고">비고</label>
-                <textarea id="비고" name="비고" placeholder="비고사항" rows="3"></textarea>
-              </div>
-            </div>
-
-            <div class="form-row">
-              <div class="form-group">
-                <label for="담당자">담당자</label>
-                <input type="text" id="담당자" name="담당자" placeholder="담당자명">
-              </div>
-              <div class="form-group">
-                <label for="연락처">연락처</label>
-                <input type="text" id="연락처" name="연락처" placeholder="010-1234-5678" required>
-              </div>
-            </div>
-
-            <div class="form-row">
-              <div class="form-group">
-                <label for="의뢰인">의뢰인</label>
-                <input type="text" id="의뢰인" name="의뢰인" placeholder="의뢰인명">
-              </div>
-              <div class="form-group">
-                <label for="비고3">비고3</label>
-                <input type="text" id="비고3" name="비고3" placeholder="비고3">
-              </div>
-            </div>
-
-            <div class="form-row">
-              <div class="form-group">
-                <label for="위반여부">위반여부</label>
-                <input type="text" id="위반여부" name="위반여부" placeholder="예: 없음">
-              </div>
-              <div class="form-group">
-                <label for="현수막번호">현수막번호</label>
-                <input type="text" id="현수막번호" name="현수막번호" placeholder="예: A-001">
-              </div>
-            </div>
-
-            <!-- 숨김 필드들 -->
-            <input type="hidden" id="현황" name="현황" value="생">
-            <input type="hidden" id="지역2" name="지역2" value="">
-            <input type="hidden" id="간략한위치" name="간략한위치" value="">
+            <!-- 공통 숨김 필드: 매물 종류 저장용 -->
+            <input type="hidden" id="매물유형" name="매물유형" value="">
           </form>
+
         </div>
         <div class="modal-footer">
           <button type="button" id="submitListing" class="btn-primary">등록</button>
@@ -871,8 +788,8 @@
 
       <!-- 메인 콘텐츠(지도) -->
       <main id="mainContent">
-        <div id="mapWrap">
-          <div id="map"></div>
+        <div id="mapWrap" oncontextmenu="return false;">
+          <div id="map" oncontextmenu="return false;"></div>
           <div id="mapCenterCross"></div>
 
           <!-- 모바일 전용 매물 모드 선택 버튼 -->
@@ -1081,7 +998,8 @@
             <div class="form-group" id="userStatusGroup">
               <label>상태</label>
               <div class="radio-group">
-                <label style="margin-right:12px;"><input type="radio" name="is_active" value="true" checked> 활성</label>
+                <label style="margin-right:12px;"><input type="radio" name="is_active" value="true" checked>
+                  활성</label>
                 <label><input type="radio" name="is_active" value="false"> 비활성</label>
               </div>
             </div>

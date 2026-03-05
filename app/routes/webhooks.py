@@ -107,10 +107,10 @@ def check_if_input_sheet_changed(sheet_id: str) -> bool:
         변경 여부 (True: 입력 시트 변경됨, False: 입력 시트 변경 안됨)
     """
     try:
-        import gspread
-        
-        service_account_file = os.getenv("SERVICE_ACCOUNT_FILE", "service_account.json")
-        client = gspread.service_account(filename=service_account_file)
+        from app.core.google_auth import get_gspread_client
+        client = get_gspread_client()
+        if not client:
+            raise Exception("Google 서비스 계정 인증 정보를 로드할 수 없습니다.")
         spreadsheet = client.open_by_key(sheet_id)
         
         # 저장된 해시값 로드

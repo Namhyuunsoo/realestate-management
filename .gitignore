@@ -110,3 +110,6 @@ Thumbs.db
 *.temp
 payload.json
 nul
+
+.vercel
+.env*.local

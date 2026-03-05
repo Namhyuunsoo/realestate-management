@@ -36,10 +36,11 @@ class CommercialSyncService:
         return create_client(url, key)
 
     def _get_google_sheets_client(self) -> gspread.Client:
-        auth_file = os.getenv("SERVICE_ACCOUNT_FILE", "service_account.json")
-        if not os.path.exists(auth_file):
-            raise FileNotFoundError(f"인증 파일을 찾을 수 없습니다: {auth_file}")
-        return gspread.service_account(filename=auth_file)
+        from app.core.google_auth import get_gspread_client
+        client = get_gspread_client()
+        if not client:
+            raise Exception("Google 서비스 계정 인증 정보를 로드할 수 없습니다.")
+        return client
 
     def normalize_header(self, header: str) -> str:
         """헤더 텍스트 정규화 (공백, 특수문자 제거)"""

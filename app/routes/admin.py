@@ -250,7 +250,8 @@ def update_sheet_slot():
     found = False
     updated_slot = None
     for slot in slots:
-        if str(slot["id"]) == slot_id:
+        slot_key = str(slot.get("id") or slot.get("slot_id"))
+        if slot_key == slot_id:
             slot["user_id"] = new_user_id
             slot["manager_name"] = new_manager_name
             if new_sheet_url is not None:
