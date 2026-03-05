@@ -9,7 +9,7 @@ from datetime import datetime
 # 외부 패키지 임포트 (try-except로 덮지 않아도 Vercel/Local 모두 pip를 통해 설치됨)
 import gspread
 from google.oauth2.service_account import Credentials
-from flask import current_app
+from flask import current_app, has_app_context
 
 # 내부 모듈 임포트
 from app.models.user_sheet import UserSheet
@@ -52,7 +52,7 @@ class UserSheetService:
         if not success:
             raise RuntimeError("Database Insert Failed")
         
-        if current_app: current_app.logger.info(f"사용자 시트 생성됨: {user_id} - {sheet_name}")
+        if has_app_context() and current_app: current_app.logger.info(f"사용자 시트 생성됨: {user_id} - {sheet_name}")
         return sheet
     
     def get_user_sheets(self, user_id: str) -> List[UserSheet]:

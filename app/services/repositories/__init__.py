@@ -2,7 +2,7 @@
 
 import os
 from typing import Optional
-from flask import current_app
+from flask import current_app, has_app_context
 from app.services.repositories.base import CustomerRepository, BriefingRepository, RecommendationRepository, UserRepository, UserSheetRepository, SheetRegistryRepository
 from app.services.repositories.file.customer_repository import FileCustomerRepository
 from app.services.repositories.supabase.customer_repository import SupabaseCustomerRepository
@@ -27,18 +27,18 @@ def get_user_repository() -> UserRepository:
 
     if use_supabase:
         try:
-            if current_app:
+            if has_app_context() and current_app:
                 current_app.logger.info("🔄 SupabaseUserRepository 초기화 시도...")
             repo = SupabaseUserRepository()
-            if current_app:
+            if has_app_context() and current_app:
                 current_app.logger.info("✅ SupabaseUserRepository 초기화 성공")
             return repo
         except Exception as e:
-            if current_app:
+            if has_app_context() and current_app:
                 current_app.logger.error(f"❌ Supabase 연결 실패, File Repository로 폴백: {e}", exc_info=True)
             return FileUserRepository()
 
-    if current_app:
+    if has_app_context() and current_app:
         current_app.logger.info("📁 FileUserRepository 사용 (USE_SUPABASE_USERS=false)")
     return FileUserRepository()
 
@@ -54,19 +54,19 @@ def get_customer_repository() -> CustomerRepository:
 
     if use_supabase:
         try:
-            if current_app:
+            if has_app_context() and current_app:
                 current_app.logger.info("🔄 SupabaseCustomerRepository 초기화 시도...")
             repo = SupabaseCustomerRepository()
-            if current_app:
+            if has_app_context() and current_app:
                 current_app.logger.info("✅ SupabaseCustomerRepository 초기화 성공")
             return repo
         except Exception as e:
             # Supabase 연결 실패 시 File Repository로 폴백
-            if current_app:
+            if has_app_context() and current_app:
                 current_app.logger.error(f"❌ Supabase 연결 실패, File Repository로 폴백: {e}", exc_info=True)
             return FileCustomerRepository()
 
-    if current_app:
+    if has_app_context() and current_app:
         current_app.logger.info("📁 FileCustomerRepository 사용 (USE_SUPABASE_CUSTOMERS=false)")
     return FileCustomerRepository()
 
@@ -85,7 +85,7 @@ def get_briefing_repository() -> BriefingRepository:
             return SupabaseBriefingRepository()
         except Exception as e:
             # Supabase 연결 실패 시 File Repository로 폴백
-            if current_app:
+            if has_app_context() and current_app:
                 current_app.logger.warning(f"Supabase 연결 실패, File Repository 사용: {e}")
             return FileBriefingRepository()
     
@@ -106,7 +106,7 @@ def get_recommendation_repository(data_dir: str = "./data") -> RecommendationRep
             return SupabaseRecommendationRepository()
         except Exception as e:
             # Supabase 연결 실패 시 File Repository로 폴백
-            if current_app:
+            if has_app_context() and current_app:
                 current_app.logger.warning(f"Supabase 연결 실패, File Repository 사용: {e}")
             return FileRecommendationRepository(data_dir)
     
@@ -128,7 +128,7 @@ def get_user_sheet_repository() -> UserSheetRepository:
                 client = create_client(supabase_url, supabase_key)
                 return SupabaseUserSheetRepository(client)
         except Exception as e:
-            if current_app:
+            if has_app_context() and current_app:
                 current_app.logger.warning(f"Supabase 연결 실패(UserSheet), File Repository 사용: {e}")
             return FileUserSheetRepository()
             
@@ -149,7 +149,7 @@ def get_sheet_registry_repository() -> SheetRegistryRepository:
                 client = create_client(supabase_url, supabase_key)
                 return SupabaseSheetRegistryRepository(client)
         except Exception as e:
-            if current_app:
+            if has_app_context() and current_app:
                 current_app.logger.warning(f"Supabase 연결 실패(SheetRegistry), File Repository 사용: {e}")
             return FileSheetRegistryRepository()
             

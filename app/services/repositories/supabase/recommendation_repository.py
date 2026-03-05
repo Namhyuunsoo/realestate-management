@@ -3,7 +3,7 @@
 import os
 from typing import Dict, List, Optional, Any
 from datetime import datetime
-from flask import current_app
+from flask import current_app, has_app_context
 from app.services.repositories.base import RecommendationRepository
 from dotenv import load_dotenv
 from supabase import create_client, Client
@@ -71,7 +71,7 @@ class SupabaseRecommendationRepository(RecommendationRepository):
             
             return True
         except Exception as e:
-            if current_app:
+            if has_app_context() and current_app:
                 current_app.logger.error(f"추천 추가 실패: {str(e)}")
             return False
     
@@ -106,7 +106,7 @@ class SupabaseRecommendationRepository(RecommendationRepository):
             
             return True
         except Exception as e:
-            if current_app:
+            if has_app_context() and current_app:
                 current_app.logger.error(f"추천 제거 실패: {str(e)}")
             return False
     
@@ -147,7 +147,7 @@ class SupabaseRecommendationRepository(RecommendationRepository):
             
             return True
         except Exception as e:
-            if current_app:
+            if has_app_context() and current_app:
                 current_app.logger.error(f"의견 추가 실패: {str(e)}")
             return False
     
@@ -162,7 +162,7 @@ class SupabaseRecommendationRepository(RecommendationRepository):
             
             return False
         except Exception as e:
-            if current_app:
+            if has_app_context() and current_app:
                 current_app.logger.error(f"추천 확인 실패: {str(e)}")
             return False
     
@@ -176,7 +176,7 @@ class SupabaseRecommendationRepository(RecommendationRepository):
             
             return None
         except Exception as e:
-            if current_app:
+            if has_app_context() and current_app:
                 current_app.logger.error(f"추천 데이터 조회 실패: {str(e)}")
             return None
     
@@ -194,7 +194,7 @@ class SupabaseRecommendationRepository(RecommendationRepository):
             
             return recommended_listings
         except Exception as e:
-            if current_app:
+            if has_app_context() and current_app:
                 current_app.logger.error(f"사용자 추천 목록 조회 실패: {str(e)}")
             return []
     
@@ -210,6 +210,6 @@ class SupabaseRecommendationRepository(RecommendationRepository):
             
             return recommendations
         except Exception as e:
-            if current_app:
+            if has_app_context() and current_app:
                 current_app.logger.error(f"모든 추천 조회 실패: {str(e)}")
             return {}

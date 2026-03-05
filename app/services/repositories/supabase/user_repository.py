@@ -3,7 +3,7 @@ from typing import List, Optional, Dict, Any
 from app.models.user import User
 from app.services.repositories.base import UserRepository
 from supabase import create_client, Client
-from flask import current_app
+from flask import current_app, has_app_context
 
 class SupabaseUserRepository(UserRepository):
     """Supabase 기반 사용자 저장소 (하이브리드 인증 지원)"""
@@ -26,7 +26,7 @@ class SupabaseUserRepository(UserRepository):
                 return User.from_dict(response.data[0])
             return None
         except Exception as e:
-            if current_app: current_app.logger.error(f"Supabase get_user_by_email 오류: {e}")
+            if has_app_context() and current_app: current_app.logger.error(f"Supabase get_user_by_email 오류: {e}")
             return None
 
     def get_user_by_id(self, user_id: str) -> Optional[User]:
@@ -36,7 +36,7 @@ class SupabaseUserRepository(UserRepository):
                 return User.from_dict(response.data[0])
             return None
         except Exception as e:
-            if current_app: current_app.logger.error(f"Supabase get_user_by_id 오류: {e}")
+            if has_app_context() and current_app: current_app.logger.error(f"Supabase get_user_by_id 오류: {e}")
             return None
 
     def get_all_users(self, include_inactive: bool = False) -> List[User]:
@@ -47,7 +47,7 @@ class SupabaseUserRepository(UserRepository):
             response = query.order('created_at', desc=True).execute()
             return [User.from_dict(data) for data in response.data] if response.data else []
         except Exception as e:
-            if current_app: current_app.logger.error(f"Supabase get_all_users 오류: {e}")
+            if has_app_context() and current_app: current_app.logger.error(f"Supabase get_all_users 오류: {e}")
             return []
 
     def register_user(self, email: str, password: str, name: str) -> Optional[User]:
@@ -81,7 +81,7 @@ class SupabaseUserRepository(UserRepository):
             self.save_user(user)
             return user
         except Exception as e:
-            if current_app: current_app.logger.error(f"Supabase register_user 오류: {e}")
+            if has_app_context() and current_app: current_app.logger.error(f"Supabase register_user 오류: {e}")
             return None
 
     def authenticate_user(self, email: str, password: str) -> Optional[User]:
@@ -108,7 +108,7 @@ class SupabaseUserRepository(UserRepository):
                 self.save_user(user)
                 return None
         except Exception as e:
-            if current_app: current_app.logger.error(f"Supabase authenticate_user 오류: {e}")
+            if has_app_context() and current_app: current_app.logger.error(f"Supabase authenticate_user 오류: {e}")
             return None
 
     def change_password(self, user_id: str, old_password: str, new_password: str) -> bool:
@@ -128,7 +128,7 @@ class SupabaseUserRepository(UserRepository):
             self.client.auth.admin.update_user_by_id(user_id, {"password": new_password})
             return True
         except Exception as e:
-            if current_app: current_app.logger.error(f"Supabase change_password 오류: {e}")
+            if has_app_context() and current_app: current_app.logger.error(f"Supabase change_password 오류: {e}")
             return False
 
     def reset_password(self, user_id: str, new_password: str, reset_by: str) -> bool:
@@ -144,7 +144,7 @@ class SupabaseUserRepository(UserRepository):
             self.save_user(user)
             return True
         except Exception as e:
-            if current_app: current_app.logger.error(f"Supabase reset_password 오류: {e}")
+            if has_app_context() and current_app: current_app.logger.error(f"Supabase reset_password 오류: {e}")
             return False
 
     def get_pending_users(self) -> List[User]:
@@ -152,7 +152,7 @@ class SupabaseUserRepository(UserRepository):
             response = self.client.table('users').select('*').eq('status', 'pending').execute()
             return [User.from_dict(data) for data in response.data] if response.data else []
         except Exception as e:
-            if current_app: current_app.logger.error(f"Supabase get_pending_users 오류: {e}")
+            if has_app_context() and current_app: current_app.logger.error(f"Supabase get_pending_users 오류: {e}")
             return []
 
     def save_user(self, user: User) -> bool:
@@ -165,7 +165,7 @@ class SupabaseUserRepository(UserRepository):
             self.client.table('users').upsert(user_dict).execute()
             return True
         except Exception as e:
-            if current_app: current_app.logger.error(f"Supabase save_user 오류: {e}")
+            if has_app_context() and current_app: current_app.logger.error(f"Supabase save_user 오류: {e}")
             return False
 
     def delete_user(self, user_id: str) -> bool:
@@ -173,5 +173,5 @@ class SupabaseUserRepository(UserRepository):
             self.client.table('users').delete().eq('id', user_id).execute()
             return True
         except Exception as e:
-            if current_app: current_app.logger.error(f"Supabase delete_user 오류: {e}")
+            if has_app_context() and current_app: current_app.logger.error(f"Supabase delete_user 오류: {e}")
             return False

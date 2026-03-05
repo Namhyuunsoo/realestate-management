@@ -1,5 +1,5 @@
 from typing import List, Dict, Any, Optional
-from flask import current_app
+from flask import current_app, has_app_context
 from supabase import Client
 from ..base import UserSheetRepository, SheetRegistryRepository
 
@@ -15,7 +15,7 @@ class SupabaseUserSheetRepository(UserSheetRepository):
             res = self.client.table(self.table_name).select("*").execute()
             return res.data
         except Exception as e:
-            if current_app: current_app.logger.error(f"Supabase get_all_sheets error: {e}")
+            if has_app_context() and current_app: current_app.logger.error(f"Supabase get_all_sheets error: {e}")
             return []
             
     def get_sheet_by_id(self, sheet_id: str) -> Optional[Dict[str, Any]]:
@@ -25,7 +25,7 @@ class SupabaseUserSheetRepository(UserSheetRepository):
                 return res.data[0]
             return None
         except Exception as e:
-            if current_app: current_app.logger.error(f"Supabase get_sheet_by_id error ({sheet_id}): {e}")
+            if has_app_context() and current_app: current_app.logger.error(f"Supabase get_sheet_by_id error ({sheet_id}): {e}")
             return None
             
     def save_sheet(self, sheet_data: Dict[str, Any]) -> bool:
@@ -34,7 +34,7 @@ class SupabaseUserSheetRepository(UserSheetRepository):
             self.client.table(self.table_name).upsert(sheet_data).execute()
             return True
         except Exception as e:
-            if current_app: current_app.logger.error(f"Supabase save_sheet error: {e}")
+            if has_app_context() and current_app: current_app.logger.error(f"Supabase save_sheet error: {e}")
             return False
             
     def delete_sheet(self, sheet_id: str) -> bool:
@@ -42,7 +42,7 @@ class SupabaseUserSheetRepository(UserSheetRepository):
             self.client.table(self.table_name).delete().eq("id", sheet_id).execute()
             return True
         except Exception as e:
-            if current_app: current_app.logger.error(f"Supabase delete_sheet error ({sheet_id}): {e}")
+            if has_app_context() and current_app: current_app.logger.error(f"Supabase delete_sheet error ({sheet_id}): {e}")
             return False
 
 class SupabaseSheetRegistryRepository(SheetRegistryRepository):
@@ -58,7 +58,7 @@ class SupabaseSheetRegistryRepository(SheetRegistryRepository):
             res = self.client.table(self.table_name).select("*").order("slot_id").execute()
             return res.data
         except Exception as e:
-            if current_app: current_app.logger.error(f"Supabase get_all_slots error: {e}")
+            if has_app_context() and current_app: current_app.logger.error(f"Supabase get_all_slots error: {e}")
             return []
             
     def save_slots(self, slots_data: List[Dict[str, Any]]) -> bool:
@@ -67,5 +67,5 @@ class SupabaseSheetRegistryRepository(SheetRegistryRepository):
             self.client.table(self.table_name).upsert(slots_data).execute()
             return True
         except Exception as e:
-            if current_app: current_app.logger.error(f"Supabase save_slots error: {e}")
+            if has_app_context() and current_app: current_app.logger.error(f"Supabase save_slots error: {e}")
             return False

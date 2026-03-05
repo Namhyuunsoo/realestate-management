@@ -4,7 +4,7 @@ import os
 import json
 import re
 from typing import List, Dict, Any, Optional
-from flask import current_app
+from flask import current_app, has_app_context
 from dotenv import load_dotenv
 from supabase import create_client, Client
 import gspread
@@ -143,7 +143,7 @@ def normalize_listing_data(row_idx: int, row: List[str], header_map: Dict[str, i
         }
         
     except Exception as e:
-        if current_app:
+        if has_app_context() and current_app:
             current_app.logger.error(f"데이터 정규화 실패 (행 {row_idx}): {e}")
         return None
 
@@ -206,13 +206,13 @@ def sync_user_sheet_to_supabase(user_id: str, user_name: str, sheet_url: str, sl
                         "count": len(sheet_listings)
                     })
                     result["total_listings"] += len(sheet_listings)
-                    if current_app:
+                    if has_app_context() and current_app:
                         current_app.logger.info(f"동기화 성공: {user_name}/{sheet_name} -> {table_name} ({len(sheet_listings)}개)")
                 
             except Exception as e:
                 error_msg = f"시트 처리 실패 ({sheet_name}): {e}"
                 result["errors"].append(error_msg)
-                if current_app:
+                if has_app_context() and current_app:
                     current_app.logger.error(error_msg)
         
         result["success"] = True
@@ -220,7 +220,7 @@ def sync_user_sheet_to_supabase(user_id: str, user_name: str, sheet_url: str, sl
     except Exception as e:
         error_msg = f"동기화 중 치명적 오류: {e}"
         result["errors"].append(error_msg)
-        if current_app:
+        if has_app_context() and current_app:
             current_app.logger.error(error_msg)
     
     return result
@@ -252,11 +252,11 @@ def sync_all_slots_to_supabase() -> Dict[str, Any]:
             is_active_val = slot.get("is_active", True)
             
             if not is_active_val or not sheet_url_val:
-                if current_app:
+                if has_app_context() and current_app:
                     current_app.logger.info(f"슬롯 {slot_id_val} 건너뜀 (비활성 또는 URL 없음)")
                 continue
             
-            if current_app:
+            if has_app_context() and current_app:
                 current_app.logger.info(f"슬롯 {slot_id_val} 동기화 시작: {manager_name_val} ({user_id_val or '미등록'})")
             
             # 사용자 ID가 없는 경우(공석 등) 임시 ID 부여하여 중복 방지
@@ -277,7 +277,7 @@ def sync_all_slots_to_supabase() -> Dict[str, Any]:
                     for err in errors_from_slot:
                         sync_errors_list.append(str(err))
         
-        if current_app:
+        if has_app_context() and current_app:
             current_app.logger.info(f"레지스트리 동기화 완료: {processed_count}개 슬롯, {total_listings}개 매물")
         
         return {
@@ -291,6 +291,6 @@ def sync_all_slots_to_supabase() -> Dict[str, Any]:
     except Exception as e:
         error_msg = f"레지스트리 동기화 실패: {e}"
         sync_errors_list.append(error_msg)
-        if current_app:
+        if has_app_context() and current_app:
             current_app.logger.error(error_msg)
         return {"success": False, "errors": sync_errors_list}

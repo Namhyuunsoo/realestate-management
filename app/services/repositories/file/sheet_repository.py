@@ -2,7 +2,7 @@ import json
 import os
 from typing import List, Dict, Any, Optional
 from datetime import datetime
-from flask import current_app
+from flask import current_app, has_app_context
 from ..base import UserSheetRepository, SheetRegistryRepository
 
 class FileUserSheetRepository(UserSheetRepository):
@@ -22,7 +22,7 @@ class FileUserSheetRepository(UserSheetRepository):
             with open(self.data_store_path, 'r', encoding='utf-8') as f:
                 return json.load(f)
         except Exception as e:
-            if current_app: current_app.logger.error(f"Error reading {self.data_store_path}: {e}")
+            if has_app_context() and current_app: current_app.logger.error(f"Error reading {self.data_store_path}: {e}")
             return {'sheets': [], 'updated_at': datetime.now().isoformat()}
 
     def _write_data(self, data: Dict[str, Any]) -> bool:
@@ -32,7 +32,7 @@ class FileUserSheetRepository(UserSheetRepository):
                 json.dump(data, f, ensure_ascii=False, indent=2, default=str)
             return True
         except Exception as e:
-            if current_app: current_app.logger.error(f"Error writing {self.data_store_path}: {e}")
+            if has_app_context() and current_app: current_app.logger.error(f"Error writing {self.data_store_path}: {e}")
             return False
 
     def get_all_sheets(self) -> List[Dict[str, Any]]:
@@ -91,7 +91,7 @@ class FileSheetRegistryRepository(SheetRegistryRepository):
             with open(self.data_store_path, 'r', encoding='utf-8') as f:
                 return json.load(f)
         except Exception as e:
-            if current_app: current_app.logger.error(f"Error reading {self.data_store_path}: {e}")
+            if has_app_context() and current_app: current_app.logger.error(f"Error reading {self.data_store_path}: {e}")
             return {'slots': []}
 
     def _write_data(self, data: Dict[str, Any]) -> bool:
@@ -100,7 +100,7 @@ class FileSheetRegistryRepository(SheetRegistryRepository):
                 json.dump(data, f, ensure_ascii=False, indent=4)
             return True
         except Exception as e:
-            if current_app: current_app.logger.error(f"Error writing {self.data_store_path}: {e}")
+            if has_app_context() and current_app: current_app.logger.error(f"Error writing {self.data_store_path}: {e}")
             return False
 
     def get_all_slots(self) -> List[Dict[str, Any]]:
