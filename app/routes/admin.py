@@ -255,18 +255,27 @@ def debug_supabase():
             env_info[k] = "NOT_SET"
             
     # 연결 테스트
-    test_result = "N/A"
+    test_results = {}
     try:
-        from app.services.repositories import get_sheet_registry_repository
+        from app.services.repositories import get_sheet_registry_repository, get_user_repository
+        
+        # 1. Sheet Slots
         repo = get_sheet_registry_repository()
         slots = repo.get_all_slots()
-        test_result = f"Success - found {len(slots)} slots"
+        test_results["sheet_slots"] = f"Success - found {len(slots)} slots"
+        
+        # 2. Users (Admin view)
+        user_repo = get_user_repository()
+        users = user_repo.get_all_users(include_inactive=True)
+        test_results["users_count"] = f"Success - found {len(users)} users"
+        test_results["users_emails"] = [u.email for u in users[:5]] # 상위 5개만
+        
     except Exception as e:
-        test_result = f"Error: {str(e)}"
+        test_results["error"] = str(e)
         
     return jsonify({
         "environment": env_info,
-        "test_result": test_result,
+        "test_results": test_results,
         "cwd": os.getcwd()
     })
 

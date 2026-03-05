@@ -35,6 +35,7 @@ _env_keys_to_strip = [
     "USE_SUPABASE_USERS", "USE_SUPABASE_CUSTOMERS",
     "USE_SUPABASE_BRIEFINGS", "USE_SUPABASE_RECOMMENDATIONS",
     "SECRET_KEY", "GOOGLE_SERVICE_ACCOUNT_JSON",
+    "SUPABASE_REAL_URL",
 ]
 for _key in _env_keys_to_strip:
     _val = os.environ.get(_key)
