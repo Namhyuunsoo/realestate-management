@@ -24,7 +24,7 @@ def get_user_repository() -> UserRepository:
     - 'true' 또는 '1': Supabase Repository 사용
     - 그 외: File Repository 사용 (기본값)
     """
-    use_supabase = os.getenv('USE_SUPABASE_USERS', 'false').lower() in ('true', '1')
+    use_supabase = os.getenv('USE_SUPABASE_USERS', 'false').strip().lower() in ('true', '1')
 
     if use_supabase:
         try:
@@ -51,7 +51,7 @@ def get_customer_repository() -> CustomerRepository:
     - 'true' 또는 '1': Supabase Repository 사용
     - 그 외: File Repository 사용 (기본값)
     """
-    use_supabase = os.getenv('USE_SUPABASE_CUSTOMERS', 'false').lower() in ('true', '1')
+    use_supabase = os.getenv('USE_SUPABASE_CUSTOMERS', 'false').strip().lower() in ('true', '1')
 
     if use_supabase:
         try:
@@ -79,7 +79,7 @@ def get_briefing_repository() -> BriefingRepository:
     - 'true' 또는 '1': Supabase Repository 사용
     - 그 외: File Repository 사용 (기본값)
     """
-    use_supabase = os.getenv('USE_SUPABASE_BRIEFINGS', 'false').lower() in ('true', '1')
+    use_supabase = os.getenv('USE_SUPABASE_BRIEFINGS', 'false').strip().lower() in ('true', '1')
     
     if use_supabase:
         try:
@@ -100,7 +100,7 @@ def get_recommendation_repository(data_dir: str = "./data") -> RecommendationRep
     - 'true' 또는 '1': Supabase Repository 사용
     - 그 외: File Repository 사용 (기본값)
     """
-    use_supabase = os.getenv('USE_SUPABASE_RECOMMENDATIONS', 'false').lower() in ('true', '1')
+    use_supabase = os.getenv('USE_SUPABASE_RECOMMENDATIONS', 'false').strip().lower() in ('true', '1')
     
     if use_supabase:
         try:
@@ -118,7 +118,7 @@ def get_user_sheet_repository() -> UserSheetRepository:
     환경변수에 따라 적절한 UserSheet Repository 반환
     USE_SUPABASE_USERS 환경변수 고려
     """
-    use_supabase = os.getenv('USE_SUPABASE_USERS', 'false').lower() in ('true', '1')
+    use_supabase = os.getenv('USE_SUPABASE_USERS', 'false').strip().lower() in ('true', '1')
     
     if use_supabase:
         try:
