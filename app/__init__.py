@@ -41,6 +41,13 @@ for _key in _env_keys_to_strip:
     if _val and _val != _val.strip():
         os.environ[_key] = _val.strip()
         print(f"🧹 환경변수 {_key} 공백/개행 정리 완료")
+    
+    # 디버그용 (마스킹)
+    _current_val = os.environ.get(_key)
+    if _current_val is not None:
+        print(f"DEBUG: ENV {_key} is set. (Prefix: {str(_current_val)[:5]}..., Len: {len(str(_current_val))})")
+    else:
+        print(f"DEBUG: ENV {_key} is NOT set.")
 
 # 로드된 환경변수 확인 (보안을 위해 마스킹 처리)
 naver_client_id = os.getenv("NAVER_MAPS_NCP_CLIENT_ID")
