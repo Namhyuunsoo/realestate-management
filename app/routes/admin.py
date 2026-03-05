@@ -261,8 +261,16 @@ def debug_supabase():
         
         # 1. Sheet Slots
         repo = get_sheet_registry_repository()
-        slots = repo.get_all_slots()
-        test_results["sheet_slots"] = f"Success - found {len(slots)} slots"
+        try:
+            # 원시 쿼리 테스트 (정렬 제외)
+            raw_res = repo.client.table('sheet_registry').select('*').execute()
+            test_results["sheet_slots_raw"] = f"Success - found {len(raw_res.data)} slots (no order)"
+            
+            # 원래 쿼리 테스트
+            slots = repo.get_all_slots()
+            test_results["sheet_slots"] = f"Success - found {len(slots)} slots (with order)"
+        except Exception as query_err:
+            test_results["sheet_slots_error"] = str(query_err)
         
         # 2. Users (Admin view)
         user_repo = get_user_repository()
