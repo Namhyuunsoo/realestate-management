@@ -229,6 +229,44 @@ def get_sheet_slots():
     
     return jsonify({"slots": slots})
 
+@bp.get("/debug-supabase")
+@require_user_management()
+def debug_supabase():
+    """Supabase 연동 디버깅 정보 반환"""
+    import os
+    env_info = {}
+    keys = [
+        "SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY", "USE_SUPABASE_USERS",
+        "SUPABASE_REAL_URL"
+    ]
+    for k in keys:
+        val = os.environ.get(k)
+        if val is not None:
+            val_str = str(val)
+            env_info[k] = {
+                "prefix": val_str[:5] + "...",
+                "length": len(val_str),
+                "has_newline": "\n" in val_str or "\r" in val_str
+            }
+        else:
+            env_info[k] = "NOT_SET"
+            
+    # 연결 테스트
+    test_result = "N/A"
+    try:
+        from app.services.repositories import get_sheet_registry_repository
+        repo = get_sheet_registry_repository()
+        slots = repo.get_all_slots()
+        test_result = f"Success - found {len(slots)} slots"
+    except Exception as e:
+        test_result = f"Error: {str(e)}"
+        
+    return jsonify({
+        "environment": env_info,
+        "test_result": test_result,
+        "cwd": os.getcwd()
+    })
+
 @bp.post("/sheet-slots")
 @require_user_management()
 @validate_json("slot_id")
