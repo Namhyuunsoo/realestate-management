@@ -26,6 +26,22 @@ if real_url:
     os.environ["SUPABASE_URL"] = real_url
     print("🔄 Vercel 환경용 SUPABASE_REAL_URL 패치 적용 완료")
 
+# -------------------------------------------------------------
+# Vercel 환경변수에 \r\n 개행 문자가 포함되는 문제 일괄 해결
+# 모든 Supabase/USE_SUPABASE 관련 환경변수를 strip()하여 정리
+# -------------------------------------------------------------
+_env_keys_to_strip = [
+    "SUPABASE_URL", "SUPABASE_ANON_KEY", "SUPABASE_SERVICE_ROLE_KEY",
+    "USE_SUPABASE_USERS", "USE_SUPABASE_CUSTOMERS",
+    "USE_SUPABASE_BRIEFINGS", "USE_SUPABASE_RECOMMENDATIONS",
+    "SECRET_KEY", "GOOGLE_SERVICE_ACCOUNT_JSON",
+]
+for _key in _env_keys_to_strip:
+    _val = os.environ.get(_key)
+    if _val and _val != _val.strip():
+        os.environ[_key] = _val.strip()
+        print(f"🧹 환경변수 {_key} 공백/개행 정리 완료")
+
 # 로드된 환경변수 확인 (보안을 위해 마스킹 처리)
 naver_client_id = os.getenv("NAVER_MAPS_NCP_CLIENT_ID")
 naver_client_secret = os.getenv("NAVER_MAPS_NCP_CLIENT_SECRET")
