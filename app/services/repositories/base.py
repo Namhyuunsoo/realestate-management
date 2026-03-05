@@ -109,6 +109,16 @@ class BriefingRepository(ABC):
         """매물 오버라이드 해제"""
         pass
 
+    @abstractmethod
+    def set_listing_tag(self, briefing_id: str, listing_id: str, tag: str) -> Optional[Dict[str, Any]]:
+        """매물 태그 설정"""
+        pass
+    
+    @abstractmethod
+    def clear_listing_tag(self, briefing_id: str, listing_id: str) -> Optional[Dict[str, Any]]:
+        """매물 태그 해제"""
+        pass
+
 class UserSheetRepository(ABC):
     """사용자 시트(user_sheets) 저장소 추상 인터페이스"""
     
@@ -143,17 +153,6 @@ class SheetRegistryRepository(ABC):
     @abstractmethod
     def save_slots(self, slots_data: List[Dict[str, Any]]) -> bool:
         """전체 슬롯 데이터(혹은 슬롯 단위) 교체/저장"""
-        pass
-
-    
-    @abstractmethod
-    def set_listing_tag(self, briefing_id: str, listing_id: str, tag: str) -> Optional[Dict[str, Any]]:
-        """매물 태그 설정"""
-        pass
-    
-    @abstractmethod
-    def clear_listing_tag(self, briefing_id: str, listing_id: str) -> Optional[Dict[str, Any]]:
-        """매물 태그 해제"""
         pass
 
 class RecommendationRepository(ABC):

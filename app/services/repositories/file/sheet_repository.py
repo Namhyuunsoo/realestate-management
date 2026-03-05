@@ -109,9 +109,3 @@ class FileSheetRegistryRepository(SheetRegistryRepository):
     def save_slots(self, slots_data: List[Dict[str, Any]]) -> bool:
         # 파일 기반은 통째로 덮어쓰기
         return self._write_data({'slots': slots_data})
-
-    def set_listing_tag(self, briefing_id: str, listing_id: str, tag: str) -> Optional[Dict[str, Any]]:
-        pass
-        
-    def clear_listing_tag(self, briefing_id: str, listing_id: str) -> Optional[Dict[str, Any]]:
-        pass

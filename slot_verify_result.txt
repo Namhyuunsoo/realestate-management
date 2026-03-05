@@ -1,0 +1,43 @@
+===== 현재 DB 슬롯 상태 확인 =====
+[❌ 불일치] Slot 1:
+  DB  : 남현수 / https://docs.google.com/spreadsheets/d/18I1rog8mytAT9cHgLQOrRjqo_MA7uC2jzWf7sJRN4LY/edit?gid=1958107055#gid=1958107055
+  사용자: 남현수 / https://docs.google.com/spreadsheets/d/18I1rog8mytAT9cHgLQOrRjqo_MA7uC2jzWf7sJRN4LY/edit?gid=1916491129#gid=1916491129
+    --> URL 불일치! 
+      (DB: https://docs.google.com/spreadsheets/d/18I1rog8mytAT9cHgLQOrRjqo_MA7uC2jzWf7sJRN4LY/edit?gid=1958107055#gid=1958107055)
+      (사: https://docs.google.com/spreadsheets/d/18I1rog8mytAT9cHgLQOrRjqo_MA7uC2jzWf7sJRN4LY/edit?gid=1916491129#gid=1916491129)
+
+[✅ 일치] Slot 2:
+  DB  : 정한나 / https://docs.google.com/spreadsheets/d/1B4w5TPxNZ9ZfzHn1LxHJoqbNDkPkI13in8F4VH-zZi8/edit?gid=1305239230#gid=1305239230
+  사용자: 정한나 / https://docs.google.com/spreadsheets/d/1B4w5TPxNZ9ZfzHn1LxHJoqbNDkPkI13in8F4VH-zZi8/edit?gid=1305239230#gid=1305239230
+
+[✅ 일치] Slot 3:
+  DB  : 오태식 / https://docs.google.com/spreadsheets/d/1XVbR4WmllKJPQx_bATHVEJ0EGumnkMlFbSGzmDByYhg/edit?gid=1008165249#gid=1008165249
+  사용자: 오태식 / https://docs.google.com/spreadsheets/d/1XVbR4WmllKJPQx_bATHVEJ0EGumnkMlFbSGzmDByYhg/edit?gid=1008165249#gid=1008165249
+
+[✅ 일치] Slot 4:
+  DB  : 유아름 / https://docs.google.com/spreadsheets/d/1sl1UNf4QWAEb6k_pPHluwHuU58IhknHpY6AUR6EsS6s/edit?gid=1144727921#gid=1144727921
+  사용자: 유아름 / https://docs.google.com/spreadsheets/d/1sl1UNf4QWAEb6k_pPHluwHuU58IhknHpY6AUR6EsS6s/edit?gid=1144727921#gid=1144727921
+
+[✅ 일치] Slot 5:
+  DB  : 이한신 / https://docs.google.com/spreadsheets/d/1dkmzISKJEXhScr3uyjca-2mIt-H3dqsPQen-4tAqQrI/edit?gid=814133760#gid=814133760
+  사용자: 이한신 / https://docs.google.com/spreadsheets/d/1dkmzISKJEXhScr3uyjca-2mIt-H3dqsPQen-4tAqQrI/edit?gid=814133760#gid=814133760
+
+[✅ 일치] Slot 6:
+  DB  : 공석 / https://docs.google.com/spreadsheets/d/1h-JlsFTsYKmRTYnHEL8H_uobXaYrRMichUZ7qK4YUmE/edit?gid=1305239230#gid=1305239230
+  사용자: 공석 / https://docs.google.com/spreadsheets/d/1h-JlsFTsYKmRTYnHEL8H_uobXaYrRMichUZ7qK4YUmE/edit?gid=1305239230#gid=1305239230
+
+[❌ 불일치] Slot 7:
+  DB  : 공석 / https://docs.google.com/spreadsheets/d/1KB4NSYCPuqBOfuv_nixz_9tM_5ul67hSTZHehGVLPq4/edit?gid=1925279387#gid=1925279387
+  사용자: 공석 / https://docs.google.com/spreadsheets/d/1KB4NSYCPuqBOfuv_nixz_9tM_5ul67hSTZHehGVLPq4/edit?gid=1305239230#gid=1305239230
+    --> URL 불일치! 
+      (DB: https://docs.google.com/spreadsheets/d/1KB4NSYCPuqBOfuv_nixz_9tM_5ul67hSTZHehGVLPq4/edit?gid=1925279387#gid=1925279387)
+      (사: https://docs.google.com/spreadsheets/d/1KB4NSYCPuqBOfuv_nixz_9tM_5ul67hSTZHehGVLPq4/edit?gid=1305239230#gid=1305239230)
+
+===== 담당자 목록 (users) =====
+  관리자(남) - darkbirth@naver.com [admin]
+  남대표(남) - charming_nam@naver.com [admin]
+  유아름(유) - hswkrl@naver.com [manager]
+  오태식(오) - ots2580@naver.com [manager]
+  정한나(정) - jeonghannah@naver.com [manager]
+  장희선(장) - izskyok@gmail.com [manager]
+  진혜영(진) - peaceinwater@hanmail.net [manager]
