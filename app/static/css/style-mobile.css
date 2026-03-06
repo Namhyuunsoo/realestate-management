@@ -803,10 +803,7 @@
 .filter-group select:focus {
   outline: none;
   border-color: #007AFF;
-}
-
-border-color: #007AFF;
-box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.1);
+  box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.1);
 }
 
 /* 필터 모달 푸터 */
