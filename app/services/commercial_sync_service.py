@@ -85,38 +85,46 @@ class CommercialSyncService:
         return mapping
 
     def sync_all_users(self) -> Dict[str, Any]:
-        """모든 사용자의 시트를 동기화"""
-        results = {"success": True, "users_processed": 0, "total_synced": 0, "details": []}
+        """모든 활성 슬롯의 시트를 동기화"""
+        results = {"success": True, "slots_processed": 0, "total_synced": 0, "details": []}
         
         try:
-            users_file = "./data/users.json"
-            if not os.path.exists(users_file):
-                return {"success": False, "error": "users.json not found"}
+            # 1. DB에서 활성 슬롯 목록 조회
+            response = self.supabase.table("sheet_registry").select("*").eq("is_active", True).execute()
+            slots = response.data if response.data else []
+            
+            if not slots:
+                logger.info("동기화할 활성 슬롯이 없습니다.")
+                return {"success": True, "slots_processed": 0, "total_synced": 0, "details": []}
                 
-            with open(users_file, 'r', encoding='utf-8') as f:
-                users = json.load(f).get("users", [])
+            for slot in slots:
+                slot_id = slot.get("slot_id")
+                sheet_url = slot.get("sheet_url")
+                user_id = slot.get("user_id")
+                manager_name = slot.get("manager_name")
                 
-            for user in users:
-                user_id = user.get("id")
-                sheet_url = user.get("sheet_url")
-                if not user_id or not sheet_url: continue
+                # slot_id가 문자열일 수도, 숫자일 수도 있으므로 보정
+                s_id = str(slot_id)
+                if not s_id or not sheet_url: continue
                 
-                logger.info(f"사용자 {user_id} 동기화 시작...")
-                user_sync = self.sync_single_user(user_id, sheet_url)
-                results["details"].append(user_sync)
-                if user_sync["success"]:
-                    results["users_processed"] += 1
-                    results["total_synced"] += user_sync["total_count"]
+                logger.info(f"슬롯 {s_id} (담당자: {manager_name}) 동기화 시작...")
+                slot_sync = self.sync_single_slot(s_id, sheet_url, user_id, manager_name)
+                results["details"].append(slot_sync)
+                if slot_sync["success"]:
+                    results["slots_processed"] += 1
+                    results["total_synced"] += slot_sync["total_count"]
                     
         except Exception as e:
+            import traceback
+            logger.error(f"전체 동기화 중 오류 발생: {traceback.format_exc()}")
             results["success"] = False
             results["error"] = str(e)
             
         return results
 
-    def sync_single_user(self, user_id: str, sheet_url: str) -> Dict[str, Any]:
-        """단일 사용자 시트 동기화"""
-        res = {"user_id": user_id, "success": False, "total_count": 0, "sheets": {}, "errors": []}
+    def sync_single_slot(self, slot_id: str, sheet_url: str, user_id: Optional[str] = None, manager_name: Optional[str] = None) -> Dict[str, Any]:
+        """단일 슬롯 시트 동기화 (기존 sync_single_user 호환 및 개선)"""
+        res = {"slot_id": slot_id, "success": False, "total_count": 0, "sheets": {}, "errors": []}
         
         try:
             m = re.search(r"/d/([a-zA-Z0-9-_]+)", sheet_url)
@@ -128,83 +136,73 @@ class CommercialSyncService:
             try:
                 spreadsheet = self.gs.open_by_key(sheet_id)
             except Exception as e:
-                import traceback
-                error_detail = traceback.format_exc()
                 res["errors"].append(f"Spreadsheet Open Failed (ID: {sheet_id}): {repr(e)}")
-                logger.error(f"Spreadsheet Open Failed for {user_id}:\n{error_detail}")
                 return res
             
-            # 실제 존재하는 모든 워크시트 가져오기
             all_worksheets = {ws.title.strip(): ws for ws in spreadsheet.worksheets()}
             
             for sheet_name, table_name in SHEET_CONFIG.items():
                 try:
-                    # 시트명 포함 여부로 유연하게 찾기 (예: " 상가임대차 " 등 대응)
                     target_ws = None
                     for actual_name, ws in all_worksheets.items():
                         if sheet_name in actual_name:
                             target_ws = ws
                             break
                     
-                    if not target_ws:
-                        # logger.info(f"시트 없음: {sheet_name} (사용자: {user_id})")
-                        continue
+                    if not target_ws: continue
                         
                     values = target_ws.get_all_values()
                     if len(values) < 2: continue
                     
-                    headers = values[0]
+                    headers = [h.strip() for h in values[0]]
                     data_rows = values[1:]
-                    
-                    # 매핑 생성
-                    header_map = {h.strip(): i for i, h in enumerate(headers) if h.strip()}
+                    header_map = {h: i for i, h in enumerate(headers) if h}
                     
                     batch_data = []
                     for idx, row in enumerate(data_rows, start=1):
-                        record = self._process_row(user_id, sheet_name, idx, row, header_map)
+                        # 슬롯 ID를 기반으로 레코드 처리
+                        record = self._process_row_v2(slot_id, sheet_name, idx, row, header_map, user_id, manager_name)
                         if record:
                             batch_data.append(record)
                     
                     if batch_data:
-                        # Supabase에 업서트
+                        # Supabase에 업서트 (ID 충돌 시 업데이트)
                         self.supabase.table(table_name).upsert(batch_data, on_conflict="id").execute()
                         res["sheets"][sheet_name] = len(batch_data)
                         res["total_count"] += len(batch_data)
                         
                 except Exception as e:
-                    err_msg = f"시트 {sheet_name} 처리 실패: {e}"
-                    logger.error(err_msg)
-                    res["errors"].append(err_msg)
+                    res["errors"].append(f"시트 {sheet_name} 처리 실패: {e}")
             
             res["success"] = True
         except Exception as e:
-            import traceback
-            err_detail = traceback.format_exc()
-            logger.error(f"사용자 {user_id} 동기화 중 치명적 오류:\n{err_detail}")
             res["errors"].append(f"Fatal Error: {e}")
             
         return res
 
-    def _process_row(self, user_id: str, sheet_name: str, row_idx: int, row: List[str], header_map: Dict[str, int]) -> Optional[Dict[str, Any]]:
-        """한 행의 데이터를 테이블 형식에 맞춰 정규화"""
+    def _process_row_v2(self, slot_id: str, sheet_name: str, row_idx: int, row: List[str], header_map: Dict[str, int], 
+                       user_id: Optional[str] = None, manager_name: Optional[str] = None) -> Optional[Dict[str, Any]]:
+        """슬롯 기반 고유 ID를 사용하는 개선된 행 처리 로직"""
         try:
             fields = {}
             for h, i in header_map.items():
                 fields[h] = row[i].strip() if i < len(row) else ""
             
-            # 주소 추출 (헤더 이름 유연하게 대응 필요 - 여기선 기본적인 것만)
+            # 주소 추출
             region2 = fields.get("지역2", fields.get("시군구", ""))
             region = fields.get("지역", "")
             lot = fields.get("지번", "")
             address_full = f"{region2} {region} {lot}".strip()
             
-            # ID 생성 규칙: c_{시트약어}_{사용자ID}_{행번호}
+            # 고유 ID 생성 규칙: c_{시트약어}_slot{슬롯ID}_{행번호}
             sheet_slug = "r" if "임대" in sheet_name else "s" if "구분" in sheet_name else "l"
-            record_id = f"c_{sheet_slug}_{user_id}_{row_idx:06d}"
+            record_id = f"c_{sheet_slug}_slot{slot_id}_{row_idx:06d}"
             
             return {
                 "id": record_id,
+                "slot_id": slot_id,
                 "user_id": user_id,
+                "manager_name": manager_name,
                 "raw_row_index": row_idx,
                 "address_full": address_full or None,
                 "address_comp": {"region2": region2, "region": region, "lot": lot},
