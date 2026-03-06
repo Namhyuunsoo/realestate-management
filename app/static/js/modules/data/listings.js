@@ -127,6 +127,10 @@ async function fetchListings(force = false) {
 
 function readTopFilterInputs() {
   const gv = id => (document.getElementById(id)?.value.trim() || "");
+  const getRawVal = id => {
+    const el = document.getElementById(id);
+    return el ? el.value.trim() : null;
+  };
 
   if (UI_STATE.listingMode === "housing") {
     // 주택 필터 (모바일: modal_tf_h_*, PC: tf_h_*)
@@ -146,7 +150,8 @@ function readTopFilterInputs() {
     TOP_FILTERS.rent = gr("modal_tf_h_rent", "tf_h_rent");
     TOP_FILTERS.rooms = gr("modal_tf_h_rooms", "tf_h_rooms");
     TOP_FILTERS.bath = gr("modal_tf_h_bath", "tf_h_bath");
-    TOP_FILTERS.status = gr("modal_tf_h_status", "tf_h_status") || "생";
+    const hStatus = getRawVal("modal_tf_h_status") ?? getRawVal("tf_h_status");
+    TOP_FILTERS.status = hStatus !== null ? hStatus : "생";
     TOP_FILTERS.client = gr("modal_tf_h_client", "tf_h_client");
     TOP_FILTERS.phone = gr("modal_tf_h_phone", "tf_h_phone");
     TOP_FILTERS.tenant = gr("modal_tf_h_tenant", "tf_h_tenant");
@@ -164,7 +169,8 @@ function readTopFilterInputs() {
       TOP_FILTERS.deposit = gv("modal_tf_deposit") || gv("tf_deposit");
       TOP_FILTERS.rent = gv("modal_tf_rent") || gv("tf_rent");
       TOP_FILTERS.premium = gv("modal_tf_premium") || gv("tf_premium");
-      TOP_FILTERS.status = gv("modal_tf_status") || gv("tf_status") || "생";
+      const cStatus = getRawVal("modal_tf_status") ?? getRawVal("tf_status");
+      TOP_FILTERS.status = cStatus !== null ? cStatus : "생";
       TOP_FILTERS.note = gv("modal_tf_note") || gv("tf_note");
       TOP_FILTERS.manager = gv("modal_tf_manager") || gv("tf_manager");
       TOP_FILTERS.region2 = gv("modal_tf_region2") || gv("tf_region2");
@@ -182,7 +188,8 @@ function readTopFilterInputs() {
       TOP_FILTERS.deposit = gv("tf_deposit");
       TOP_FILTERS.rent = gv("tf_rent");
       TOP_FILTERS.premium = gv("tf_premium");
-      TOP_FILTERS.status = gv("tf_status") || "생";
+      const cStatus = getRawVal("tf_status");
+      TOP_FILTERS.status = cStatus !== null ? cStatus : "생";
       TOP_FILTERS.sale_price = gv("tf_sale_price");
       TOP_FILTERS.yield = gv("tf_yield");
       TOP_FILTERS.area_land = gv("tf_area_land_py");
