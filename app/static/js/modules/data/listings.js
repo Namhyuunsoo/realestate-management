@@ -303,6 +303,7 @@ function applyAllFilters() {
     client: "의뢰인",
     phone: "연락처",
     tenant: ["임차인 연락처", "임차인연락처"],
+    status: "현황",
     note: "비고"
   } : {
     region: "지역",
@@ -328,8 +329,8 @@ function applyAllFilters() {
   };
 
   const TEXT_KEYS = UI_STATE.listingMode === "housing"
-    ? ["region", "jibun", "region2", "type", "building", "dong", "ho", "direction", "client", "phone", "tenant", "note"]
-    : ["region", "jibun", "building", "store", "note", "manager", "region2", "phone", "client", "note3"];
+    ? ["region", "jibun", "region2", "type", "building", "dong", "ho", "direction", "client", "phone", "tenant", "note", "status"]
+    : ["region", "jibun", "building", "store", "note", "manager", "region2", "phone", "client", "note3", "status"];
   const NUM_CONFIG = UI_STATE.listingMode === "housing"
     ? { supply: "gte", exclusive: "gte", deposit: "lte", rent: "lte", rooms: "gte", bath: "gte" }
     : { area_sale: "gte", area_real: "gte", area_land: "gte", deposit: "lte", rent: "lte", premium: "lte", sale_price: "lte", yield: "gte" };
