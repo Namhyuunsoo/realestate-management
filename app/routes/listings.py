@@ -52,7 +52,11 @@ def api_listings():
 
     # 필터 (현황 필터)
     if status_raw:
-        data = [d for d in data if d.get("status_raw") == status_raw]
+        if status_raw == "생":
+            # '생' 필터 시 현황이 비어있는 유효 데이터도 포함 (활성 매물로 간주)
+            data = [d for d in data if d.get("status_raw") in ["생", "", None]]
+        else:
+            data = [d for d in data if d.get("status_raw") == status_raw]
     
     # 역할별 필터링 없음 — 시트에 있는 매물은 담당자/사용자 등록 여부 무관하게 전체 표시
     current_app.logger.info(f"✅ 전체 매물 {len(data)}개 반환 (사용자: {mask_email(user.email)})")

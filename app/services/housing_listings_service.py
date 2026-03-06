@@ -132,7 +132,11 @@ def fetch_housing_listings(
     try:
         query = supabase.table(table_name).select("*", count="exact")
         if status_raw:
-            query = query.eq("status_raw", status_raw)
+            if status_raw == "생":
+                # '생' 필터 시 현황이 '생' 또는 비어있는 데이터 포함
+                query = query.in_("status_raw", ["생", "", None])
+            else:
+                query = query.eq("status_raw", status_raw)
         query = query.order("raw_row_index", desc=False)
 
         if trade_filter:
