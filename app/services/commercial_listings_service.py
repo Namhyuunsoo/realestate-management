@@ -2,6 +2,7 @@ import os
 import json
 from typing import Dict, List, Any, Optional, Tuple
 from dotenv import load_dotenv
+from flask import current_app
 
 load_dotenv()
 
@@ -221,8 +222,40 @@ def fetch_all_commercial_listings(subtype: Optional[str] = None) -> List[Dict[st
         # 2. 좌표 맵 구축 (모든 매물 주소를 한꺼번에 전달)
         coords_map = _fetch_coords_map(supabase, all_addresses)
 
-        # 3. 데이터 정규화 및 반환
-        return [_normalize_row(item, coords_map, registry_map) for item in all_items]
+        # 3. 데이터 정규화
+        normalized_items = [_normalize_row(item, coords_map, registry_map) for item in all_items]
+        
+        # 4. 물리적 속성 기반 중복 제거 (Dedup)
+        # 키: (주소, 건물명, 가게명, 층수, 실평수, 보증금, 월세)
+        dedup_map = {}
+        for item in normalized_items:
+            fields = item.get("fields") or {}
+            # 중복 판단을 위한 유니크 키 생성
+            key_parts = [
+                item.get("address_full") or "",
+                fields.get("건물명") or "",
+                fields.get("가게명") or fields.get("상호") or "",
+                fields.get("층수") or "",
+                fields.get("실평수") or fields.get("전용(평)") or "",
+                fields.get("보증금") or "",
+                fields.get("월세") or ""
+            ]
+            dedup_key = "|".join([str(p).strip() for p in key_parts])
+            
+            # 기존에 동일 키가 있으면 우선순위 비교
+            if dedup_key in dedup_map:
+                existing = dedup_map[dedup_key]
+                # 현재 항목에 slot_id가 있고 기존 항목엔 없으면 현재 항목으로 교체
+                if item.get("slot_id") and not existing.get("slot_id"):
+                    dedup_map[dedup_key] = item
+                # 둘 다 slot_id가 있거나 없으면 더 최신 데이터(ID 기준 등) 유지 (여기선 유지)
+            else:
+                dedup_map[dedup_key] = item
+        
+        final_items = list(dedup_map.values())
+        current_app.logger.info(f"✅ 중복 제거 완료: {len(normalized_items)} -> {len(final_items)}개")
+        
+        return final_items
 
     except Exception as e:
         print(f"fetch_all_commercial_listings failed: {e}")
