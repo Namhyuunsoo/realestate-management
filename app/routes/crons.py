@@ -47,7 +47,6 @@ def sync_all_data():
         sync_results['housing'] = {'success': False, 'error': str(e)}
 
     # 3. 배포 (DB 전체 -> 사용자별 맞춤 시트) 
-    # (선택적: 부하를 고려하여 새벽 시간 위주로 동작하도록 분리 가능)
     try:
         from app.services.supabase_to_sheet_distribution import distribute_all_listings_to_all_users
         res_dist = distribute_all_listings_to_all_users()
@@ -56,8 +55,22 @@ def sync_all_data():
         current_app.logger.error(f"사용자 시트 배포 동기화 실패: {e}")
         sync_results['distribution'] = {'success': False, 'error': str(e)}
 
+    # 4. 지오코딩 (신규 매물 좌표 생성 및 반영)
+    try:
+        from app.services.geocoding_service import GeocodingService
+        geo_service = GeocodingService()
+        current_app.logger.info("동기화 후 지오코딩 업데이트를 시작합니다...")
+        geo_res = geo_service.run_geocoding_update()
+        sync_results['geocoding'] = geo_res
+        
+        # 좌표를 실제 매물 테이블(coords 컬럼)에 전파
+        geo_service.sync_coords_to_supabase_listings()
+    except Exception as e:
+        current_app.logger.error(f"지오코딩 자동화 실패: {e}")
+        sync_results['geocoding'] = {'success': False, 'error': str(e)}
+
     return jsonify({
         'status': 'ok',
-        'message': 'Cron sync completed',
+        'message': 'Cron sync and geocoding completed',
         'results': sync_results
     }), 200

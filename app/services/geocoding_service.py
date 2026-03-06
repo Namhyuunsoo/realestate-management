@@ -117,26 +117,16 @@ class GeocodingService:
             
             for table_name in housing_tables:
                 try:
-                    # 현황이 '생'인 매물만 조회
-                    # status_raw 필드 또는 fields->>'현황' 필드 확인
-                    result = supabase.table(table_name).select("address_full, status_raw, fields").execute()
+                    # 모든 매물 조회 (필터 제거)
+                    result = supabase.table(table_name).select("address_full").execute()
                     
                     for row in result.data:
-                        # 현황 확인 (status_raw 우선, 없으면 fields에서)
-                        status = row.get("status_raw", "")
-                        if not status and row.get("fields"):
-                            status = row.get("fields", {}).get("현황", "")
-                        
-                        # 현황이 '생'인 매물만 처리
-                        if status != "생":
-                            continue
-                        
                         # address_full 추출
                         address_full = row.get("address_full", "").strip()
                         if address_full and address_full not in addresses:
                             addresses.append(address_full)
                     
-                    self.logger.info(f"{table_name}에서 {len([r for r in result.data if (r.get('status_raw') == '생' or r.get('fields', {}).get('현황') == '생')])}개 '생' 매물 발견")
+                    self.logger.info(f"{table_name}에서 {len(result.data)}개 매물 주소 추출 완료")
                     
                 except Exception as e:
                     self.logger.error(f"{table_name}에서 주소 추출 실패: {e}")
@@ -165,7 +155,7 @@ class GeocodingService:
                     offset = 0
                     page_size = 1000
                     while True:
-                        result = supabase.table(table_name).select("address_full").eq("status_raw", "생").range(offset, offset + page_size - 1).execute()
+                        result = supabase.table(table_name).select("address_full").range(offset, offset + page_size - 1).execute()
                         if not result.data:
                             break
                         
@@ -178,7 +168,7 @@ class GeocodingService:
                             break
                         offset += page_size
                         
-                    self.logger.info(f"{table_name}에서 '생' 매물 주소 추출 중... 현재 누적: {len(addresses)}개")
+                    self.logger.info(f"{table_name}에서 매물 주소 추출 중... 현재 누적: {len(addresses)}개")
                     
                 except Exception as e:
                     self.logger.error(f"{table_name}에서 주소 추출 실패: {e}")
@@ -210,14 +200,13 @@ class GeocodingService:
                     header = rows[0]
                     hdr_map = self._normalize_headers(header)
                     for row in rows[1:]:
-                        if row[hdr_map.get("현황", -1)] == "생":
-                            r2 = row[hdr_map.get("지역2", -1)] if "지역2" in hdr_map else ""
-                            r1 = row[hdr_map.get("지역", -1)] if "지역" in hdr_map else ""
-                            lot = row[hdr_map.get("지번", -1)] if "지번" in hdr_map else ""
-                            if r2 and r1 and lot:
-                                addr = f"{r2} {r1} {lot}".strip()
-                                if addr not in local_addresses:
-                                    local_addresses.append(addr)
+                        r2 = row[hdr_map.get("지역2", -1)] if "지역2" in hdr_map else ""
+                        r1 = row[hdr_map.get("지역", -1)] if "지역" in hdr_map else ""
+                        lot = row[hdr_map.get("지번", -1)] if "지번" in hdr_map else ""
+                        if r2 and r1 and lot:
+                            addr = f"{r2} {r1} {lot}".strip()
+                            if addr not in local_addresses:
+                                local_addresses.append(addr)
         except Exception as e:
             self.logger.warning(f"로컬 파일 주소 추출 실패 (Supabase 데이터 사용): {e}")
             

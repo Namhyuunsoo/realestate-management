@@ -193,11 +193,12 @@ def fetch_all_commercial_listings(subtype: Optional[str] = None) -> List[Dict[st
     try:
         for table in target_tables:
             try:
-                # 100,000건 고려 Pagination
+                # 100,000건 고려 Pagination 및 현황 필터 완화
+                # '완', '생', '보류', 또는 비어있는 상태도 모두 지도에 표시 가능하도록 조회
                 offset = 0
                 page_size = 1000
                 while True:
-                    result = supabase.table(table).select("*").eq("status_raw", "생").range(offset, offset + page_size - 1).execute()
+                    result = supabase.table(table).select("*").in_("status_raw", ["생", "완", "보류", ""]).range(offset, offset + page_size - 1).execute()
                     if not result.data:
                         break
                     
