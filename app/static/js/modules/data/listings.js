@@ -63,7 +63,10 @@ async function fetchListings(force = false) {
       data = await getCachedHousingListings(subtype, status_raw, force);
     } else {
       // 상가 모드: 상가 API 호출 (getCachedListings 내부에서 UI_STATE.commercialSubtype 참조함)
-      data = await getCachedListings(force);
+      const statusEl = document.getElementById("modal_tf_status") || document.getElementById("tf_status");
+      const status_raw = (statusEl && statusEl.value && statusEl.value.trim()) ? statusEl.value.trim() : "생";
+      _lastCommercialStatusRaw = status_raw;
+      data = await getCachedListings(status_raw, force);
     }
 
     if (!data) throw new Error("매물 데이터를 가져올 수 없습니다.");
@@ -161,6 +164,7 @@ function readTopFilterInputs() {
       TOP_FILTERS.deposit = gv("modal_tf_deposit") || gv("tf_deposit");
       TOP_FILTERS.rent = gv("modal_tf_rent") || gv("tf_rent");
       TOP_FILTERS.premium = gv("modal_tf_premium") || gv("tf_premium");
+      TOP_FILTERS.status = gv("modal_tf_status") || gv("tf_status") || "생";
       TOP_FILTERS.note = gv("modal_tf_note") || gv("tf_note");
       TOP_FILTERS.manager = gv("modal_tf_manager") || gv("tf_manager");
       TOP_FILTERS.region2 = gv("modal_tf_region2") || gv("tf_region2");
@@ -178,6 +182,7 @@ function readTopFilterInputs() {
       TOP_FILTERS.deposit = gv("tf_deposit");
       TOP_FILTERS.rent = gv("tf_rent");
       TOP_FILTERS.premium = gv("tf_premium");
+      TOP_FILTERS.status = gv("tf_status") || "생";
       TOP_FILTERS.sale_price = gv("tf_sale_price");
       TOP_FILTERS.yield = gv("tf_yield");
       TOP_FILTERS.area_land = gv("tf_area_land_py");
@@ -224,8 +229,9 @@ function applyUserRoleFilter() {
 }
 
 
-// 주택 모드: 마지막 fetch 시 사용한 status_raw (현황 필터 변경 시 refetch용)
+// 주택/상가 모드: 마지막 fetch 시 사용한 status_raw (현황 필터 변경 시 refetch용)
 let _lastHousingStatusRaw = "생";
+let _lastCommercialStatusRaw = "생";
 
 function applyAllFilters() {
   dbg("applyAllFilters start");
@@ -238,6 +244,16 @@ function applyAllFilters() {
     const newStatus = TOP_FILTERS.status || "생";
     if (newStatus !== _lastHousingStatusRaw) {
       _lastHousingStatusRaw = newStatus;
+      if (typeof fetchListings === "function") {
+        fetchListings(true);
+      }
+      return;
+    }
+  } else {
+    // 상가 모드: 현황 필터 변경 시 API 재호출 필요
+    const newStatus = TOP_FILTERS.status || "생";
+    if (newStatus !== _lastCommercialStatusRaw) {
+      _lastCommercialStatusRaw = newStatus;
       if (typeof fetchListings === "function") {
         fetchListings(true);
       }
@@ -304,6 +320,7 @@ function applyAllFilters() {
     yield: "수익율",
     note: "비고",
     manager: "담당자",
+    status: "현황",
     region2: "지역2",
     phone: "연락처",
     client: "의뢰인",

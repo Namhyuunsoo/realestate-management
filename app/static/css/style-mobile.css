@@ -787,19 +787,26 @@
   margin-bottom: 4px;
 }
 
-.filter-group input {
+.filter-group input,
+.filter-group select {
   padding: 12px;
   border: 1px solid #ddd;
   border-radius: 8px;
   font-size: 16px;
   background: white;
   transition: border-color 0.2s ease;
+  width: 100%;
+  box-sizing: border-box;
 }
 
-.filter-group input:focus {
+.filter-group input:focus,
+.filter-group select:focus {
   outline: none;
   border-color: #007AFF;
-  box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.1);
+}
+
+border-color: #007AFF;
+box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.1);
 }
 
 /* 필터 모달 푸터 */

@@ -437,6 +437,15 @@
                   <input type="text" id="modal_tf_note" placeholder="비고">
                 </div>
                 <div class="filter-group">
+                  <label for="modal_tf_status">현황</label>
+                  <select id="modal_tf_status">
+                    <option value="생" selected>생 (진행중)</option>
+                    <option value="완">완 (완료)</option>
+                    <option value="보류">보류</option>
+                    <option value="">전체</option>
+                  </select>
+                </div>
+                <div class="filter-group">
                   <label for="modal_tf_manager">담당자</label>
                   <input type="text" id="modal_tf_manager" placeholder="담당자">
                 </div>
@@ -537,7 +546,12 @@
               <div class="filter-row">
                 <div class="filter-group">
                   <label for="modal_tf_h_status">현황</label>
-                  <input type="text" id="modal_tf_h_status" placeholder="생" value="생" title="기본값 생, 초기화 시 생">
+                  <select id="modal_tf_h_status">
+                    <option value="생" selected>생 (진행중)</option>
+                    <option value="완">완 (완료)</option>
+                    <option value="보류">보류</option>
+                    <option value="">전체</option>
+                  </select>
                 </div>
                 <div class="filter-group">
                   <label for="modal_tf_h_client">의뢰인</label>
@@ -596,6 +610,7 @@
           <div class="comm-sale-only hidden">매매가</div>
           <div class="comm-sale-only hidden">수익율</div>
           <div class="comm-land-only hidden">대지(평)</div>
+          <div>현황</div>
           <div>비고</div>
           <div>담당자</div>
           <div>지역2</div>
@@ -618,6 +633,12 @@
           <input id="tf_sale_price" class="comm-sale-only hidden" placeholder="매매가 (<=값)">
           <input id="tf_yield" class="comm-sale-only hidden" placeholder="수익율 (%)">
           <input id="tf_area_land_py" class="comm-land-only hidden" placeholder="대지(평)">
+          <select id="tf_status">
+            <option value="생" selected>생</option>
+            <option value="완">완</option>
+            <option value="보류">보류</option>
+            <option value="">전체</option>
+          </select>
           <input id="tf_note" placeholder="비고">
           <input id="tf_manager" placeholder="담당자">
           <input id="tf_region2" placeholder="지역2">
@@ -668,7 +689,12 @@
           <input id="tf_h_rent" placeholder="<=값 또는 a-b">
           <input id="tf_h_rooms" placeholder="단일 또는 a-b">
           <input id="tf_h_bath" placeholder="단일 또는 a-b">
-          <input id="tf_h_status" placeholder="생" value="생" title="기본값 생, 초기화 시 생">
+          <select id="tf_h_status">
+            <option value="생" selected>생</option>
+            <option value="완">완</option>
+            <option value="보류">보류</option>
+            <option value="">전체</option>
+          </select>
           <input id="tf_h_client" placeholder="의뢰인">
           <input id="tf_h_phone" placeholder="연락처">
           <input id="tf_h_tenant" placeholder="임차인연락처">

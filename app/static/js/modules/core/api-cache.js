@@ -161,10 +161,10 @@ async function getCurrentUserInfo() {
 let listingsCache = {}; // subtype별 캐시
 let listingsCacheTime = {}; // subtype별 캐시 시간
 
-async function getCachedListings(force = false) {
+async function getCachedListings(status_raw = "생", force = false) {
   const now = Date.now();
   const subtype = UI_STATE.commercialSubtype || "lease";
-  const cacheKey = subtype;
+  const cacheKey = `${subtype}_${status_raw}`;
 
   // 강제 새로고침이 아니고 캐시가 유효한 경우
   if (!force && listingsCache[cacheKey] && (now - listingsCacheTime[cacheKey]) < 60000) { // 1분간 유효
@@ -172,9 +172,9 @@ async function getCachedListings(force = false) {
   }
 
   try {
-    const url = force
-      ? `/api/listings?force=1&limit=100000&subtype=${subtype}`
-      : `/api/listings?limit=100000&subtype=${subtype}`;
+    let url = `/api/listings?limit=100000&subtype=${subtype}&status_raw=${status_raw}`;
+    if (force) url += "&force=1";
+
     const data = await cachedFetch(url, {
       credentials: 'include'
     });
