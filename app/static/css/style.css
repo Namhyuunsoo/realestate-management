@@ -1224,19 +1224,24 @@ body {
   padding: 6px 8px 10px;
   font-size: 12px;
   overflow-x: auto;
+  /* 가로 스크롤 허용 */
   display: flex;
   flex-direction: row;
   flex-wrap: nowrap;
+  /* 줄바꿈 금지 */
   align-items: flex-end;
   gap: 8px;
+  -webkit-overflow-scrolling: touch;
 }
 
 .top-filter .tf-row {
   display: grid;
-  grid-template-columns: repeat(16, 1fr) 120px;
-  /* 16필드 + 버튼영역 - 1920px에 맞게 정확히 조정 */
+  grid-template-columns: repeat(20, minmax(80px, 1fr)) 120px;
+  /* 20필드 확장 + 버튼영역 */
   gap: 4px;
   margin-bottom: 4px;
+  min-width: max-content;
+  /* 내부 콘텐츠에 맞춰 너비 확장 (줄바꿈 방지) */
 }
 
 .top-filter .tf-row.tf-labels div {
@@ -1245,13 +1250,23 @@ body {
   padding: 2px 0;
 }
 
-.top-filter .tf-row.tf-inputs input {
+.top-filter .tf-row.tf-inputs input,
+.top-filter .tf-row.tf-inputs select {
   width: 100%;
   height: 26px;
   padding: 0 6px;
   border: 1px solid #ccc;
   border-radius: 3px;
   font-size: 12px;
+  background-color: white;
+  box-sizing: border-box;
+}
+
+/* 현황 필터(select) 너비 특별 관리 */
+#tf_status,
+#tf_h_status {
+  min-width: 60px !important;
+  max-width: 60px !important;
 }
 
 .top-filter .tf-actions {
