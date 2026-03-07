@@ -6,6 +6,9 @@
  * ===== 마커 관리 =====
  **************************************/
 
+// 마커 재사용을 위한 캐시 (listingId -> Marker객체)
+let MARKER_MAP = new Map();
+
 function placeMarkers(arr) {
   if (PLACING_MARKERS || window.PLACING_MARKERS) return;
 
@@ -27,20 +30,32 @@ function placeMarkers(arr) {
       return;
     }
 
-    // 기존 마커 제거
-    if (MARKERS && MARKERS.length) {
-      MARKERS.forEach(m => m.setMap && m.setMap(null));
-      MARKERS = [];
-    }
+    // 1. 기존 CLUSTERER 제거 (매번 새로 생성해야 하거나 업데이트해야 함)
     if (CLUSTERER) {
-      try { CLUSTERER.setMap(null); } catch (e) { }
+      try {
+        CLUSTERER.setMap(null);
+      } catch (e) { }
       CLUSTERER = null;
     }
 
-    const bounds = new naver.maps.LatLngBounds();
+    const bounds = MAP.getBounds();
+    const isZoomLarge = MAP.getZoom() >= 14;
+
+    // 현재 표시해야 할 마커 ID 목록
+    const targetIds = new Set(arr.map(item => item.id));
+
+    // 2. 캐시된 마커들 중 현재 리스트에 없는 것은 지도에서 제거 (메모리 해제는 하지 않음)
+    MARKER_MAP.forEach((marker, id) => {
+      if (!targetIds.has(id)) {
+        marker.setMap(null);
+      }
+    });
+
+    const activeMarkers = [];
     let validMarkers = 0;
     let invalidCoords = 0;
 
+    // 3. 현재 리스트 순회하며 마커 생성 또는 재사용
     arr.forEach(item => {
       const { lat, lng } = item.coords || {};
       if (lat == null || lng == null) {
@@ -48,39 +63,59 @@ function placeMarkers(arr) {
         return;
       }
 
-      let pos;
-      try {
-        const latNum = parseFloat(lat);
-        const lngNum = parseFloat(lng);
-        if (isNaN(latNum) || isNaN(lngNum)) {
+      let marker = MARKER_MAP.get(item.id);
+
+      if (!marker) {
+        let pos;
+        try {
+          const latNum = parseFloat(lat);
+          const lngNum = parseFloat(lng);
+          if (isNaN(latNum) || isNaN(lngNum)) {
+            invalidCoords++;
+            return;
+          }
+          pos = new naver.maps.LatLng(latNum, lngNum);
+        } catch (error) {
           invalidCoords++;
           return;
         }
-        pos = new naver.maps.LatLng(latNum, lngNum);
-      } catch (error) {
-        invalidCoords++;
-        return;
+
+        const color = STATUS_COLORS[item.status_raw] || "#007AFF";
+        marker = new naver.maps.Marker({
+          position: pos,
+          map: null,
+          icon: { content: createMarkerIcon(color, item.id === SELECTED_MARKER_ID, getBriefingStatus(item.id), (window.USER_RECOMMENDATIONS && window.USER_RECOMMENDATIONS.has) ? window.USER_RECOMMENDATIONS.has(item.id) : false) }
+        });
+        marker._listingId = item.id;
+
+        naver.maps.Event.addListener(marker, "click", () => {
+          hideClusterList();
+          setActiveMarker(item.id);
+          scrollToListing(item.id);
+          renderDetailPanel(item);
+        });
+
+        MARKER_MAP.set(item.id, marker);
+      } else {
+        // 이미 존재하는 마커인 경우 아이콘 업데이트 (상태가 변했을 수 있음)
+        const color = STATUS_COLORS[item.status_raw] || "#007AFF";
+        const isActive = (item.id === SELECTED_MARKER_ID);
+        const briefingStatus = getBriefingStatus(item.id);
+        const isRecommended = (window.USER_RECOMMENDATIONS && window.USER_RECOMMENDATIONS.has) ? window.USER_RECOMMENDATIONS.has(item.id) : false;
+
+        // 아이콘 내용이 달라졌을 때만 업데이트하여 성능 최적화
+        const newIconContent = createMarkerIcon(color, isActive, briefingStatus, isRecommended);
+        if (marker.getIcon().content !== newIconContent) {
+          marker.setIcon({ content: newIconContent });
+        }
       }
 
-      const color = STATUS_COLORS[item.status_raw] || "#007AFF";
-      const marker = new naver.maps.Marker({
-        position: pos,
-        map: null,
-        icon: { content: createMarkerIcon(color, item.id === SELECTED_MARKER_ID, getBriefingStatus(item.id), (window.USER_RECOMMENDATIONS && window.USER_RECOMMENDATIONS.has) ? window.USER_RECOMMENDATIONS.has(item.id) : false) }
-      });
-      marker._listingId = item.id;
+      activeMarkers.push(marker);
       validMarkers++;
-
-      naver.maps.Event.addListener(marker, "click", () => {
-        hideClusterList();
-        setActiveMarker(item.id);
-        scrollToListing(item.id);
-        renderDetailPanel(item);
-      });
-
-      MARKERS.push(marker);
-      bounds.extend(pos);
     });
+
+    // MARKERS 배열 업데이트 (다른 함수에서 참조하므로)
+    MARKERS = activeMarkers;
 
     if (typeof MarkerClustering !== "undefined" && MarkerClustering) {
       CLUSTERER = new MarkerClustering({
@@ -119,7 +154,7 @@ function placeMarkers(arr) {
       MARKERS.forEach(m => m.setMap(MAP));
     }
 
-    // console.log(`✅ placeMarkers 완료: 유효한 마커 ${validMarkers}개, 좌표 없는 매물 ${invalidCoords}개`);
+    // console.log(`✅ placeMarkers 완료: 유효한 마커 ${validMarkers}개, 좌표 없는 매물 ${invalidCoords}개 (재사용 마커 포함)`);
   } catch (err) {
     console.error("❌ placeMarkers 실행 중 오류:", err);
   } finally {
@@ -249,65 +284,6 @@ function getDistanceMeters(centerLatLng, targetLatLng) {
   );
 }
 
-function computeDistancesIfNeeded() {
-  if (!MAP) return;
-  const c = MAP.getCenter();
-  if (!c) return;
-
-  // naver.maps API가 완전히 로드되었는지 확인
-  if (!window.naver || !window.naver.maps || typeof naver.maps.LatLng !== 'function') {
-    console.error('❌ naver.maps.LatLng이 사용할 수 없습니다.');
-    console.log('🔍 naver 객체 상태:', !!window.naver);
-    console.log('🔍 naver.maps 객체 상태:', !!window.naver?.maps);
-    console.log('🔍 naver.maps.LatLng 함수 상태:', typeof window.naver?.maps?.LatLng);
-    return;
-  }
-
-  const cx = c.x, cy = c.y;
-  if (LAST_DISTANCE_CENTER && LAST_DISTANCE_CENTER.x === cx && LAST_DISTANCE_CENTER.y === cy) {
-    return;
-  }
-  LAST_DISTANCE_CENTER = { x: cx, y: cy };
-
-  LISTINGS.forEach(item => {
-    const { lat, lng } = item.coords || {};
-    if (lat == null || lng == null) return;
-
-    // naver.maps.LatLng 생성 시 더 강력한 안전장치
-    let targetLatLng;
-    try {
-      // 좌표 값이 유효한지 확인
-      const latNum = parseFloat(lat);
-      const lngNum = parseFloat(lng);
-
-      if (isNaN(latNum) || isNaN(lngNum)) {
-        console.warn(`⚠️ 유효하지 않은 좌표: lat=${lat}, lng=${lng}`);
-        return;
-      }
-
-      // naver.maps.LatLng 생성 전에 API 확인
-      if (typeof naver.maps.LatLng !== 'function') {
-        console.error('❌ naver.maps.LatLng이 함수가 아닙니다.');
-        return;
-      }
-
-      targetLatLng = new naver.maps.LatLng(latNum, lngNum);
-
-      // 생성된 객체가 유효한지 확인
-      if (!targetLatLng || typeof targetLatLng.lat !== 'function' || typeof targetLatLng.lng !== 'function') {
-        console.error('❌ 생성된 LatLng 객체가 유효하지 않습니다.');
-        return;
-      }
-
-    } catch (error) {
-      console.error(`❌ LatLng 생성 실패: lat=${lat}, lng=${lng}`, error);
-      return;
-    }
-
-    const distance = getDistanceMeters(c, targetLatLng);
-    item.distance = distance;
-  });
-}
 
 function assignTempCoords() {
   if (!Array.isArray(LISTINGS)) {
@@ -464,6 +440,5 @@ window.updateClusterBubblesRecommendationStatus = updateClusterBubblesRecommenda
 window.fixMapLayoutAfterShow = fixMapLayoutAfterShow;
 window.calcHaversineMeters = calcHaversineMeters;
 window.getDistanceMeters = getDistanceMeters;
-window.computeDistancesIfNeeded = computeDistancesIfNeeded;
 window.assignTempCoords = assignTempCoords;
 window.CLUSTERER = CLUSTERER; // 클러스터 객체 전역 노출 

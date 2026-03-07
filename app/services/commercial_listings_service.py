@@ -129,8 +129,8 @@ def _fetch_coords_map(supabase: Client, addresses: List[str]) -> Dict[str, Tuple
         
     return coords_map
 
-def _normalize_row(row: Dict[str, Any], coords_map: Dict[str, Tuple[float, float]], registry_map: Dict[str, Dict[str, Any]]) -> Dict[str, Any]:
-    """Supabase 행 데이터를 프론트엔드 호환 포맷으로 변환"""
+def _normalize_row(row: Dict[str, Any], coords_map: Dict[str, Tuple[float, float]], registry_map: Dict[str, Dict[str, Any]], id_prefix: str = "") -> Dict[str, Any]:
+    """Supabase 행 데이터를 프론트엔드 호환 포맷으로 변환 (ID 충돌 방지 접두사 포함)"""
     address_full = (row.get("address_full") or "").strip()
     
     # coords_map에서 좌표 조회 (유연한 매칭 결과 포함)
@@ -148,8 +148,12 @@ def _normalize_row(row: Dict[str, Any], coords_map: Dict[str, Tuple[float, float
     manager_name = reg_info.get("manager_name") or fields.get("담당자") or row.get("manager_name") or ""
     slot_id = reg_info.get("slot_id") or row.get("slot_id") or ""
     
+    # ID에 접두사를 부여하여 테이블 간 중복 방지 (예: r_123, u_456)
+    original_id = str(row.get("id"))
+    prefixed_id = f"{id_prefix}{original_id}" if id_prefix else original_id
+
     return {
-        "id": row.get("id"),
+        "id": prefixed_id,
         "user_id": user_id,
         "raw_row_index": row.get("raw_row_index"),
         "address_full": address_full,
@@ -191,10 +195,19 @@ def fetch_all_commercial_listings(subtype: Optional[str] = None) -> List[Dict[st
     registry_map = _load_sheet_registry()
 
     try:
+        # 테이블별 ID 접두사 매핑
+        table_prefix_map = {
+            "listings_rent": "r_",
+            "listings_sale_unit": "u_",
+            "listings_sale_land": "l_"
+        }
+
+        all_addresses = []
+        all_items_with_prefix = [] # (item, prefix) 튜플 저장
+
         for table in target_tables:
+            prefix = table_prefix_map.get(table, "")
             try:
-                # 100,000건 고려 Pagination 및 현황 필터 완화
-                # '완', '생', '보류', 또는 비어있는 상태도 모두 지도에 표시 가능하도록 조회
                 offset = 0
                 page_size = 1000
                 while True:
@@ -203,8 +216,8 @@ def fetch_all_commercial_listings(subtype: Optional[str] = None) -> List[Dict[st
                         break
                     
                     data = list(result.data)
-                    all_items.extend(data)
                     for r in data:
+                        all_items_with_prefix.append((r, prefix))
                         addr = (r.get("address_full") or "").strip()
                         if addr:
                             all_addresses.append(addr)
@@ -217,44 +230,18 @@ def fetch_all_commercial_listings(subtype: Optional[str] = None) -> List[Dict[st
                 print(f"Error fetching from {table}: {e}")
                 continue
 
-        if not all_items:
+        if not all_items_with_prefix:
             return []
 
-        # 2. 좌표 맵 구축 (모든 매물 주소를 한꺼번에 전달)
+        # 2. 좌표 맵 구축
         coords_map = _fetch_coords_map(supabase, all_addresses)
 
-        # 3. 데이터 정규화
-        normalized_items = [_normalize_row(item, coords_map, registry_map) for item in all_items]
+        # 3. 데이터 정규화 (ID 접두사 포함)
+        normalized_items = [_normalize_row(item, coords_map, registry_map, prefix) for item, prefix in all_items_with_prefix]
         
-        # 4. 물리적 속성 기반 중복 제거 (Dedup)
-        # 키: (주소, 건물명, 가게명, 층수, 실평수, 보증금, 월세)
-        dedup_map = {}
-        for item in normalized_items:
-            fields = item.get("fields") or {}
-            # 중복 판단을 위한 유니크 키 생성
-            key_parts = [
-                item.get("address_full") or "",
-                fields.get("건물명") or "",
-                fields.get("가게명") or fields.get("상호") or "",
-                fields.get("층수") or "",
-                fields.get("실평수") or fields.get("전용(평)") or "",
-                fields.get("보증금") or "",
-                fields.get("월세") or ""
-            ]
-            dedup_key = "|".join([str(p).strip() for p in key_parts])
-            
-            # 기존에 동일 키가 있으면 우선순위 비교
-            if dedup_key in dedup_map:
-                existing = dedup_map[dedup_key]
-                # 현재 항목에 slot_id가 있고 기존 항목엔 없으면 현재 항목으로 교체
-                if item.get("slot_id") and not existing.get("slot_id"):
-                    dedup_map[dedup_key] = item
-                # 둘 다 slot_id가 있거나 없으면 더 최신 데이터(ID 기준 등) 유지 (여기선 유지)
-            else:
-                dedup_map[dedup_key] = item
-        
-        final_items = list(dedup_map.values())
-        current_app.logger.info(f"✅ 중복 제거 완료: {len(normalized_items)} -> {len(final_items)}개")
+        # 4. 사용자의 "1개 행 = 1개 매물" 원칙에 따라 시트 데이터를 그대로 반환합니다.
+        final_items = normalized_items
+        current_app.logger.info(f"✅ 조회 완료: 총 {len(final_items)}개 매물 (중복 제거 미적용)")
         
         return final_items
 

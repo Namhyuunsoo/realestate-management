@@ -24,7 +24,7 @@
     // PC CSS 먼저 로드
     const pcLink = document.createElement('link');
     pcLink.rel = 'stylesheet';
-    pcLink.href = '/static/css/style.css?v=20250924';
+    pcLink.href = '/static/css/style.css?v=20260307_final_v2';
     document.head.appendChild(pcLink);
 
     // 모바일이면 모바일 CSS 추가 로드 (오버라이드용)
@@ -47,6 +47,7 @@
   <script src="/static/js/listing-add.js"></script>
   <script src="/static/js/customer-add.js"></script>
   <script src="/static/js/modules/ui/mobile-buttons.js"></script>
+  <script src="/static/js/modules/ui/hybrid-filter.js"></script>
   <script src="/static/js/customer-list-modal.js"></script>
   <script src="/static/js/modules/admin/slot-management.js"></script>
   <script>
@@ -151,7 +152,7 @@
   </script>
 </head>
 
-<body>
+<body class="hybrid-mode">
   <!-- 로그인 필요 안내 화면 -->
   <div id="loginRequiredScreen" class="login-required-screen hidden">
     <div class="login-required-box">
@@ -234,7 +235,13 @@
     </header>
 
     <!-- 상태카운트바 -->
-    <div id="statusCounts">
+    <section id="statusCounts">
+      <div id="filterChipBar" style="display: flex; align-items: center; width: 100%; gap: 8px;">
+        <button id="filterTriggerBtn" type="button">🔍 필터</button>
+        <div id="filterSummaryArea">
+          <!-- 적용된 필터 칩이 여기에 동적으로 렌더링됨 -->
+        </div>
+      </div>
       <div class="count-info">
         총 <span id="countTotal">0</span>건 / 필터 후 <span id="countFiltered">0</span>건
         <button id="addListingBtn" class="btn-add-listing">📝 매물등록</button>
@@ -272,7 +279,7 @@
           <span class="last-update">마지막 업데이트: <span id="lastUpdateTime">-</span></span>
         </div>
       </div>
-    </div>
+    </section>
 
     <!-- 매물등록 모달 -->
     <div id="listingAddModal" class="modal hidden">
@@ -592,124 +599,85 @@
       </div>
     </div>
 
-    <!-- 상단 필터바 (모바일에서 숨김) -->
-    <section id="topFilterBar" class="top-filter mobile-hidden">
-      <!-- 상가 필터 (상가 모드 시 표시) -->
-      <div id="commercialFilterSection" class="filter-section">
-        <div class="tf-row tf-labels">
-          <div>지역</div>
-          <div>지번</div>
-          <div>건물명</div>
-          <div>층수</div>
-          <div>가게명</div>
-          <div>분양</div>
-          <div>실평수/전용</div>
-          <div>보증금</div>
-          <div>월세</div>
-          <div class="comm-premium-field">권리금</div>
-          <div class="comm-sale-only hidden">매매가</div>
-          <div class="comm-sale-only hidden">수익율</div>
-          <div class="comm-land-only hidden">대지(평)</div>
-          <div>현황</div>
-          <div>비고</div>
-          <div>담당자</div>
-          <div>지역2</div>
-          <div>연락처</div>
-          <div>의뢰인</div>
-          <div>비고3</div>
-          <div class="tf-actions"></div>
-        </div>
-        <div class="tf-row tf-inputs">
-          <input id="tf_region" placeholder="쉼표로 복수검색">
-          <input id="tf_jibun" placeholder="예: 123-45, 12-3">
-          <input id="tf_building" placeholder="건물명">
-          <input id="tf_floor" placeholder="단일 또는 a-b">
-          <input id="tf_store" placeholder="가게명">
-          <input id="tf_area_sale" placeholder="분양평 (>=값 또는 a‑b)">
-          <input id="tf_area_real" placeholder="전용/실평 (>=값 또는 a‑b)">
-          <input id="tf_deposit" placeholder="보증금 (<=값 또는 a‑b)">
-          <input id="tf_rent" placeholder="월세 (<=값 또는 a‑b)">
-          <input id="tf_premium" class="comm-premium-field" placeholder="권리금 (<=값 또는 a‑b)">
-          <input id="tf_sale_price" class="comm-sale-only hidden" placeholder="매매가 (<=값)">
-          <input id="tf_yield" class="comm-sale-only hidden" placeholder="수익율 (%)">
-          <input id="tf_area_land_py" class="comm-land-only hidden" placeholder="대지(평)">
-          <select id="tf_status">
-            <option value="생" selected>생</option>
-            <option value="완">완</option>
-            <option value="보류">보류</option>
-            <option value="">전체</option>
-          </select>
-          <input id="tf_note" placeholder="비고">
-          <input id="tf_manager" placeholder="담당자">
-          <input id="tf_region2" placeholder="지역2">
-          <input id="tf_phone" placeholder="연락처">
-          <input id="tf_client" placeholder="의뢰인">
-          <input id="tf_note3" placeholder="비고3">
-          <div class="tf-actions"></div>
-        </div>
+    <!-- 하이브리드 필터 모달 -->
+    <div id="hybridFilterOverlay"></div>
+    <aside id="hybridFilterModal">
+      <div class="hybrid-modal-header">
+        <h3>세부 필터 설정</h3>
+        <button id="modalCloseBtn"
+          style="background:none; border:none; font-size:24px; cursor:pointer; color:#666;">&times;</button>
       </div>
-      <!-- 주택 필터 (주택 모드 시 표시) -->
-      <div id="housingFilterSection" class="filter-section hidden">
-        <div class="tf-row tf-labels">
-          <div>지역</div>
-          <div>지번</div>
-          <div>지역2</div>
-          <div>유형</div>
-          <div>건물명</div>
-          <div>동</div>
-          <div>호수</div>
-          <div>향</div>
-          <div>층수</div>
-          <div>공급</div>
-          <div>전용</div>
-          <div>보증금</div>
-          <div>월세</div>
-          <div>방</div>
-          <div>화장실</div>
-          <div>현황</div>
-          <div>의뢰인</div>
-          <div>연락처</div>
-          <div>임차인연락처</div>
-          <div>비고</div>
-          <div class="tf-actions"></div>
-        </div>
-        <div class="tf-row tf-inputs">
-          <input id="tf_h_region" placeholder="쉼표로 복수검색">
-          <input id="tf_h_jibun" placeholder="예: 123-45, 12-3">
-          <input id="tf_h_region2" placeholder="지역2">
-          <input id="tf_h_type" placeholder="유형">
-          <input id="tf_h_building" placeholder="건물명">
-          <input id="tf_h_dong" placeholder="동">
-          <input id="tf_h_ho" placeholder="호수">
-          <input id="tf_h_direction" placeholder="향">
-          <input id="tf_h_floor" placeholder="단일 또는 a-b 또는 -1">
-          <input id="tf_h_supply" placeholder=">=값 또는 a-b">
-          <input id="tf_h_exclusive" placeholder=">=값 또는 a-b">
-          <input id="tf_h_deposit" placeholder="<=값 또는 a-b">
-          <input id="tf_h_rent" placeholder="<=값 또는 a-b">
-          <input id="tf_h_rooms" placeholder="단일 또는 a-b">
-          <input id="tf_h_bath" placeholder="단일 또는 a-b">
-          <select id="tf_h_status">
-            <option value="생" selected>생</option>
-            <option value="완">완</option>
-            <option value="보류">보류</option>
-            <option value="">전체</option>
-          </select>
-          <input id="tf_h_client" placeholder="의뢰인">
-          <input id="tf_h_phone" placeholder="연락처">
-          <input id="tf_h_tenant" placeholder="임차인연락처">
-          <input id="tf_h_note" placeholder="비고">
-          <div class="tf-actions"></div>
-        </div>
+      <div class="hybrid-modal-content">
+        <!-- 기존 필터바를 모달 내부로 이동 또는 복제 (JS에서 처리하거나 여기 직접 배치) -->
+        <section id="topFilterBar" class="top-filter">
+          <!-- 상가 필터 -->
+          <div id="modalCommercialFilter" class="filter-section">
+            <div class="tf-row tf-inputs">
+              <input id="tf_region" placeholder="지역 (쉼표로 복수검색)">
+              <input id="tf_jibun" placeholder="지번 (예: 123-45)">
+              <input id="tf_building" placeholder="건물명">
+              <input id="tf_floor" placeholder="층수">
+              <input id="tf_store" placeholder="가게명">
+              <input id="tf_area_sale" placeholder="분양평">
+              <input id="tf_area_real" placeholder="전용/실평">
+              <input id="tf_deposit" placeholder="보증금">
+              <input id="tf_rent" placeholder="월세">
+              <input id="tf_premium" class="comm-premium-field" placeholder="권리금">
+              <input id="tf_sale_price" class="comm-sale-only hidden" placeholder="매매가">
+              <input id="tf_yield" class="comm-sale-only hidden" placeholder="수익율 (%)">
+              <input id="tf_area_land_py" class="comm-land-only hidden" placeholder="대지(평)">
+              <select id="tf_status">
+                <option value="생" selected>현황: 생</option>
+                <option value="완">현황: 완</option>
+                <option value="보류">현황: 보류</option>
+                <option value="">현황: 전체</option>
+              </select>
+              <input id="tf_note" placeholder="비고">
+              <input id="tf_manager" placeholder="담당자">
+              <input id="tf_region2" placeholder="지역2">
+              <input id="tf_phone" placeholder="연락처">
+              <input id="tf_client" placeholder="의뢰인">
+              <input id="tf_note3" placeholder="비고3">
+            </div>
+          </div>
+          <!-- 주택 필터 -->
+          <div id="modalHousingFilter" class="filter-section hidden">
+            <div class="tf-row tf-inputs">
+              <input id="tf_h_region" placeholder="지역">
+              <input id="tf_h_jibun" placeholder="지번">
+              <input id="tf_h_region2" placeholder="지역2">
+              <input id="tf_h_type" placeholder="유형">
+              <input id="tf_h_building" placeholder="건물명">
+              <input id="tf_h_dong" placeholder="동">
+              <input id="tf_h_ho" placeholder="호수">
+              <input id="tf_h_direction" placeholder="향">
+              <input id="tf_h_floor" placeholder="층수">
+              <input id="tf_h_supply" placeholder="공급">
+              <input id="tf_h_exclusive" placeholder="전용">
+              <input id="tf_h_deposit" placeholder="보증금">
+              <input id="tf_h_rent" placeholder="월세">
+              <input id="tf_h_rooms" placeholder="방 수">
+              <input id="tf_h_bath" placeholder="화장실 수">
+              <select id="tf_h_status">
+                <option value="생" selected>현황: 생</option>
+                <option value="완">현황: 완</option>
+                <option value="보류">현황: 보류</option>
+                <option value="">현황: 전체</option>
+              </select>
+              <input id="tf_h_client" placeholder="의뢰인">
+              <input id="tf_h_phone" placeholder="연락처">
+              <input id="tf_h_tenant" placeholder="임차인연락처">
+              <input id="tf_h_note" placeholder="비고">
+            </div>
+          </div>
+        </section>
       </div>
-      <!-- 공통 적용/초기화 버튼 -->
-      <div class="tf-row tf-actions-row">
-        <div class="tf-actions">
-          <button id="topFilterApplyBtn" type="button">적용</button>
-          <button id="topFilterResetBtn" type="button">초기화</button>
-        </div>
+      <div class="hybrid-modal-footer">
+        <button id="topFilterResetBtn" type="button"
+          style="background:#fff; border:1px solid #ccc; color:#666;">초기화</button>
+        <button id="topFilterApplyBtn" type="button" style="background:#007bff; color:#fff; border:none;">필터 적용</button>
       </div>
-    </section>
+    </aside>
 
     <!-- 본문 레이아웃 -->
     <div id="layout">

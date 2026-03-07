@@ -130,7 +130,7 @@ function registerMapEvents() {
       }
 
       if (typeof applyAllFilters === 'function') {
-        applyAllFilters();
+        window.applyAllFilters();
       }
     } catch (err) {
       console.error("❌ idle 이벤트 처리 중 오류:", err);

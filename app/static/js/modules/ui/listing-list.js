@@ -31,7 +31,20 @@ function renderListingList(arr) {
   const housingSubtype = (window.UI_STATE && window.UI_STATE.housingSubtype) || "sale";
 
   ul.innerHTML = "";
-  arr.forEach(item => {
+
+  // 성능 최적화: 너무 많은 매물을 한꺼번에 렌더링하면 브라우저가 느려짐
+  // 300개까지만 렌더링하고 나머지는 생략
+  const MAX_RENDER = 300;
+  const toRender = arr.slice(0, MAX_RENDER);
+
+  if (arr.length > MAX_RENDER) {
+    const infoLi = document.createElement("li");
+    infoLi.style.cssText = "padding:12px; background:#f8f9fa; color:#666; font-size:12px; text-align:center; border-bottom:1px solid #eee;";
+    infoLi.innerHTML = `⚠️ 전개 매물이 너무 많아 상위 ${MAX_RENDER}개만 표시됩니다.<br>지도를 확대하거나 필터를 상세히 설정해주세요. (총 ${arr.length}개)`;
+    ul.appendChild(infoLi);
+  }
+
+  toRender.forEach(item => {
     const fields = item.fields || {};
 
     // 주소에서 지역과 지번 추출
@@ -341,7 +354,7 @@ function switchToListingMode(mode) {
       briefingBtn.classList.remove("active");
       briefingBtn.removeAttribute("data-mode");
     }
-    applyAllFilters();
+    window.applyAllFilters();
   }
 }
 

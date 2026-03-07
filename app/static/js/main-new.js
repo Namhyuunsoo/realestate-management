@@ -176,7 +176,8 @@ async function loadModules() {
       '/static/js/modules/ui/customer-forms.js',
       '/static/js/modules/ui/customer-management.js',
       '/static/js/modules/ui/customer-list-detail.js',
-      '/static/js/modules/ui/filter-modal.js'
+      '/static/js/modules/ui/filter-modal.js',
+      '/static/js/modules/ui/hybrid-filter.js'
     ];
 
     await Promise.all(normalUIModules.map(async (modulePath) => {

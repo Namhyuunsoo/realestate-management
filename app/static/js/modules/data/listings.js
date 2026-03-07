@@ -101,12 +101,12 @@ async function fetchListings(force = false) {
     // console.log(`🔍 fetchListings: 매물 ${LISTINGS.length}개 로드됨`);
     // console.log(`🔍 fetchListings: window.LISTINGS 동기화 완료, 개수: ${window.LISTINGS.length}`);
 
-    // 좌표 할당과 거리 계산을 동기적으로 처리
-    await assignTempCoords();
-    await computeDistancesIfNeeded();
+    // 좌표 할당 (전역 함수 호출)
+    if (window.assignTempCoords) await window.assignTempCoords();
+    // await computeDistancesIfNeeded(); // ⚠️ 존재하지 않는 함수이므로 주석 처리
 
     // 필터 적용
-    applyAllFilters();
+    window.applyAllFilters();
 
     // 🔥 핵심 수정: FILTERED_LISTINGS도 전역 변수로 동기화
     window.FILTERED_LISTINGS = FILTERED_LISTINGS;

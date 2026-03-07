@@ -262,7 +262,7 @@ window.initializeApp = async function () {
 
   // 상단 필터바 버튼
   const topApply = document.getElementById("topFilterApplyBtn");
-  if (topApply) topApply.addEventListener("click", applyAllFilters);
+  if (topApply) topApply.addEventListener("click", window.applyAllFilters);
   const topReset = document.getElementById("topFilterResetBtn");
   if (topReset) topReset.addEventListener("click", () => {
     if (UI_STATE.listingMode === "housing") {
@@ -280,12 +280,12 @@ window.initializeApp = async function () {
         el.value = (el.id === "modal_tf_status") ? "생" : "";
       });
     }
-    applyAllFilters();
+    window.applyAllFilters();
   });
 
   // 상단 필터 Enter 키
   document.querySelectorAll("#topFilterBar input").forEach(inp => {
-    inp.addEventListener("keydown", e => { if (e.key === "Enter") applyAllFilters(); }, { passive: false });
+    inp.addEventListener("keydown", e => { if (e.key === "Enter") window.applyAllFilters(); }, { passive: false });
   });
 
   // 2차 패널/전체보기 버튼 바인딩

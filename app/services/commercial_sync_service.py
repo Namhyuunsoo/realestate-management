@@ -86,7 +86,12 @@ class CommercialSyncService:
 
     def sync_all_users(self) -> Dict[str, Any]:
         """모든 활성 슬롯의 시트를 동기화"""
-        results = {"success": True, "slots_processed": 0, "total_synced": 0, "details": []}
+        results: Dict[str, Any] = {
+            "success": True,
+            "slots_processed": 0,
+            "total_synced": 0,
+            "details": []
+        }
         
         try:
             # 1. DB에서 활성 슬롯 목록 조회
@@ -124,7 +129,13 @@ class CommercialSyncService:
 
     def sync_single_slot(self, slot_id: str, sheet_url: str, user_id: Optional[str] = None, manager_name: Optional[str] = None) -> Dict[str, Any]:
         """단일 슬롯 시트 동기화 (기존 sync_single_user 호환 및 개선)"""
-        res = {"slot_id": slot_id, "success": False, "total_count": 0, "sheets": {}, "errors": []}
+        res: Dict[str, Any] = {
+            "slot_id": slot_id,
+            "success": False,
+            "total_count": 0,
+            "sheets": {},
+            "errors": []
+        }
         
         try:
             m = re.search(r"/d/([a-zA-Z0-9-_]+)", sheet_url)
@@ -143,31 +154,59 @@ class CommercialSyncService:
             
             for sheet_name, table_name in SHEET_CONFIG.items():
                 try:
-                    target_ws = None
-                    for actual_name, ws in all_worksheets.items():
-                        if sheet_name in actual_name:
-                            target_ws = ws
-                            break
-                    
+                    target_ws = all_worksheets.get(sheet_name)
                     if not target_ws: continue
                         
                     values = target_ws.get_all_values()
                     if len(values) < 2: continue
                     
-                    headers = [h.strip() for h in values[0]]
-                    data_rows = values[1:]
+                    # --- 동적 헤더 탐색 로직 추가 ---
+                    header_idx = 0
+                    found_header = False
+                    # 상위 10행까지만 탐색
+                    for i, row_vals in enumerate(values[:10]):
+                        row_str = " ".join([str(v) for v in row_vals])
+                        # 필수 키워드 중 2개 이상 포함 시 헤더로 간주
+                        keywords = ["지역", "지번", "층", "건물명", "보증금", "월세"]
+                        matches = [k for k in keywords if k in row_str]
+                        if len(matches) >= 2:
+                            header_idx = i
+                            found_header = True
+                            break
+                    
+                    if not found_header:
+                        logger.warning(f"시트 {sheet_name}에서 유효한 헤더를 찾을 수 없음. 1행을 기본으로 사용합니다.")
+                        header_idx = 0
+
+                    headers = [h.strip() for h in values[header_idx]]
+                    data_rows = values[header_idx + 1:]
                     header_map = {h: i for i, h in enumerate(headers) if h}
                     
                     batch_data = []
-                    for idx, row in enumerate(data_rows, start=1):
+                    for idx, row in enumerate(data_rows, start=header_idx + 2):
                         # 슬롯 ID를 기반으로 레코드 처리
                         record = self._process_row_v2(slot_id, sheet_name, idx, row, header_map, user_id, manager_name)
                         if record:
                             batch_data.append(record)
                     
                     if batch_data:
-                        # Supabase에 업서트 (ID 충돌 시 업데이트)
-                        self.supabase.table(table_name).upsert(batch_data, on_conflict="id").execute()
+                        # [Atomic Sync] Upsert 기반 동기화 (1행 = 1레코드 보장)
+                        # ID(slot_id + row_idx)가 같으면 무조건 덮어쓰기하여 중복 방지
+                        try:
+                            self.supabase.table(table_name).upsert(batch_data).execute()
+                            logger.info(f"슬롯 {slot_id} ({sheet_name}) Upsert 완료: {len(batch_data)}개")
+                            
+                            # 시트에서 삭제된 행(기존 DB에는 있으나 현재 시트에는 없는 행) 청소
+                            # 현재 시트의 최대 행 번호보다 큰 레코드를 삭제
+                            max_row_idx = max(item["raw_row_index"] for item in batch_data)
+                            self.supabase.table(table_name).delete() \
+                                .eq("slot_id", slot_id) \
+                                .gt("raw_row_index", max_row_idx) \
+                                .execute()
+                        except Exception as sync_err:
+                            logger.error(f"슬롯 {slot_id} 동기화 실패: {sync_err}")
+                            res["errors"].append(str(sync_err))
+
                         res["sheets"][sheet_name] = len(batch_data)
                         res["total_count"] += len(batch_data)
                         

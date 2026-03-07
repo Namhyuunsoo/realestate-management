@@ -1303,7 +1303,245 @@ body {
   flex-shrink: 0;
 }
 
-/* 상단바(사무소명/직책/이름) 보강 */
+/* ──────────────────────────────────────────────────
+   하이브리드 필터 모드 전용 스타일
+   (body.hybrid-mode 클래스가 있을 때만 활성화)
+   기존 !important 설정을 덮어쓰기 위해 상세 선택자 사용
+────────────────────────────────────────────────── */
+
+
+/* ──────────────────────────────────────────────────
+   (이전 위치의 하이브리드 필터 모드 전용 스타일 제거됨 - 파일 최하단으로 이동)
+   ────────────────────────────────────────────────── */
+body.hybrid-mode .count-info {
+  position: absolute !important;
+  top: 30px !important;
+  /* 칩 바 아래 */
+  left: 15px !important;
+  right: 15px !important;
+  height: 40px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  /* 좌우 분산 */
+  font-size: 11px !important;
+  z-index: 1001 !important;
+}
+
+body.hybrid-mode .sheet-controls {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  height: 100% !important;
+  border: none !important;
+}
+
+/* 개별 버튼 크기 및 폰트 최종 최적화 */
+body.hybrid-mode .btn-add-listing,
+body.hybrid-mode .mode-btn,
+body.hybrid-mode .subtype-btn,
+body.hybrid-mode .btn-sheet-open,
+body.hybrid-mode .refresh-btn {
+  padding: 2px 8px !important;
+  height: 24px !important;
+  font-size: 10.5px !important;
+  white-space: nowrap !important;
+}
+
+#filterTriggerBtn {
+  background: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-right: 8px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+#filterTriggerBtn:hover {
+  background: #0056b3;
+}
+
+#filterSummaryArea {
+  flex: 1;
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding: 2px 0;
+  scrollbar-width: none;
+  /* Firefox */
+}
+
+#filterSummaryArea::-webkit-scrollbar {
+  display: none;
+  /* Chrome, Safari */
+}
+
+.filter-chip {
+  background: #e9f2ff;
+  color: #0056b3;
+  border: 1px solid #c9dfff;
+  border-radius: 20px;
+  padding: 2px 10px;
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.filter-chip .remove-chip {
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 14px;
+  color: #999;
+}
+
+.filter-chip .remove-chip:hover {
+  color: #dc3545;
+}
+
+/* 3. 새로운 필터 모달 스타일 */
+#hybridFilterModal {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 400px;
+  height: 100vh;
+  background: white;
+  z-index: 2000;
+  box-shadow: -4px 0 20px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  transform: translateX(100%);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+#hybridFilterModal.show {
+  transform: translateX(0);
+}
+
+.hybrid-modal-header {
+  padding: 16px;
+  background: #e9f2ff;
+  border-bottom: 1px solid #c9dfff;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.hybrid-modal-header h3 {
+  margin: 0;
+  font-size: 14px;
+  color: #0056b3;
+}
+
+.hybrid-modal-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+}
+
+.hybrid-modal-footer {
+  padding: 16px;
+  background: #f8f9fa;
+  border-top: 1px solid #eee;
+  display: flex;
+  gap: 8px;
+}
+
+.hybrid-modal-footer button {
+  flex: 1;
+  height: 40px;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+#hybridApplyBtn {
+  background: #007bff;
+  color: white;
+  border: none;
+}
+
+#hybridResetBtn {
+  background: white;
+  color: #666;
+  border: 1px solid #ccc;
+}
+
+/* 모달 오버레이 */
+#hybridFilterOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.3);
+  z-index: 1999;
+  display: none;
+}
+
+#hybridFilterOverlay.show {
+  display: block;
+}
+
+/* 모달 내부 필터 항목 레이아웃 최적화 */
+.hybrid-modal-content .filter-section {
+  display: block !important;
+  /* 모달 내부에서는 항상 노출 */
+}
+
+.hybrid-modal-content .tf-row.tf-labels {
+  display: none;
+  /* 모달에서는 라벨을 내부 placeholder나 설명으로 대체 가능성 고려, 일단 숨김 */
+}
+
+.hybrid-modal-content .tf-row.tf-inputs {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.hybrid-modal-content .tf-row.tf-inputs>div,
+.hybrid-modal-content .tf-row.tf-inputs>input,
+.hybrid-modal-content .tf-row.tf-inputs>select {
+  width: 100% !important;
+  height: 34px !important;
+  margin-bottom: 4px;
+}
+
+/* 필터 항목 앞에 설명을 위한 데이터 속성 활용 (CSS로 라벨 복구) */
+.hybrid-modal-content .tf-row.tf-inputs input::before {
+  content: attr(placeholder);
+  display: block;
+  font-size: 11px;
+  color: #888;
+  margin-bottom: 4px;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* 기존 상단바(사무소명/직책/이름) 보강 */
 #topbar {
   display: flex;
   justify-content: space-between;
@@ -4672,8 +4910,6 @@ input[type="text"] {
   margin-bottom: 15px;
 }
 
-   / *   �͜�  ļ\�  ����|�  * /     
-
 /* 추천 별표 스타일 */
 .recommendation-star-container {
   display: flex;
@@ -5124,4 +5360,151 @@ input[type="text"] {
 .btn-save-slot:hover {
   transform: translateY(-1px);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* ──────────────────────────────────────────────────
+   하이브리드 필터 모드 전용 스타일 (FINAL OVERRIDE)
+   (body.hybrid-mode 클래스가 있을 때만 활성화)
+   파일 최하단에 위치하여 모든 앞선 규칙을 덮어씁니다.
+────────────────────────────────────────────────── */
+
+/* 1. 상단 레이아웃 높이 재설정 및 필터바 숨김 */
+body.hybrid-mode #topFilterBar:not(#hybridFilterModal #topFilterBar) {
+  display: none !important;
+}
+
+/* 모달 내부의 필터바는 표시 */
+body.hybrid-mode #hybridFilterModal #topFilterBar {
+  display: block !important;
+  position: static !important;
+  height: auto !important;
+  max-height: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+}
+
+body.hybrid-mode #topbar {
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100% !important;
+  height: 40px !important;
+  min-height: 40px !important;
+  max-height: 40px !important;
+  padding: 0 15px !important;
+  display: flex !important;
+  align-items: center !important;
+  background: #e9f2ff !important;
+  z-index: 1000 !important;
+}
+
+body.hybrid-mode #topbar {
+  height: 40px !important;
+  min-height: 40px !important;
+  max-height: 40px !important;
+  padding: 0 15px !important;
+  box-sizing: border-box !important;
+}
+
+body.hybrid-mode #statusCounts {
+  position: absolute !important;
+  top: 40px !important;
+  left: 0 !important;
+  width: 100% !important;
+  height: 70px !important;
+  min-height: 70px !important;
+  max-height: 70px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  padding: 0 !important;
+  background: white !important;
+  border-bottom: 2px solid #e9ecef !important;
+  z-index: 1000 !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05) !important;
+  box-sizing: border-box !important;
+}
+
+body.hybrid-mode #layout {
+  position: absolute !important;
+  top: 110px !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  height: calc(100vh - 110px) !important;
+  max-height: calc(100vh - 110px) !important;
+  width: 100% !important;
+  z-index: 1 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+}
+
+/* #layout 내부 모든 자식의 상단 여백 및 변위 강제 초기화 (유격 제거 핵심) */
+body.hybrid-mode #layout>#sidebar,
+body.hybrid-mode #layout>#mainContent,
+body.hybrid-mode #layout>#mapWrap,
+body.hybrid-mode #layout>#mapArea,
+body.hybrid-mode #layout>.mobile-notch {
+  position: absolute !important;
+  top: 0 !important;
+  margin-top: 0 !important;
+  height: 100% !important;
+  transform: none !important;
+}
+
+body.hybrid-mode #filterChipBar {
+  display: flex !important;
+  align-items: center !important;
+  width: 100% !important;
+  height: 30px !important;
+  min-height: 30px !important;
+  gap: 10px !important;
+  padding: 0 15px !important;
+  border-bottom: 1px dashed #f0f0f0 !important;
+  box-sizing: border-box !important;
+}
+
+/* 2단: 통합 바 구성 */
+body.hybrid-mode .count-info {
+  display: flex !important;
+  position: absolute !important;
+  top: 30px !important;
+  left: 15px !important;
+  height: 40px !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 6px !important;
+  z-index: 1001 !important;
+  font-size: 13px !important;
+  margin: 0 !important;
+}
+
+body.hybrid-mode .sheet-controls {
+  display: flex !important;
+  position: absolute !important;
+  top: 30px !important;
+  right: 15px !important;
+  height: 40px !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  gap: 8px !important;
+  z-index: 1001 !important;
+  margin: 0 !important;
+}
+
+body.hybrid-mode #statusCounts>div:not(#filterChipBar):not(.count-info):not(.sheet-controls) {
+  display: none !important;
+}
+
+/* 10. 필터 모달 섹션 개별 제어 강제 적용 */
+#hybridFilterModal .filter-section.hidden {
+  display: none !important;
+}
+
+/* 11. 현황 필터 드롭다운 너비 확장 (다른 필드와 동일하게) */
+body.hybrid-mode #tf_status,
+body.hybrid-mode #tf_h_status {
+  min-width: 100% !important;
+  max-width: 100% !important;
+  width: 100% !important;
 }

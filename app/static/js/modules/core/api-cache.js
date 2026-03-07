@@ -57,6 +57,7 @@ function generateCacheKey(url, options = {}) {
 
 // 캐시된 API 호출 함수
 async function cachedFetch(url, options = {}) {
+  const signal = options.signal;
   const cacheKey = generateCacheKey(url, options);
   const now = Date.now();
 
@@ -161,7 +162,7 @@ async function getCurrentUserInfo() {
 let listingsCache = {}; // subtype별 캐시
 let listingsCacheTime = {}; // subtype별 캐시 시간
 
-async function getCachedListings(status_raw = "생", force = false) {
+async function getCachedListings(status_raw = "생", force = false, signal = null) {
   const now = Date.now();
   const subtype = UI_STATE.commercialSubtype || "lease";
   const cacheKey = `${subtype}_${status_raw}`;
@@ -193,7 +194,7 @@ async function getCachedListings(status_raw = "생", force = false) {
 let housingListingsCache = {}; // subtype별 캐시
 let housingListingsCacheTime = {}; // subtype별 캐시 시간
 
-async function getCachedHousingListings(subtype = "sale", status_raw = "생", force = false) {
+async function getCachedHousingListings(subtype = "sale", status_raw = "생", force = false, signal = null) {
   const now = Date.now();
   const cacheKey = `${subtype}_${status_raw}`;
 

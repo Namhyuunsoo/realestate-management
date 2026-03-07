@@ -20,13 +20,13 @@ function clearSelection() {
     const listing = LISTINGS.find(x => x.id === m._listingId);
     const color = STATUS_COLORS[listing?.status_raw] || "#007AFF";
     const briefingStatus = getBriefingStatus(m._listingId);
-    
+
     // 🔥 추천 상태 확인 강화
     let isRecommended = false;
     if (window.USER_RECOMMENDATIONS && window.USER_RECOMMENDATIONS.has) {
       isRecommended = window.USER_RECOMMENDATIONS.has(m._listingId);
     }
-    
+
     m.setIcon({ content: createMarkerIcon(color, false, briefingStatus, isRecommended) });
     m.setZIndex(1);
   });
@@ -34,13 +34,13 @@ function clearSelection() {
   // 매물리스트 하이라이트 제거 (UI 크기나 위치는 변경하지 않음)
   document.querySelectorAll("#listingList .listing-item.selected")
     .forEach(el => el.classList.remove("selected"));
-  
+
   // 클러스터 목록 하이라이트 제거 (더 강력한 선택자 사용, UI 크기나 위치는 변경하지 않음)
   document.querySelectorAll("#clusterItemList li.selected")
     .forEach(el => el.classList.remove("selected"));
   document.querySelectorAll("#clusterList li.selected")
     .forEach(el => el.classList.remove("selected"));
-  
+
   // 클러스터 목록 닫기 제거 - UI 변동 방지를 위해
   // hideClusterList();
 }
@@ -100,7 +100,7 @@ function timeEnd(label, extra = {}) {
 function setLayoutHeight() {
   // CSS Grid 레이아웃을 사용하므로 JavaScript로 높이를 조정할 필요가 없음
   // 대신 지도 리사이즈만 트리거하고, 레이아웃 안정성을 위해 최소한의 조정만 수행
-  
+
   // CSS Grid 레이아웃이 이미 올바르게 설정되어 있으므로 추가 조정 불필요
   // 단, 지도가 있는 경우에만 리사이즈 트리거
   if (typeof MAP !== 'undefined' && MAP && MAP_READY) {
@@ -157,12 +157,12 @@ function buildFloorFilter(input) {
 
 function parseFloorValue(raw) {
   if (!raw) return null;
-  
+
   // If raw is already a number, return it directly
   if (typeof raw === 'number') {
     return raw;
   }
-  
+
   const str = raw.toString().toLowerCase();
 
   // Check for "지하" or "B" indicating negative floors
@@ -237,6 +237,15 @@ function checkNumFilter(value, filter) {
   return value >= filter.min && value <= filter.max;
 }
 
+function debounce(func, wait) {
+  let timeout;
+  return function (...args) {
+    const context = this;
+    clearTimeout(timeout);
+    timeout = setTimeout(() => func.apply(context, args), wait);
+  };
+}
+
 function parseTextTokens(str) {
   if (!str) return [];
   return str.split(",").map(s => s.trim()).filter(Boolean);
@@ -290,18 +299,18 @@ function setupLayoutObserver() {
   const topbar = document.getElementById('topbar');
   const statusCounts = document.getElementById('statusCounts');
   const topFilterBar = document.getElementById('topFilterBar');
-  
+
   if (!topbar || !statusCounts || !topFilterBar) return;
-  
+
   const resizeObserver = new ResizeObserver(() => {
     calculateSecondaryPanelPosition();
   });
-  
+
   // 각 상단 요소들을 관찰
   resizeObserver.observe(topbar);
   resizeObserver.observe(statusCounts);
   resizeObserver.observe(topFilterBar);
-  
+
   // 초기 위치 계산
   calculateSecondaryPanelPosition();
 }
@@ -330,10 +339,10 @@ function adjustMobileAppHeight() {
     // 모바일 앱 전체 높이를 화면 높이에 맞춤
     const screenHeight = window.innerHeight;
     const visualViewportHeight = window.visualViewport ? window.visualViewport.height : screenHeight;
-    
+
     // 실제 사용 가능한 높이 계산 (브라우저 UI 제외)
     const availableHeight = Math.min(screenHeight, visualViewportHeight);
-    
+
     // body와 layout에 화면 높이 적용
     document.body.style.height = `${availableHeight}px`;
     document.body.style.maxHeight = `${availableHeight}px`;
@@ -346,7 +355,7 @@ function adjustMobileAppHeight() {
     document.body.style.width = '100%';
     document.body.style.margin = '0';
     document.body.style.padding = '0';
-    
+
     const layout = document.getElementById('layout');
     if (layout) {
       layout.style.height = `${availableHeight}px`;
@@ -357,7 +366,7 @@ function adjustMobileAppHeight() {
       layout.style.margin = '0';
       layout.style.padding = '0';
     }
-    
+
     // 메인 콘텐츠에 화면 높이 적용
     const mainContent = document.getElementById('mainContent');
     if (mainContent) {
@@ -368,7 +377,7 @@ function adjustMobileAppHeight() {
       mainContent.style.margin = '0';
       mainContent.style.padding = '0';
     }
-    
+
     // 지도에 화면 높이 적용
     const map = document.getElementById('map');
     if (map) {
@@ -378,16 +387,16 @@ function adjustMobileAppHeight() {
       map.style.margin = '0';
       map.style.padding = '0';
     }
-    
+
     // 사이드바는 CSS에서 이미 올바르게 설정되어 있으므로 JavaScript로 재설정하지 않음
     // PC 환경에서는 사이드바 높이를 변경하면 안 됨
-    
+
     // 모바일 노치에 화면 높이 적용
     const mobileNotch = document.querySelector('.mobile-notch');
     if (mobileNotch) {
       mobileNotch.style.bottom = '0';
     }
-    
+
     // 2차 사이드바에 화면 높이 적용 - 정확한 버전
     const secondaryPanel = document.getElementById('secondaryPanel');
     if (secondaryPanel) {
@@ -400,19 +409,19 @@ function adjustMobileAppHeight() {
       secondaryPanel.style.position = 'fixed';
       secondaryPanel.style.margin = '0';
       secondaryPanel.style.padding = '0';
-      
+
       // 2차 사이드바 내부 컨테이너들도 높이 조정 - 정확한 버전
-             const panelBody = secondaryPanel.querySelector('.panel-body');
-       if (panelBody) {
-         panelBody.style.height = `${availableHeight}px`;
-         panelBody.style.maxHeight = `${availableHeight}px`;
-         panelBody.style.overflow = 'auto';
-         panelBody.style.padding = '15px';
-         panelBody.style.paddingBottom = '10px'; // 최소한의 하단 여백만
-         panelBody.style.margin = '0';
-         panelBody.style.position = 'relative';
-       }
-      
+      const panelBody = secondaryPanel.querySelector('.panel-body');
+      if (panelBody) {
+        panelBody.style.height = `${availableHeight}px`;
+        panelBody.style.maxHeight = `${availableHeight}px`;
+        panelBody.style.overflow = 'auto';
+        panelBody.style.padding = '15px';
+        panelBody.style.paddingBottom = '10px'; // 최소한의 하단 여백만
+        panelBody.style.margin = '0';
+        panelBody.style.position = 'relative';
+      }
+
       const panelView = secondaryPanel.querySelector('.panel-view');
       if (panelView) {
         panelView.style.height = `${availableHeight}px`;
@@ -421,7 +430,7 @@ function adjustMobileAppHeight() {
         panelView.style.margin = '0';
         panelView.style.padding = '0';
       }
-      
+
       // 폼 액션 버튼들을 하단에 고정 - 정확한 버전
       const formActions = secondaryPanel.querySelector('.form-actions');
       if (formActions) {
@@ -436,7 +445,7 @@ function adjustMobileAppHeight() {
         formActions.style.left = '0';
         formActions.style.right = '0';
       }
-      
+
       const detailActions = secondaryPanel.querySelector('.detail-actions');
       if (detailActions) {
         detailActions.style.position = 'sticky';
@@ -450,7 +459,7 @@ function adjustMobileAppHeight() {
         detailActions.style.left = '0';
         detailActions.style.right = '0';
       }
-      
+
       // 클러스터 리스트 정확한 높이 조정
       const clusterList = secondaryPanel.querySelector('.cluster-list');
       if (clusterList) {
@@ -460,17 +469,17 @@ function adjustMobileAppHeight() {
         clusterList.style.margin = '0';
         clusterList.style.padding = '0';
       }
-      
-             const clusterItemList = secondaryPanel.querySelector('#clusterItemList');
-       if (clusterItemList) {
-         clusterItemList.style.height = `${availableHeight - 120}px`; // 헤더와 버튼 영역 제외
-         clusterItemList.style.maxHeight = `${availableHeight - 120}px`;
-         clusterItemList.style.overflow = 'auto';
-         clusterItemList.style.margin = '0';
-         clusterItemList.style.padding = '0';
-       }
+
+      const clusterItemList = secondaryPanel.querySelector('#clusterItemList');
+      if (clusterItemList) {
+        clusterItemList.style.height = `${availableHeight - 120}px`; // 헤더와 버튼 영역 제외
+        clusterItemList.style.maxHeight = `${availableHeight - 120}px`;
+        clusterItemList.style.overflow = 'auto';
+        clusterItemList.style.margin = '0';
+        clusterItemList.style.padding = '0';
+      }
     }
-    
+
     // CSS 변수로 설정하여 CSS에서도 사용할 수 있도록 함
     document.documentElement.style.setProperty('--mobile-screen-height', `${availableHeight}px`);
   }
@@ -496,15 +505,15 @@ let lastWindowHeight = window.innerHeight;
 function isRealWindowResize() {
   const currentWidth = window.innerWidth;
   const currentHeight = window.innerHeight;
-  
+
   // 창 크기가 실제로 변경되었는지 확인
   const isResized = (currentWidth !== lastWindowWidth || currentHeight !== lastWindowHeight);
-  
+
   if (isResized) {
     lastWindowWidth = currentWidth;
     lastWindowHeight = currentHeight;
   }
-  
+
   return isResized;
 }
 
@@ -517,32 +526,32 @@ function setPCLayoutHeight() {
   const topFilterBar = document.getElementById('topFilterBar');
   const layout = document.getElementById('layout');
   const sidebar = document.getElementById('sidebar');
-  
+
   if (!topbar || !statusCounts || !topFilterBar || !layout || !sidebar) {
     return;
   }
-  
+
   // 실제 상단바 높이 계산
   const topbarHeight = parseFloat(window.getComputedStyle(topbar).height);
   const statusCountsHeight = parseFloat(window.getComputedStyle(statusCounts).height);
   const topFilterBarHeight = parseFloat(window.getComputedStyle(topFilterBar).height);
-  
+
   const totalTopbarHeight = topbarHeight + statusCountsHeight + topFilterBarHeight;
   const viewportHeight = window.innerHeight;
   const layoutHeight = viewportHeight - totalTopbarHeight;
-  
+
   // #layout 높이 정확히 설정
   layout.style.top = totalTopbarHeight + 'px';
   layout.style.height = layoutHeight + 'px';
   layout.style.maxHeight = layoutHeight + 'px';
   layout.style.bottom = '0';
-  
+
   // #sidebar 높이를 레이아웃 높이와 정확히 맞춤
   sidebar.style.height = layoutHeight + 'px';
   sidebar.style.maxHeight = layoutHeight + 'px';
   sidebar.style.top = '0';
   sidebar.style.bottom = 'auto';
-  
+
   // 설정 후 실제 계산된 값 확인
   const actualLayoutTop = parseFloat(window.getComputedStyle(layout).top);
   const actualLayoutHeight = parseFloat(window.getComputedStyle(layout).height);
@@ -566,7 +575,7 @@ function restorePCLayoutHeight() {
 function handleMobileAppResize() {
   const isRealResize = isRealWindowResize();
   const isPC = window.innerWidth > 768;
-  
+
   // PC 환경에서는 리사이즈 발생 시 높이 재설정 (가짜 리사이즈 포함)
   if (isPC) {
     // requestAnimationFrame을 사용하여 레이아웃 재계산 완료 후 재설정
@@ -574,12 +583,12 @@ function handleMobileAppResize() {
       setPCLayoutHeight();
     });
   }
-  
+
   // 실제 창 크기 변경인지 확인 (스크롤바 등으로 인한 가짜 리사이즈 무시)
   if (!isRealResize) {
     return;
   }
-  
+
   // 모바일 환경에서만 높이 조정 실행
   if (window.innerWidth <= 768) {
     adjustMobileAppHeight();
@@ -594,19 +603,19 @@ document.addEventListener('DOMContentLoaded', () => {
   } else {
     // PC 환경: 실제 상단바 높이를 계산하여 정확히 설정
     setPCLayoutHeight();
-    
+
     // PC 환경에서 #layout과 #sidebar 높이/위치 변경 감지 (디버깅용)
     const layout = document.getElementById('layout');
     const sidebar = document.getElementById('sidebar');
     const topbar = document.getElementById('topbar');
     const statusCounts = document.getElementById('statusCounts');
     const topFilterBar = document.getElementById('topFilterBar');
-    
+
     if (layout) {
       let lastLayoutHeight = window.getComputedStyle(layout).height;
       let lastLayoutTop = window.getComputedStyle(layout).top;
       let lastLayoutBottom = window.getComputedStyle(layout).bottom;
-      
+
       const layoutObserver = new MutationObserver((mutations) => {
         mutations.forEach((mutation) => {
           if (mutation.type === 'attributes' && mutation.attributeName === 'style') {
@@ -614,9 +623,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const computedHeight = window.getComputedStyle(layout).height;
             const computedTop = window.getComputedStyle(layout).top;
             const computedBottom = window.getComputedStyle(layout).bottom;
-            
-            if (currentHeight || computedHeight !== lastLayoutHeight || 
-                computedTop !== lastLayoutTop || computedBottom !== lastLayoutBottom) {
+
+            if (currentHeight || computedHeight !== lastLayoutHeight ||
+              computedTop !== lastLayoutTop || computedBottom !== lastLayoutBottom) {
               console.warn('⚠️ #layout 변경 감지:', {
                 inlineHeight: currentHeight || '(CSS 값)',
                 computedHeight: computedHeight,
@@ -627,11 +636,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 previousBottom: lastLayoutBottom,
                 stackTrace: new Error().stack.split('\n').slice(2, 8).join('\n')
               });
-              
+
               lastLayoutHeight = computedHeight;
               lastLayoutTop = computedTop;
               lastLayoutBottom = computedBottom;
-              
+
               // PC 환경에서 인라인 스타일이 설정되면 즉시 재설정
               if (window.innerWidth > 768) {
                 requestAnimationFrame(() => {
@@ -642,27 +651,27 @@ document.addEventListener('DOMContentLoaded', () => {
           }
         });
       });
-      
+
       layoutObserver.observe(layout, {
         attributes: true,
         attributeFilter: ['style']
       });
-      
+
       // 상단바 영역 높이 추적
       if (topbar && statusCounts && topFilterBar) {
         let lastTopbarHeight = window.getComputedStyle(topbar).height;
         let lastStatusCountsHeight = window.getComputedStyle(statusCounts).height;
         let lastTopFilterBarHeight = window.getComputedStyle(topFilterBar).height;
-        
+
         const topbarObserver = new MutationObserver(() => {
           const topbarHeight = window.getComputedStyle(topbar).height;
           const statusCountsHeight = window.getComputedStyle(statusCounts).height;
           const topFilterBarHeight = window.getComputedStyle(topFilterBar).height;
           const layoutTop = window.getComputedStyle(layout).top;
-          
-          if (topbarHeight !== lastTopbarHeight || 
-              statusCountsHeight !== lastStatusCountsHeight || 
-              topFilterBarHeight !== lastTopFilterBarHeight) {
+
+          if (topbarHeight !== lastTopbarHeight ||
+            statusCountsHeight !== lastStatusCountsHeight ||
+            topFilterBarHeight !== lastTopFilterBarHeight) {
             console.error('🚨 상단바 영역 높이 변경 감지:', {
               topbarHeight: topbarHeight,
               previousTopbarHeight: lastTopbarHeight,
@@ -675,28 +684,28 @@ document.addEventListener('DOMContentLoaded', () => {
               totalHeight: parseFloat(topbarHeight) + parseFloat(statusCountsHeight) + parseFloat(topFilterBarHeight) + 'px',
               stackTrace: new Error().stack.split('\n').slice(2, 10).join('\n')
             });
-            
+
             lastTopbarHeight = topbarHeight;
             lastStatusCountsHeight = statusCountsHeight;
             lastTopFilterBarHeight = topFilterBarHeight;
           }
         });
-        
+
         topbarObserver.observe(topbar, { attributes: true, attributeFilter: ['style'] });
         topbarObserver.observe(statusCounts, { attributes: true, attributeFilter: ['style'] });
         topbarObserver.observe(topFilterBar, { attributes: true, attributeFilter: ['style'] });
       }
     }
-    
+
     if (sidebar) {
       let lastSidebarHeight = window.getComputedStyle(sidebar).height;
-      
+
       const sidebarObserver = new MutationObserver((mutations) => {
         mutations.forEach((mutation) => {
           if (mutation.type === 'attributes' && (mutation.attributeName === 'style' || mutation.attributeName === 'class')) {
             const currentHeight = sidebar.style.height;
             const computedHeight = window.getComputedStyle(sidebar).height;
-            
+
             if (computedHeight !== lastSidebarHeight) {
               console.error('🚨 #sidebar 높이 변경 감지:', {
                 inlineHeight: currentHeight || '(CSS 값)',
@@ -705,24 +714,24 @@ document.addEventListener('DOMContentLoaded', () => {
                 heightDiff: parseFloat(computedHeight) - parseFloat(lastSidebarHeight),
                 stackTrace: new Error().stack.split('\n').slice(2, 10).join('\n')
               });
-              
+
               lastSidebarHeight = computedHeight;
             }
           }
         });
       });
-      
+
       sidebarObserver.observe(sidebar, {
         attributes: true,
         attributeFilter: ['style', 'class']
       });
-      
+
       // #layout의 높이 변경도 감지 (sidebar는 layout의 100%이므로)
       if (layout) {
         const layoutHeightObserver = new MutationObserver(() => {
           const layoutHeight = window.getComputedStyle(layout).height;
           const sidebarHeight = window.getComputedStyle(sidebar).height;
-          
+
           if (sidebarHeight !== lastSidebarHeight) {
             console.error('🚨 #sidebar 높이 변경 감지 (#layout 영향):', {
               layoutHeight: layoutHeight,
@@ -731,11 +740,11 @@ document.addEventListener('DOMContentLoaded', () => {
               heightDiff: parseFloat(sidebarHeight) - parseFloat(lastSidebarHeight),
               stackTrace: new Error().stack.split('\n').slice(2, 10).join('\n')
             });
-            
+
             lastSidebarHeight = sidebarHeight;
           }
         });
-        
+
         layoutHeightObserver.observe(layout, {
           attributes: true,
           attributeFilter: ['style'],
@@ -783,4 +792,7 @@ window.handleMobileAppResize = handleMobileAppResize;
 window.handleVisualViewportChange = handleVisualViewportChange;
 window.isRealWindowResize = isRealWindowResize; // 실제 창 크기 변경 감지 함수 export
 window.setPCLayoutHeight = setPCLayoutHeight; // PC 환경 높이 설정 함수 export
-window.restorePCLayoutHeight = restorePCLayoutHeight; // PC 환경 높이 복원 함수 export (레거시) 
+window.restorePCLayoutHeight = restorePCLayoutHeight;
+window.debounce = debounce;
+// PC 환경 높이 복원 함수 export (레거시) 
+window.debounce = debounce;

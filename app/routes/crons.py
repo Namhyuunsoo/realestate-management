@@ -46,14 +46,8 @@ def sync_all_data():
         current_app.logger.error(f"주택 매물 동기화 실패: {e}")
         sync_results['housing'] = {'success': False, 'error': str(e)}
 
-    # 3. 배포 (DB 전체 -> 사용자별 맞춤 시트) 
-    try:
-        from app.services.supabase_to_sheet_distribution import distribute_all_listings_to_all_users
-        res_dist = distribute_all_listings_to_all_users()
-        sync_results['distribution'] = res_dist
-    except Exception as e:
-        current_app.logger.error(f"사용자 시트 배포 동기화 실패: {e}")
-        sync_results['distribution'] = {'success': False, 'error': str(e)}
+    # 3. 배포 기능 제거됨 (DB→시트 역배포는 사용하지 않음)
+    # supabase_to_sheet_distribution은 더 이상 cron에서 호출하지 않습니다.
 
     # 4. 지오코딩 (신규 매물 좌표 생성 및 반영)
     try:
