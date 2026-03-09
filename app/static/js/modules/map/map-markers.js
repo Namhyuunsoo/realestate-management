@@ -107,7 +107,7 @@ function finalizeMarkers(activeMarkers) {
   if (typeof MarkerClustering !== "undefined" && MarkerClustering) {
     CLUSTERER = new MarkerClustering({
       minClusterSize: 2,
-      maxZoom: MAP.getMaxZoom(),
+      maxZoom: 22, // 지도의 최대 줌 단계에서도 클러스트가 풀리지 않도록 설정
       map: MAP,
       markers: MARKERS,
       disableClickZoom: true,
