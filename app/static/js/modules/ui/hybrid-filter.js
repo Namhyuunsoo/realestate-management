@@ -122,10 +122,11 @@
         // 여기서는 직관적으로 실시간 적용된 필터를 보여주기 위해 EFFECTIVE_FILTERS 사용 권장
         const filters = window.EFFECTIVE_FILTERS || {};
 
-        // 표시할 라벨 매핑 (복잡한 로직은 생략하고 핵심 키워드 중심)
+        // 표시할 라벨 매핑 (모든 가용한 필터 필드 대응)
         const labelMap = {
             region: '지역',
             jibun: '지번',
+            region2: '지역2',
             building: '건물',
             floor: '층',
             store: '가게',
@@ -133,23 +134,41 @@
             deposit: '보증',
             rent: '월세',
             premium: '권리',
-            manager: '담당'
+            area_sale: '분양',
+            area_real: '전용',
+            manager: '담당',
+            phone: '연락처',
+            client: '의뢰인',
+            note: '비고',
+            note3: '비고3',
+            type: '유형',
+            dong: '동',
+            ho: '호수',
+            direction: '향',
+            supply: '공급',
+            exclusive: '전용',
+            rooms: '방',
+            bath: '화장실',
+            tenant: '임차인',
+            sale_price: '매매',
+            yield: '수익'
         };
 
         let count = 0;
         Object.keys(filters).forEach(key => {
             const val = filters[key];
-            if (val && val !== '' && val !== '전체') {
-                // 주택 필터(tf_h_...) 접두사 제거하고 라벨 찾기
-                const cleanKey = key.replace('tf_h_', 'tf_').replace('tf_', '');
+            // 값이 있고, '전체'가 아닌 경우만 표시 (0은 유효한 값으로 취급)
+            if (val !== undefined && val !== null && val !== '' && val !== '전체') {
+                // 주택 필터(tf_h_...) 또는 상가 필터(tf_...) 접두사 제거
+                const cleanKey = key.replace(/^modal_/, '').replace(/^tf_h_/, '').replace(/^tf_/, '');
                 const label = labelMap[cleanKey] || cleanKey;
 
                 const chip = document.createElement('div');
                 chip.className = 'filter-chip';
                 chip.innerHTML = `
-          <span>${label}: ${val}</span>
-          <span class="remove-chip" data-key="${key}">&times;</span>
-        `;
+                  <span>${label}: ${val}</span>
+                  <span class="remove-chip" data-key="${key}">&times;</span>
+                `;
 
                 chip.querySelector('.remove-chip').addEventListener('click', (e) => {
                     e.stopPropagation();

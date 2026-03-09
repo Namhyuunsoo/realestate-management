@@ -23,28 +23,49 @@ function formatRoomsBath(rooms, bath) {
   return `방${r}화${b}`;
 }
 
+let _currentListData = [];
+let _renderedCount = 0;
+const _BATCH_SIZE = 20;
+
 function renderListingList(arr) {
   const ul = document.getElementById("listingList");
   if (!ul) return;
 
+  _currentListData = arr || [];
+  _renderedCount = 0;
+  ul.innerHTML = "";
+
+  if (_currentListData.length === 0) {
+    ul.innerHTML = '<li style="padding:20px; text-align:center; color:#999;">검색 결과가 없습니다.</li>';
+    return;
+  }
+
+  // 첫 번째 배치 렌더링
+  renderNextBatch();
+
+  // 스크롤 이벤트 등록 (한 번만)
+  if (!ul._hasScrollListener) {
+    ul.addEventListener("scroll", () => {
+      // 바닥에서 100px 정도 남았을 때 추가 로드
+      if (ul.scrollTop + ul.clientHeight >= ul.scrollHeight - 100) {
+        renderNextBatch();
+      }
+    });
+    ul._hasScrollListener = true;
+  }
+}
+
+function renderNextBatch() {
+  const ul = document.getElementById("listingList");
+  if (!ul || _renderedCount >= _currentListData.length) return;
+
+  const nextBatch = _currentListData.slice(_renderedCount, _renderedCount + _BATCH_SIZE);
   const isHousing = window.UI_STATE && window.UI_STATE.listingMode === "housing";
   const housingSubtype = (window.UI_STATE && window.UI_STATE.housingSubtype) || "sale";
 
-  ul.innerHTML = "";
+  const fragment = document.createDocumentFragment();
 
-  // 성능 최적화: 너무 많은 매물을 한꺼번에 렌더링하면 브라우저가 느려짐
-  // 300개까지만 렌더링하고 나머지는 생략
-  const MAX_RENDER = 300;
-  const toRender = arr.slice(0, MAX_RENDER);
-
-  if (arr.length > MAX_RENDER) {
-    const infoLi = document.createElement("li");
-    infoLi.style.cssText = "padding:12px; background:#f8f9fa; color:#666; font-size:12px; text-align:center; border-bottom:1px solid #eee;";
-    infoLi.innerHTML = `⚠️ 전개 매물이 너무 많아 상위 ${MAX_RENDER}개만 표시됩니다.<br>지도를 확대하거나 필터를 상세히 설정해주세요. (총 ${arr.length}개)`;
-    ul.appendChild(infoLi);
-  }
-
-  toRender.forEach(item => {
+  nextBatch.forEach(item => {
     const fields = item.fields || {};
 
     // 주소에서 지역과 지번 추출
@@ -274,8 +295,11 @@ function renderListingList(arr) {
       highlightMarkerTemp(item.id, false);
     });
 
-    ul.appendChild(li);
+    fragment.appendChild(li);
   });
+
+  ul.appendChild(fragment);
+  _renderedCount += nextBatch.length;
 }
 
 function scrollToListing(id) {

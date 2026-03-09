@@ -33,6 +33,10 @@ class ListingListModalManager {
 
         // 닫기 작업 진행 중 플래그 (중복 실행 방지)
         this.isClosing = false;
+        // 무한 스크롤 관련 상태
+        this.listingsData = [];
+        this.renderedCount = 0;
+        this.BATCH_SIZE = 20;
 
         this.init();
     }
@@ -529,13 +533,39 @@ class ListingListModalManager {
             }
         }
 
+        // 무한 스크롤 상태 초기화
+        this.listingsData = listings;
+        this.renderedCount = 0;
+        this.container.innerHTML = '<ul class="listing-list"></ul>';
+
+        // 첫 번째 배치 렌더링
+        this.renderNextBatch();
+
+        // 스크롤 이벤트 등록 (한 번만)
+        if (!this.container._hasScrollListener) {
+            this.container.addEventListener('scroll', () => {
+                if (this.container.scrollTop + this.container.clientHeight >= this.container.scrollHeight - 100) {
+                    this.renderNextBatch();
+                }
+            });
+            this.container._hasScrollListener = true;
+        }
+    }
+
+    renderNextBatch() {
+        if (!this.container || this.renderedCount >= this.listingsData.length) return;
+
+        const ul = this.container.querySelector('ul.listing-list');
+        if (!ul) return;
+
+        const nextBatch = this.listingsData.slice(this.renderedCount, this.renderedCount + this.BATCH_SIZE);
         const isHousing = window.UI_STATE && window.UI_STATE.listingMode === "housing";
         const housingSubtype = (window.UI_STATE && window.UI_STATE.housingSubtype) || "sale";
         const formatSupplyExcl = typeof window.formatSupplyExclusive === "function" ? window.formatSupplyExclusive : (s, e) => (s || e) ? `${s || "-"}/${e || "-"}` : "-/-";
         const formatRoomsBath = typeof window.formatRoomsBath === "function" ? window.formatRoomsBath : (r, b) => `방${(r || "").toString().trim() || "-"}화${(b || "").toString().trim() || "-"}`;
 
-        let listHtml = '<ul class="listing-list">';
-        listings.forEach(item => {
+        let listHtml = '';
+        nextBatch.forEach(item => {
             const fields = item.fields || {};
             const addr = item.address_full || "";
             const addrParts = addr.split(' ');
@@ -543,7 +573,7 @@ class ListingListModalManager {
             const jibun = addrParts.length > 1 ? escapeHtml(addrParts[1]) : "";
             const floorRaw = fields["층수"] || fields["층"] || "";
             const floor = floorRaw ? (/층|지하|^b\d+/i.test(floorRaw) ? floorRaw : `${floorRaw}층`) : "-";
-            const briefingStatus = getBriefingStatus(item.id);
+            const briefingStatus = typeof getBriefingStatus === 'function' ? getBriefingStatus(item.id) : 'none';
             const briefingIcon = briefingStatus === 'briefed' ? '📋' : briefingStatus === 'in_progress' ? '⏳' : '';
             const isRecommended = (window.USER_RECOMMENDATIONS && window.USER_RECOMMENDATIONS.has) ? window.USER_RECOMMENDATIONS.has(item.id) : false;
             const recommendationStar = isRecommended ? '⭐' : '☆';
@@ -664,9 +694,14 @@ class ListingListModalManager {
             `;
             }
         });
-        listHtml += '</ul>';
 
-        this.container.innerHTML = listHtml;
+        const tempUl = document.createElement('div');
+        tempUl.innerHTML = listHtml;
+        while (tempUl.firstChild) {
+            ul.appendChild(tempUl.firstChild);
+        }
+
+        this.renderedCount += nextBatch.length;
         this.originalListingContent = this.container.innerHTML;
 
         // 모달 내부의 리스트 아이템에 클릭 이벤트 추가
@@ -674,7 +709,6 @@ class ListingListModalManager {
 
         // 추천 UI 동기화
         this.syncRecommendationUI();
-
     }
 
     // 추천 UI 동기화 메서드

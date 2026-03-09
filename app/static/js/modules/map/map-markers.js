@@ -9,42 +9,30 @@
 // 마커 재사용을 위한 캐시 (listingId -> Marker객체)
 let MARKER_MAP = new Map();
 
+let _placingRequest = null;
+
 function placeMarkers(arr) {
-  if (PLACING_MARKERS || window.PLACING_MARKERS) return;
+  if (!MAP) return;
+  if (!Array.isArray(arr)) return;
+
+  // 이전 작업 취소
+  if (_placingRequest) {
+    cancelAnimationFrame(_placingRequest);
+    _placingRequest = null;
+  }
 
   PLACING_MARKERS = true;
   window.PLACING_MARKERS = true;
 
   try {
-    if (!MAP) {
-      console.error("❌ MAP 객체가 없습니다.");
-      return;
-    }
-    if (!Array.isArray(arr)) {
-      console.error("❌ arr가 배열이 아닙니다:", typeof arr);
-      return;
-    }
-
-    if (!window.naver || !window.naver.maps || typeof naver.maps.LatLng !== 'function') {
-      console.error('❌ naver.maps.LatLng이 사용할 수 없습니다.');
-      return;
-    }
-
-    // 1. 기존 CLUSTERER 제거 (매번 새로 생성해야 하거나 업데이트해야 함)
     if (CLUSTERER) {
-      try {
-        CLUSTERER.setMap(null);
-      } catch (e) { }
+      try { CLUSTERER.setMap(null); } catch (e) { }
       CLUSTERER = null;
     }
 
-    const bounds = MAP.getBounds();
-    const isZoomLarge = MAP.getZoom() >= 14;
-
-    // 현재 표시해야 할 마커 ID 목록
     const targetIds = new Set(arr.map(item => item.id));
 
-    // 2. 캐시된 마커들 중 현재 리스트에 없는 것은 지도에서 제거 (메모리 해제는 하지 않음)
+    // 기존 마커 중 현재 화면에 없는 것 지도에서 제거
     MARKER_MAP.forEach((marker, id) => {
       if (!targetIds.has(id)) {
         marker.setMap(null);
@@ -52,115 +40,105 @@ function placeMarkers(arr) {
     });
 
     const activeMarkers = [];
-    let validMarkers = 0;
-    let invalidCoords = 0;
+    const BATCH_SIZE = 250;
+    let index = 0;
 
-    // 3. 현재 리스트 순회하며 마커 생성 또는 재사용
-    arr.forEach(item => {
-      const { lat, lng } = item.coords || {};
-      if (lat == null || lng == null) {
-        invalidCoords++;
-        return;
-      }
+    function processBatch() {
+      const end = Math.min(index + BATCH_SIZE, arr.length);
+      for (; index < end; index++) {
+        const item = arr[index];
+        const { lat, lng } = item.coords || {};
+        if (lat == null || lng == null) continue;
 
-      let marker = MARKER_MAP.get(item.id);
-
-      if (!marker) {
-        let pos;
-        try {
-          const latNum = parseFloat(lat);
-          const lngNum = parseFloat(lng);
-          if (isNaN(latNum) || isNaN(lngNum)) {
-            invalidCoords++;
-            return;
-          }
-          pos = new naver.maps.LatLng(latNum, lngNum);
-        } catch (error) {
-          invalidCoords++;
-          return;
-        }
-
-        const color = STATUS_COLORS[item.status_raw] || "#007AFF";
-        marker = new naver.maps.Marker({
-          position: pos,
-          map: null,
-          icon: { content: createMarkerIcon(color, item.id === SELECTED_MARKER_ID, getBriefingStatus(item.id), (window.USER_RECOMMENDATIONS && window.USER_RECOMMENDATIONS.has) ? window.USER_RECOMMENDATIONS.has(item.id) : false) }
-        });
-        marker._listingId = item.id;
-
-        naver.maps.Event.addListener(marker, "click", () => {
-          hideClusterList();
-          setActiveMarker(item.id);
-          scrollToListing(item.id);
-          renderDetailPanel(item);
-        });
-
-        MARKER_MAP.set(item.id, marker);
-      } else {
-        // 이미 존재하는 마커인 경우 아이콘 업데이트 (상태가 변했을 수 있음)
+        let marker = MARKER_MAP.get(item.id);
         const color = STATUS_COLORS[item.status_raw] || "#007AFF";
         const isActive = (item.id === SELECTED_MARKER_ID);
         const briefingStatus = getBriefingStatus(item.id);
         const isRecommended = (window.USER_RECOMMENDATIONS && window.USER_RECOMMENDATIONS.has) ? window.USER_RECOMMENDATIONS.has(item.id) : false;
+        const iconContent = createMarkerIcon(color, isActive, briefingStatus, isRecommended);
 
-        // 아이콘 내용이 달라졌을 때만 업데이트하여 성능 최적화
-        const newIconContent = createMarkerIcon(color, isActive, briefingStatus, isRecommended);
-        if (marker.getIcon().content !== newIconContent) {
-          marker.setIcon({ content: newIconContent });
+        if (!marker) {
+          const latNum = parseFloat(lat);
+          const lngNum = parseFloat(lng);
+          if (isNaN(latNum) || isNaN(lngNum)) continue;
+
+          marker = new naver.maps.Marker({
+            position: new naver.maps.LatLng(latNum, lngNum),
+            map: null,
+            icon: { content: iconContent }
+          });
+          marker._listingId = item.id;
+
+          naver.maps.Event.addListener(marker, "click", () => {
+            if (typeof hideClusterList === 'function') hideClusterList();
+            setActiveMarker(item.id);
+            if (typeof scrollToListing === 'function') scrollToListing(item.id);
+            if (typeof renderDetailPanel === 'function') renderDetailPanel(item);
+          });
+
+          MARKER_MAP.set(item.id, marker);
+        } else {
+          if (marker.getIcon().content !== iconContent) {
+            marker.setIcon({ content: iconContent });
+          }
         }
+        activeMarkers.push(marker);
       }
 
-      activeMarkers.push(marker);
-      validMarkers++;
-    });
-
-    // MARKERS 배열 업데이트 (다른 함수에서 참조하므로)
-    MARKERS = activeMarkers;
-
-    if (typeof MarkerClustering !== "undefined" && MarkerClustering) {
-      CLUSTERER = new MarkerClustering({
-        minClusterSize: 2,
-        maxZoom: MAP.getMaxZoom(),
-        map: MAP,
-        markers: MARKERS,
-        disableClickZoom: true,
-        gridSize: 80,
-        stylingFunction: function (clusterMarker, count) {
-          let cls = count >= 50 ? "cluster-big" : (count >= 10 ? "cluster-mid" : "cluster-small");
-          const bubbleHtml = `<div class="cluster-bubble ${cls}">${count}</div>`;
-          clusterMarker.getElement().innerHTML = bubbleHtml;
-          try { clusterMarker.setZIndex(8000 + count); } catch (e) { }
-        }
-      });
-      window.CLUSTERER = CLUSTERER;
-
-      // 클러스터 변경 리스너 등록
-      if (window._clusterChangedListener) {
-        try { CLUSTERER.removeListener('cluster_changed', window._clusterChangedListener); } catch (e) { }
+      if (index < arr.length) {
+        _placingRequest = requestAnimationFrame(processBatch);
+      } else {
+        finalizeMarkers(activeMarkers);
       }
-      window._clusterChangedListener = () => {
-        if (window.updateClusterBubblesRecommendationStatus) window.updateClusterBubblesRecommendationStatus();
-        if (typeof bindClusterClickDelegation === 'function') bindClusterClickDelegation();
-      };
-      CLUSTERER.addListener('cluster_changed', window._clusterChangedListener);
-
-      setTimeout(() => {
-        if (window.updateClusterBubblesRecommendationStatus) window.updateClusterBubblesRecommendationStatus();
-        if (typeof bindClusterClickDelegation === 'function') bindClusterClickDelegation();
-        if (typeof window.updateClusterBubbles === 'function') window.updateClusterBubbles();
-      }, 500);
-
-    } else {
-      MARKERS.forEach(m => m.setMap(MAP));
     }
 
-    // console.log(`✅ placeMarkers 완료: 유효한 마커 ${validMarkers}개, 좌표 없는 매물 ${invalidCoords}개 (재사용 마커 포함)`);
+    processBatch();
+
   } catch (err) {
     console.error("❌ placeMarkers 실행 중 오류:", err);
-  } finally {
     PLACING_MARKERS = false;
     window.PLACING_MARKERS = false;
   }
+}
+
+function finalizeMarkers(activeMarkers) {
+  MARKERS = activeMarkers;
+
+  if (typeof MarkerClustering !== "undefined" && MarkerClustering) {
+    CLUSTERER = new MarkerClustering({
+      minClusterSize: 2,
+      maxZoom: MAP.getMaxZoom(),
+      map: MAP,
+      markers: MARKERS,
+      disableClickZoom: true,
+      gridSize: 80,
+      stylingFunction: function (clusterMarker, count) {
+        let cls = count >= 50 ? "cluster-big" : (count >= 10 ? "cluster-mid" : "cluster-small");
+        clusterMarker.getElement().innerHTML = `<div class="cluster-bubble ${cls}">${count}</div>`;
+      }
+    });
+    window.CLUSTERER = CLUSTERER;
+
+    if (window._clusterChangedListener) {
+      try { CLUSTERER.removeListener('cluster_changed', window._clusterChangedListener); } catch (e) { }
+    }
+    window._clusterChangedListener = () => {
+      if (window.updateClusterBubblesRecommendationStatus) window.updateClusterBubblesRecommendationStatus();
+      if (typeof bindClusterClickDelegation === 'function') bindClusterClickDelegation();
+    };
+    CLUSTERER.addListener('cluster_changed', window._clusterChangedListener);
+
+    setTimeout(() => {
+      if (window.updateClusterBubblesRecommendationStatus) window.updateClusterBubblesRecommendationStatus();
+      if (typeof bindClusterClickDelegation === 'function') bindClusterClickDelegation();
+    }, 500);
+  } else {
+    MARKERS.forEach(m => m.setMap(MAP));
+  }
+
+  PLACING_MARKERS = false;
+  window.PLACING_MARKERS = false;
+  _placingRequest = null;
 }
 
 function setActiveMarker(id) {

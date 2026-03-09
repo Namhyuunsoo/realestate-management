@@ -41,6 +41,34 @@ SUBTYPE_CONFIG = {
     "oneroom": ("listings_housing_oneroom", None),  # 원룸임대차
 }
 
+# --- 서버측 글로벌 좌표 캐시 ---
+_GEOCODE_CACHE: Dict[str, Tuple[float, float]] = {}
+_LAST_CACHE_UPDATE: float = 0
+
+def _get_or_build_geocode_cache(supabase: Client) -> Dict[str, Tuple[float, float]]:
+    """글로벌 캐시가 없거나 오래된 경우 구축하여 반환"""
+    global _GEOCODE_CACHE, _LAST_CACHE_UPDATE
+    import time
+    
+    current_time = time.time()
+    # 1시간 주기로 갱신
+    if not _GEOCODE_CACHE or (current_time - _LAST_CACHE_UPDATE > 3600):
+        try:
+            print("🔄 Building global geocode cache for Housing from Supabase...")
+            # 전체 주소-좌표 맵 생성
+            result = supabase.table("address_geocode_cache").select("address_full, lat, lng").execute()
+            if result.data:
+                _GEOCODE_CACHE = {
+                    (r.get("address_full") or "").strip(): (float(r["lat"]), float(r["lng"]))
+                    for r in result.data if r.get("address_full") and r.get("lat") is not None
+                }
+                _LAST_CACHE_UPDATE = current_time
+                print(f"✅ Housing Cache built: {len(_GEOCODE_CACHE)} addresses")
+        except Exception as e:
+            print(f"❌ Error building housing geocode cache: {e}")
+            
+    return _GEOCODE_CACHE
+
 
 def _row_to_item(row: Dict[str, Any], coords_map: Dict[str, Tuple[float, float]]) -> Dict[str, Any]:
     """Supabase 행을 프론트 호환 형식으로 변환"""
@@ -62,7 +90,6 @@ def _row_to_item(row: Dict[str, Any], coords_map: Dict[str, Tuple[float, float]]
         "id": row.get("id", ""),
         "raw_row_index": row.get("raw_row_index"),
         "address_full": address_full or None,
-        "address_comp": row.get("address_comp") or {},
         "fields": row.get("fields") or {},
         "coords": coords,
         "status_raw": row.get("status_raw") or "",
@@ -71,27 +98,18 @@ def _row_to_item(row: Dict[str, Any], coords_map: Dict[str, Tuple[float, float]]
 
 
 def _fetch_coords_map(supabase: Client, addresses: List[str]) -> Dict[str, Tuple[float, float]]:
-    """address_geocode_cache에서 주소별 좌표 조회"""
+    """글로벌 캐시를 활용하여 주소별 좌표 조회"""
     if not addresses:
         return {}
-    addresses = [a.strip() for a in addresses if a and a.strip()]
-    if not addresses:
-        return {}
-
+    
+    cache = _get_or_build_geocode_cache(supabase)
     coords_map: Dict[str, Tuple[float, float]] = {}
-    batch_size = 200
-    for i in range(0, len(addresses), batch_size):
-        batch = addresses[i : i + batch_size]
-        try:
-            result = supabase.table("address_geocode_cache").select("address_full, lat, lng").in_("address_full", batch).execute()
-            for r in result.data:
-                addr = (r.get("address_full") or "").strip()
-                lat = r.get("lat")
-                lng = r.get("lng")
-                if addr and lat is not None and lng is not None:
-                    coords_map[addr] = (float(lat), float(lng))
-        except Exception:
-            continue
+    
+    for addr in addresses:
+        clean_addr = addr.strip()
+        if clean_addr in cache:
+            coords_map[clean_addr] = cache[clean_addr]
+            
     return coords_map
 
 

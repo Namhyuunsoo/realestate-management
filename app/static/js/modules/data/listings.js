@@ -449,21 +449,21 @@ function applyAllFilters() {
       return region2.includes(EFFECTIVE_FILTERS.region2);
     });
   }
-  
+   
   if (EFFECTIVE_FILTERS.floor) {
     const floorMatches = LISTINGS.filter(item => {
       const floor = item.fields?.층수 || '';
       return floor.includes(EFFECTIVE_FILTERS.floor);
     });
   }
-  
+   
   if (EFFECTIVE_FILTERS.area_real) {
     const areaMatches = LISTINGS.filter(item => {
       const area = parseNumber(item.fields?.실평수) || 0;
       return area >= parseNumber(EFFECTIVE_FILTERS.area_real);
     });
   }
-  
+   
   if (EFFECTIVE_FILTERS.deposit) {
     const depositFilter = buildNumFilter(EFFECTIVE_FILTERS.deposit, "lte");
     const depositMatches = LISTINGS.filter(item => {
@@ -492,9 +492,12 @@ function applyAllFilters() {
     placeMarkers(FILTERED_LISTINGS);
   }
 
-  // 모바일 필터 요약 업데이트
+  // 모바일/하이브리드 필터 요약 업데이트
   if (typeof window.updateMobileFilterSummary === 'function') {
     window.updateMobileFilterSummary();
+  }
+  if (window.HybridFilter && typeof window.HybridFilter.updateSummary === 'function') {
+    window.HybridFilter.updateSummary();
   }
 
   // 🔥 무한 루프 방지: idle 이벤트 트리거 제거

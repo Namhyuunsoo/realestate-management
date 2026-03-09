@@ -39,6 +39,49 @@ MAP_DISPLAY_TABLES = [
     "listings_rent",
 ]
 
+# --- 서버측 글로벌 좌표 캐시 ---
+_GEOCODE_CACHE: Dict[str, Tuple[float, float]] = {}
+_FLEXIBLE_CACHE: Dict[str, Tuple[float, float]] = {}
+_LAST_CACHE_UPDATE: float = 0
+
+def _get_or_build_geocode_cache(supabase: Client) -> Tuple[Dict[str, Tuple[float, float]], Dict[str, Tuple[float, float]]]:
+    """글로벌 캐시가 없거나 오래된 경우 구축하여 반환"""
+    global _GEOCODE_CACHE, _FLEXIBLE_CACHE, _LAST_CACHE_UPDATE
+    import time
+    
+    current_time = time.time()
+    # 1시간(3600초) 주기로 갱신
+    # 1시간(3600초) 주기로 갱신
+    if not _GEOCODE_CACHE or (current_time - _LAST_CACHE_UPDATE > 3600):
+        try:
+            print("🔄 Building global geocode cache from Supabase...")
+            result = supabase.table("address_geocode_cache").select("address_full, lat, lng").execute()
+            if result.data:
+                new_exact = {}
+                new_flex = {}
+                for r in result.data:
+                    addr_full = (r.get("address_full") or "").strip()
+                    lat = r.get("lat")
+                    lng = r.get("lng")
+                    if not addr_full or lat is None or lng is None:
+                        continue
+                    coords = (float(lat), float(lng))
+                    new_exact[addr_full] = coords
+                    
+                    parts = addr_full.split()
+                    if len(parts) >= 2:
+                        key = " ".join(parts[-2:])
+                        if key not in new_flex: new_flex[key] = coords
+                
+                _GEOCODE_CACHE = new_exact
+                _FLEXIBLE_CACHE = new_flex
+                _LAST_CACHE_UPDATE = current_time
+                print(f"✅ Cache built: {len(_GEOCODE_CACHE)} addresses")
+        except Exception as e:
+            print(f"❌ Error building geocode cache: {e}")
+            
+    return _GEOCODE_CACHE, _FLEXIBLE_CACHE
+
 def _load_sheet_registry() -> Dict[str, Dict[str, Any]]:
     """SheetRegistryRepository를 활용하여 user_id별 슬롯 정보를 맵으로 반환"""
     mapping = {}
@@ -67,66 +110,38 @@ def _load_sheet_registry() -> Dict[str, Dict[str, Any]]:
 
 def _fetch_coords_map(supabase: Client, addresses: List[str]) -> Dict[str, Tuple[float, float]]:
     """
-    address_geocode_cache에서 좌표 조회.
-    주소 형식이 약간 달라도(예: '부평구' 누락) 매칭될 수 있도록 고도화.
+    글로벌 캐시를 활용하여 좌표 조회.
+    DB 요청 없이 메모리에서 즉시 매칭하여 성능을 극대화함.
     """
     coords_map: Dict[str, Tuple[float, float]] = {}
     
-    try:
-        # 캐시 테이블 전체 로드 (약 3,500건으로 작으므로 메모리 로드 가능)
-        # 테이블이 커질 것에 대비해 향후 쿼리 최적화가 필요할 수 있으나 현재는 효율적임
-        result = supabase.table("address_geocode_cache").select("address_full, lat, lng").execute()
-        if not result.data:
-            return {}
+    # 캐시 가져오기 (필요 시 자동 구축)
+    exact_map, flexible_map = _get_or_build_geocode_cache(supabase)
+    
+    if not exact_map:
+        return {}
         
-        # 1. 정밀 매칭용 맵 (전체 주소)
-        exact_map = {}
-        # 2. 유연 매칭용 맵 (동+지번)
-        flexible_map = {}
+    for addr in addresses:
+        if not addr or "#N/A" in addr:
+            continue
         
-        for r in result.data:
-            addr_full = (r.get("address_full") or "").strip()
-            lat = r.get("lat")
-            lng = r.get("lng")
-            if not addr_full or lat is None or lng is None:
-                continue
+        clean_addr = addr.strip()
+        
+        # 1. 정확한 매칭
+        if clean_addr in exact_map:
+            coords_map[clean_addr] = exact_map[clean_addr]
+            continue
+        
+        # 2. 유연한 매칭
+        parts = clean_addr.split()
+        if len(parts) >= 2:
+            key = " ".join(parts[-2:])
+            if key in flexible_map:
+                coords_map[clean_addr] = flexible_map[key]
+        elif len(parts) == 1:
+            if parts[0] in flexible_map:
+                coords_map[clean_addr] = flexible_map[parts[0]]
                 
-            coords = (float(lat), float(lng))
-            exact_map[addr_full] = coords
-            
-            # 주소에서 핵심 부분 추출 (뒤에서부터 두 단어: '동 지번' 또는 '동')
-            parts = addr_full.split()
-            if len(parts) >= 2:
-                # '산곡동 100-80' 형태
-                key = " ".join(parts[-2:])
-                if key not in flexible_map: flexible_map[key] = coords
-        
-        # 입력받은 주소들에 대해 매칭 수행
-        for addr in addresses:
-            if not addr or "#N/A" in addr:
-                continue
-            
-            clean_addr = addr.strip()
-            
-            # 단계 1: 정확한 매칭
-            if clean_addr in exact_map:
-                coords_map[clean_addr] = exact_map[clean_addr]
-                continue
-            
-            # 단계 2: 유연한 매칭 (입력 주소가 짧은 경우 대비)
-            parts = clean_addr.split()
-            if len(parts) >= 2:
-                key = " ".join(parts[-2:])
-                if key in flexible_map:
-                    coords_map[clean_addr] = flexible_map[key]
-            elif len(parts) == 1:
-                # 동 이름만 있는 경우 등 (위험할 수 있으나 시도)
-                if parts[0] in flexible_map:
-                    coords_map[clean_addr] = flexible_map[parts[0]]
-                    
-    except Exception as e:
-        print(f"Error building coords map: {e}")
-        
     return coords_map
 
 def _normalize_row(row: Dict[str, Any], coords_map: Dict[str, Tuple[float, float]], registry_map: Dict[str, Dict[str, Any]], id_prefix: str = "") -> Dict[str, Any]:
@@ -157,7 +172,6 @@ def _normalize_row(row: Dict[str, Any], coords_map: Dict[str, Tuple[float, float
         "user_id": user_id,
         "raw_row_index": row.get("raw_row_index"),
         "address_full": address_full,
-        "address_comp": row.get("address_comp") or {},
         "fields": fields,
         "coords": coords,
         "numeric_cache": row.get("numeric_cache") or {},

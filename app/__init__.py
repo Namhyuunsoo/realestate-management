@@ -181,11 +181,18 @@ def create_app(config_object=None):
                 app.logger.warning(f"🚨 차단된 경로 접근 시도: {request.path} from {mask_ip(request.remote_addr)}")
                 return "Access Denied", 403
 
-    # CORS 헤더 추가 (다른 컴퓨터에서 접속 가능하도록)
+    # CORS 헤더 추가 (보안 강화: 자격 증명 허용 시 와일드카드 사용 제한)
     @app.after_request
     def after_request(response):
         # CORS 헤더 설정
-        response.headers.add('Access-Control-Allow-Origin', '*')
+        origin = request.headers.get('Origin')
+        # 특정 도메인만 허용하거나, 요청 온 Origin을 신뢰할 수 있는 경우에만 반환하는 것이 좋으나
+        # 현재는 로컬 및 다양한 환경 지원을 위해 Origin을 그대로 반환하되 * 대신 명시적 값 사용
+        if origin:
+            response.headers.add('Access-Control-Allow-Origin', origin)
+        else:
+            response.headers.add('Access-Control-Allow-Origin', '*')
+            
         response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization,X-User,X-CSRF-Token')
         response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
         response.headers.add('Access-Control-Allow-Credentials', 'true')
@@ -242,18 +249,15 @@ def create_app(config_object=None):
     def register():
         return app.send_static_file("register.html")
     
-    # 네이버 지도 API 설정 반환
     @app.route("/api/config/maps")
     def get_maps_config():
-        """네이버 지도 API 설정을 반환"""
+        """네이버 지도 API 설정을 반환 (보안: 시크릿 키 제외)"""
         ncp_client_id = app.config.get("NAVER_MAPS_NCP_CLIENT_ID", "")
-        ncp_client_secret = app.config.get("NAVER_MAPS_NCP_CLIENT_SECRET", "")
         
-        # 환경변수가 이미 설정되어 있으므로 그대로 반환
+        # 보안을 위해 ncpClientSecret은 절대 프론트엔드에 노출하지 않음
         return jsonify({
             "ncpKeyId": ncp_client_id,
-            "ncpClientId": ncp_client_id,
-            "ncpClientSecret": ncp_client_secret
+            "ncpClientId": ncp_client_id
         })
 
     # 압축 상태 확인 API

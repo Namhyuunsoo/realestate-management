@@ -274,35 +274,50 @@ function updateMobileFilterSummary() {
 
   const summaryParts = [];
 
-  // 필터 필드명 매핑
+  // 필터 필드명 매핑 (hybrid-filter.js와 동기화)
   const filterLabels = {
     region: '지역',
     jibun: '지번',
-    building: '건물명',
-    floor: '층',
-    store: '가게명',
-    area_sale: '분양',
-    area_real: '실평수',
-    deposit: '보증금',
-    rent: '월세',
-    premium: '권리금',
-    note: '비고',
-    manager: '담당자',
     region2: '지역2',
+    building: '건물',
+    floor: '층',
+    store: '가게',
+    status: '현황',
+    deposit: '보증',
+    rent: '월세',
+    premium: '권리',
+    area_sale: '분양',
+    area_real: '전용',
+    manager: '담당',
     phone: '연락처',
     client: '의뢰인',
-    note3: '비고3'
+    note: '비고',
+    note3: '비고3',
+    type: '유형',
+    dong: '동',
+    ho: '호수',
+    direction: '향',
+    supply: '공급',
+    exclusive: '전용',
+    rooms: '방',
+    bath: '화장실',
+    tenant: '임차인',
+    sale_price: '매매',
+    yield: '수익'
   };
 
   // 모든 필터를 순회하면서 값이 있는 것만 요약에 추가
   Object.keys(filters).forEach(key => {
     const value = filters[key];
-    if (value && value.toString().trim() !== '') {
-      const label = filterLabels[key] || key;
-      // 숫자 필터의 경우 범위 표시, 텍스트 필터는 그대로 표시
-      if (key === 'floor') {
+    if (value !== undefined && value !== null && value.toString().trim() !== '' && value !== '전체') {
+      // 주택 필터(tf_h_...) 또는 상가 필터(tf_...) 접두사 제거
+      const cleanKey = key.replace(/^modal_/, '').replace(/^tf_h_/, '').replace(/^tf_/, '');
+      const label = filterLabels[cleanKey] || cleanKey;
+
+      // 숫자 필터의 경우 단위 표시 고려 (기존 로직 유지하며 라벨만 보완)
+      if (cleanKey === 'floor') {
         summaryParts.push(value + label);
-      } else if (key === 'deposit' || key === 'rent' || key === 'premium' || key === 'area_sale' || key === 'area_real') {
+      } else if (['deposit', 'rent', 'premium', 'area_sale', 'area_real'].includes(cleanKey)) {
         summaryParts.push(label + ' ' + value);
       } else {
         summaryParts.push(label + ':' + value);

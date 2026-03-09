@@ -230,11 +230,13 @@ def get_sheet_slots():
     return jsonify({"slots": slots})
 
 @bp.get("/debug-supabase")
+@require_admin()
+@log_access()
 def debug_supabase():
-    """Supabase 연동 디버깅 정보 반환 (임시 시크릿 키 사용)"""
-    from flask import request
+    """Supabase 연동 디버깅 정보 반환 (관리자 전용)"""
+    # 기존 고정 시크릿 확인은 유지하되, 이미 require_admin으로 보호됨
     if request.args.get('secret') != 'antigravity_debug_123':
-        return jsonify({"error": "Unauthorized"}), 401
+        return jsonify({"error": "Unauthorized Debug Secret Required"}), 401
         
     import os
     env_info = {}
