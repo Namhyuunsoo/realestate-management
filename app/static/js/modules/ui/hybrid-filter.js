@@ -13,8 +13,10 @@
     function init() {
         console.log('🚀 Hybrid Filter Module Initializing...');
 
-        // 0. 하이브리드 모드 클래스 강제 적용
-        document.body.classList.add('hybrid-mode');
+        // 0. 하이브리드 모드 클래스 적용 - 모바일이 아닐 경우에만 (모바일 레이아웃 간섭 방지)
+        if (!window.MOBILE_APP) {
+            document.body.classList.add('hybrid-mode');
+        }
 
         // 1. 이벤트 리스너 바인딩
         bindEvents();

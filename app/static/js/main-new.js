@@ -9,12 +9,17 @@
  * ===== 모듈 로드 시스템 =====
  *******************************/
 
+// 전역 캐시 버전
+const APP_VERSION = '20260310_v4';
+
 // 모듈 로드 함수 (성능 측정 포함)
 function loadModule(modulePath) {
   return new Promise((resolve, reject) => {
     const startTime = performance.now();
     const script = document.createElement('script');
-    script.src = modulePath;
+    // 캐시 버스팅 파라미터 추가
+    const urlWithVersion = modulePath.includes('?') ? `${modulePath}&v=${APP_VERSION}` : `${modulePath}?v=${APP_VERSION}`;
+    script.src = urlWithVersion;
 
     script.onload = () => {
       const endTime = performance.now();
@@ -37,7 +42,9 @@ function loadModuleWithPriority(modulePath, priority = 'normal') {
   return new Promise((resolve, reject) => {
     const startTime = performance.now();
     const script = document.createElement('script');
-    script.src = modulePath;
+    // 캐시 버스팅 파라미터 추가
+    const urlWithVersion = modulePath.includes('?') ? `${modulePath}&v=${APP_VERSION}` : `${modulePath}?v=${APP_VERSION}`;
+    script.src = urlWithVersion;
 
     // 우선순위에 따른 로딩 전략
     if (priority === 'critical') {

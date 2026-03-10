@@ -110,9 +110,9 @@ function registerMapEvents() {
     // 성능 최적화: 지도 영역 변경 감지 (백업 로직 기반)
     if (LAST_MAP_BOUNDS &&
       window.LAST_MAP_ZOOM === zoom &&
-      typeof LAST_MAP_BOUNDS.getNorthEast === 'function' &&
-      LAST_MAP_BOUNDS.getNorthEast().equals(bounds.getNorthEast()) &&
-      LAST_MAP_BOUNDS.getSouthWest().equals(bounds.getSouthWest())) {
+      typeof LAST_MAP_BOUNDS.getNE === 'function' &&
+      LAST_MAP_BOUNDS.getNE().equals(bounds.getNE()) &&
+      LAST_MAP_BOUNDS.getSW().equals(bounds.getSW())) {
       return;
     }
 

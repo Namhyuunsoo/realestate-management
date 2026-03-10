@@ -5398,113 +5398,115 @@ body.hybrid-mode #topbar {
   z-index: 1000 !important;
 }
 
-body.hybrid-mode #topbar {
-  height: 40px !important;
-  min-height: 40px !important;
-  max-height: 40px !important;
-  padding: 0 15px !important;
-  box-sizing: border-box !important;
-}
+@media (min-width: 769px) {
+  body.hybrid-mode #topbar {
+    height: 40px !important;
+    min-height: 40px !important;
+    max-height: 40px !important;
+    padding: 0 15px !important;
+    box-sizing: border-box !important;
+  }
 
-body.hybrid-mode #statusCounts {
-  position: absolute !important;
-  top: 40px !important;
-  left: 0 !important;
-  width: 100% !important;
-  height: 70px !important;
-  min-height: 70px !important;
-  max-height: 70px !important;
-  display: flex !important;
-  flex-direction: column !important;
-  padding: 0 !important;
-  background: white !important;
-  border-bottom: 2px solid #e9ecef !important;
-  z-index: 1000 !important;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05) !important;
-  box-sizing: border-box !important;
-}
+  body.hybrid-mode #statusCounts {
+    position: absolute !important;
+    top: 40px !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: 70px !important;
+    min-height: 70px !important;
+    max-height: 70px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    padding: 0 !important;
+    background: white !important;
+    border-bottom: 2px solid #e9ecef !important;
+    z-index: 1000 !important;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05) !important;
+    box-sizing: border-box !important;
+  }
 
-body.hybrid-mode #layout {
-  position: absolute !important;
-  top: 110px !important;
-  left: 0 !important;
-  right: 0 !important;
-  bottom: 0 !important;
-  height: calc(100vh - 110px) !important;
-  max-height: calc(100vh - 110px) !important;
-  width: 100% !important;
-  z-index: 1 !important;
-  margin: 0 !important;
-  padding: 0 !important;
-  overflow: hidden !important;
-}
+  body.hybrid-mode #layout {
+    position: absolute !important;
+    top: 110px !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    height: calc(100vh - 110px) !important;
+    max-height: calc(100vh - 110px) !important;
+    width: 100% !important;
+    z-index: 1 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+  }
 
-/* #layout 내부 모든 자식의 상단 여백 및 변위 강제 초기화 (유격 제거 핵심) */
-body.hybrid-mode #layout>#sidebar,
-body.hybrid-mode #layout>#mainContent,
-body.hybrid-mode #layout>#mapWrap,
-body.hybrid-mode #layout>#mapArea,
-body.hybrid-mode #layout>.mobile-notch {
-  position: absolute !important;
-  top: 0 !important;
-  margin-top: 0 !important;
-  height: 100% !important;
-  transform: none !important;
-}
+  /* #layout 내부 모든 자식의 상단 여백 및 변위 강제 초기화 (유격 제거 핵심) */
+  body.hybrid-mode #layout>#sidebar,
+  body.hybrid-mode #layout>#mainContent,
+  body.hybrid-mode #layout>#mapWrap,
+  body.hybrid-mode #layout>#mapArea,
+  body.hybrid-mode #layout>.mobile-notch {
+    position: absolute !important;
+    top: 0 !important;
+    margin-top: 0 !important;
+    height: 100% !important;
+    transform: none !important;
+  }
 
-body.hybrid-mode #filterChipBar {
-  display: flex !important;
-  align-items: center !important;
-  width: 100% !important;
-  height: 30px !important;
-  min-height: 30px !important;
-  gap: 10px !important;
-  padding: 0 15px !important;
-  border-bottom: 1px dashed #f0f0f0 !important;
-  box-sizing: border-box !important;
-}
+  body.hybrid-mode #filterChipBar {
+    display: flex !important;
+    align-items: center !important;
+    width: 100% !important;
+    height: 30px !important;
+    min-height: 30px !important;
+    gap: 10px !important;
+    padding: 0 15px !important;
+    border-bottom: 1px dashed #f0f0f0 !important;
+    box-sizing: border-box !important;
+  }
 
-/* 2단: 통합 바 구성 */
-body.hybrid-mode .count-info {
-  display: flex !important;
-  position: absolute !important;
-  top: 30px !important;
-  left: 15px !important;
-  height: 40px !important;
-  align-items: center !important;
-  justify-content: flex-start !important;
-  gap: 6px !important;
-  z-index: 1001 !important;
-  font-size: 13px !important;
-  margin: 0 !important;
-}
+  /* 2단: 통합 바 구성 */
+  body.hybrid-mode .count-info {
+    display: flex !important;
+    position: absolute !important;
+    top: 30px !important;
+    left: 15px !important;
+    height: 40px !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    gap: 6px !important;
+    z-index: 1001 !important;
+    font-size: 13px !important;
+    margin: 0 !important;
+  }
 
-body.hybrid-mode .sheet-controls {
-  display: flex !important;
-  position: absolute !important;
-  top: 30px !important;
-  right: 15px !important;
-  height: 40px !important;
-  align-items: center !important;
-  justify-content: flex-end !important;
-  gap: 8px !important;
-  z-index: 1001 !important;
-  margin: 0 !important;
-}
+  body.hybrid-mode .sheet-controls {
+    display: flex !important;
+    position: absolute !important;
+    top: 30px !important;
+    right: 15px !important;
+    height: 40px !important;
+    align-items: center !important;
+    justify-content: flex-end !important;
+    gap: 8px !important;
+    z-index: 1001 !important;
+    margin: 0 !important;
+  }
 
-body.hybrid-mode #statusCounts>div:not(#filterChipBar):not(.count-info):not(.sheet-controls) {
-  display: none !important;
-}
+  body.hybrid-mode #statusCounts>div:not(#filterChipBar):not(.count-info):not(.sheet-controls) {
+    display: none !important;
+  }
 
-/* 10. 필터 모달 섹션 개별 제어 강제 적용 */
-#hybridFilterModal .filter-section.hidden {
-  display: none !important;
-}
+  /* 10. 필터 모달 섹션 개별 제어 강제 적용 */
+  #hybridFilterModal .filter-section.hidden {
+    display: none !important;
+  }
 
-/* 11. 현황 필터 드롭다운 너비 확장 (다른 필드와 동일하게) */
-body.hybrid-mode #tf_status,
-body.hybrid-mode #tf_h_status {
-  min-width: 100% !important;
-  max-width: 100% !important;
-  width: 100% !important;
+  /* 11. 현황 필터 드롭다운 너비 확장 (다른 필드와 동일하게) */
+  body.hybrid-mode #tf_status,
+  body.hybrid-mode #tf_h_status {
+    min-width: 100% !important;
+    max-width: 100% !important;
+    width: 100% !important;
+  }
 }

@@ -398,30 +398,41 @@ function applyAllFilters() {
     return true;
   });
 
-  // 🔥 핵심 수정: 지도 영역 필터링 추가 (백업 로직 기반)
+  // 🔥 핵심 수정: 지도 영역 필터링 추가 (초기 로딩 시 bounds 미확보 대비 예외 처리)
   if (MAP_READY && MAP) {
     const zoom = MAP.getZoom();
     const bounds = MAP.getBounds();
 
     if (bounds) {
-      if (zoom < 14) {
-        arr = [];
+      // bounding box가 유효한지 파악 (초기화 직후 0에 가까운 값이 될 수 있음)
+      const sw = bounds.getSW();
+      const ne = bounds.getNE();
+      const isValidBounds = sw && ne && Math.abs(sw.lat() - ne.lat()) > 0.0001;
+
+      if (isValidBounds) {
+        if (zoom < 14) {
+          arr = [];
+        } else {
+          arr = arr.filter(item => {
+            const { lat, lng } = item.coords || {};
+            if (lat == null || lng == null) return false;
+
+            try {
+              const latNum = parseFloat(lat);
+              const lngNum = parseFloat(lng);
+              if (isNaN(latNum) || isNaN(lngNum)) return false;
+
+              const latLng = new naver.maps.LatLng(latNum, lngNum);
+              return bounds.hasLatLng(latLng);
+            } catch (error) {
+              return false;
+            }
+          });
+        }
       } else {
-        arr = arr.filter(item => {
-          const { lat, lng } = item.coords || {};
-          if (lat == null || lng == null) return false;
-
-          try {
-            const latNum = parseFloat(lat);
-            const lngNum = parseFloat(lng);
-            if (isNaN(latNum) || isNaN(lngNum)) return false;
-
-            const latLng = new naver.maps.LatLng(latNum, lngNum);
-            return bounds.hasLatLng(latLng);
-          } catch (error) {
-            return false;
-          }
-        });
+        // bounds가 유효하지 않으면 필터링 건너뜀 (초기 렌더링 무시 방지)
+        // zoom 14 미만일 때 빈 배열 처리만 유지
+        if (zoom < 14) arr = [];
       }
     }
   }

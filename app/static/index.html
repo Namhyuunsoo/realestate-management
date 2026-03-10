@@ -7,6 +7,11 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <meta name="csrf-token" content="">
   <link rel="icon" href="data:,">
+  <!-- 
+    ========================================
+    🔥 전역 설정 및 기기 감지 (매우 중요)
+    ========================================
+  -->
   <script>
     // 브라우저/앱 속성으로 모바일 감지 (CSS 로드 전에 실행)
     function isMobileDevice() {
@@ -21,35 +26,46 @@
       return isMobileOS || isMobileBrowser;
     }
 
-    // PC CSS 먼저 로드
-    const pcLink = document.createElement('link');
-    pcLink.rel = 'stylesheet';
-    pcLink.href = '/static/css/style.css?v=20260307_final_v2';
-    document.head.appendChild(pcLink);
+    (function () {
+      // 1) 모바일 감지 (가장 먼저 실행)
+      var isMobile = isMobileDevice() || window.innerWidth <= 768;
+      window.MOBILE_APP = isMobile;
 
-    // 모바일이면 모바일 CSS 추가 로드 (오버라이드용)
-    if (isMobileDevice()) {
-      const mobileLink = document.createElement('link');
-      mobileLink.rel = 'stylesheet';
-      mobileLink.href = '/static/css/style-mobile.css?v=20250924';
-      document.head.appendChild(mobileLink);
-      console.log('📱 모바일 디바이스 감지 - PC CSS + 모바일 CSS 로드');
-    } else {
-      console.log('💻 PC 디바이스 감지 - PC CSS만 로드');
-    }
+      // 2) 앱 버전 (캐시 무효화용) - JS/CSS 통합 버전 관리
+      window.APP_VERSION = "20260310_v4";
+    })();
+  </script>
 
-    // 모바일 환경에서는 매물리스트 모달 버튼 사용
-    if (isMobileDevice()) {
-      console.log('📱 모바일 환경 감지 - 매물리스트 모달 버튼 사용');
+  <!-- 파서 레벨에서 동기 로딩을 보장하는 표준 링크 태그 -->
+  <link rel="stylesheet" href="/static/css/style.css?v=20260310_v4">
+
+  <!-- 모바일 환경에서만 style-mobile.css 로드 (media 쿼리 가중치) -->
+  <link rel="stylesheet" href="/static/css/style-mobile.css?v=20260310_v4" media="screen and (max-width: 768px)">
+
+  <!-- 
+    태블릿 등 UA 기준 모바일이지만 해상도가 넓은 예외 케이스 처리
+    width가 768px을 초과해도 모바일로 판정된 경우 강제로 적용
+  -->
+  <script>
+    if (window.MOBILE_APP && (window.innerWidth > 768 || isMobileDevice())) {
+      var linkId = 'force-mobile-style';
+      if (!document.getElementById(linkId)) {
+        var link = document.createElement('link');
+        link.id = linkId;
+        link.rel = 'stylesheet';
+        link.href = '/static/css/style-mobile.css?v=' + window.APP_VERSION;
+        document.head.appendChild(link);
+        console.log('🚀 모바일 강제 스타일 주입됨 (v4)');
+      }
     }
   </script>
-  <script src="/static/js/main-new.js"></script>
-  <script src="/static/js/listing-add.js"></script>
-  <script src="/static/js/customer-add.js"></script>
-  <script src="/static/js/modules/ui/mobile-buttons.js"></script>
-  <script src="/static/js/modules/ui/hybrid-filter.js"></script>
-  <script src="/static/js/customer-list-modal.js"></script>
-  <script src="/static/js/modules/admin/slot-management.js"></script>
+  <script src="/static/js/main-new.js?v=20260310_v4"></script>
+  <script src="/static/js/listing-add.js?v=20260310_v4"></script>
+  <script src="/static/js/customer-add.js?v=20260310_v4"></script>
+  <script src="/static/js/modules/ui/mobile-buttons.js?v=20260310_v4"></script>
+  <script src="/static/js/modules/ui/hybrid-filter.js?v=20260310_v4"></script>
+  <script src="/static/js/customer-list-modal.js?v=20260310_v4"></script>
+  <script src="/static/js/modules/admin/slot-management.js?v=20260310_v4"></script>
   <script>
     async function loadNaverMapsAPI() {
       return new Promise(async (resolve, reject) => {
@@ -152,7 +168,7 @@
   </script>
 </head>
 
-<body class="hybrid-mode">
+<body>
   <!-- 로그인 필요 안내 화면 -->
   <div id="loginRequiredScreen" class="login-required-screen hidden">
     <div class="login-required-box">
