@@ -6,7 +6,8 @@
 #listingModeToggle,
 .subtype-buttons,
 #topFilterBar,
-#filterChipBar {
+#filterChipBar,
+#addressSearchArea {
   display: none !important;
 }
 

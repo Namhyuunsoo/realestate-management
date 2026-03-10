@@ -32,15 +32,15 @@
       window.MOBILE_APP = isMobile;
 
       // 2) 앱 버전 (캐시 무효화용) - JS/CSS 통합 버전 관리
-      window.APP_VERSION = "20260310_v4";
+      window.APP_VERSION = "20260310_v5";
     })();
   </script>
 
   <!-- 파서 레벨에서 동기 로딩을 보장하는 표준 링크 태그 -->
-  <link rel="stylesheet" href="/static/css/style.css?v=20260310_v4">
+  <link rel="stylesheet" href="/static/css/style.css?v=20260310_v5">
 
   <!-- 모바일 환경에서만 style-mobile.css 로드 (media 쿼리 가중치) -->
-  <link rel="stylesheet" href="/static/css/style-mobile.css?v=20260310_v4" media="screen and (max-width: 768px)">
+  <link rel="stylesheet" href="/static/css/style-mobile.css?v=20260310_v5" media="screen and (max-width: 768px)">
 
   <!-- 
     태블릿 등 UA 기준 모바일이지만 해상도가 넓은 예외 케이스 처리
@@ -55,17 +55,18 @@
         link.rel = 'stylesheet';
         link.href = '/static/css/style-mobile.css?v=' + window.APP_VERSION;
         document.head.appendChild(link);
-        console.log('🚀 모바일 강제 스타일 주입됨 (v4)');
+        console.log('🚀 모바일 강제 스타일 주입됨 (v5)');
       }
     }
   </script>
-  <script src="/static/js/main-new.js?v=20260310_v4"></script>
-  <script src="/static/js/listing-add.js?v=20260310_v4"></script>
-  <script src="/static/js/customer-add.js?v=20260310_v4"></script>
-  <script src="/static/js/modules/ui/mobile-buttons.js?v=20260310_v4"></script>
-  <script src="/static/js/modules/ui/hybrid-filter.js?v=20260310_v4"></script>
-  <script src="/static/js/customer-list-modal.js?v=20260310_v4"></script>
-  <script src="/static/js/modules/admin/slot-management.js?v=20260310_v4"></script>
+  <script src="/static/js/main-new.js?v=20260310_v5"></script>
+  <script src="/static/js/listing-add.js?v=20260310_v5"></script>
+  <script src="/static/js/customer-add.js?v=20260310_v5"></script>
+  <script src="/static/js/modules/ui/mobile-buttons.js?v=20260310_v5"></script>
+  <script src="/static/js/modules/ui/hybrid-filter.js?v=20260310_v5"></script>
+  <script src="/static/js/customer-list-modal.js?v=20260310_v5"></script>
+  <script src="/static/js/modules/admin/slot-management.js?v=20260310_v5"></script>
+  <script src="/static/js/modules/map/address-search.js?v=20260310_v5"></script>
   <script>
     async function loadNaverMapsAPI() {
       return new Promise(async (resolve, reject) => {
@@ -257,6 +258,12 @@
         <div id="filterSummaryArea">
           <!-- 적용된 필터 칩이 여기에 동적으로 렌더링됨 -->
         </div>
+      </div>
+
+      <!-- 주소 검색 영역 (PC 전용) -->
+      <div id="addressSearchArea" class="address-search-area">
+        <input type="text" id="addressSearchInput" placeholder="주소, 건물명 검색 (예: 서초대로 397)">
+        <button id="addressSearchBtn" type="button">검색</button>
       </div>
       <div class="count-info">
         총 <span id="countTotal">0</span>건 / 필터 후 <span id="countFiltered">0</span>건
