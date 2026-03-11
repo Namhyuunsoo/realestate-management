@@ -21,7 +21,7 @@ class CustomerListModalManager {
     
     
     // 인증 상태 확인
-    if (!currentUser) {
+    if (!window.currentUser) {
       console.error('❌ 사용자가 로그인되지 않았습니다');
       alert('로그인이 필요합니다.');
       return;
@@ -175,7 +175,7 @@ class CustomerListModalManager {
       
       const res = await fetch(url, {
         headers: {
-          'X-User': currentUser
+          'X-User': window.currentUser
         }
       });
       
