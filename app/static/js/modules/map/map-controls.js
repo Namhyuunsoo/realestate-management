@@ -987,37 +987,50 @@ function addListingAtCoord(coord, options = {}) {
     const addr = response.v2.address || {};
     console.log('추출된 주소 데이터:', addr);
 
-    // 법정동 구조물 파싱 (안전한 접근 및 Fallback 처리)
-    let sido = '';
+    // 법정동 구조물 파싱 (문자열 기반 스마트 파싱)
     let sigugun = '';
     let dong = '';
     let jibunCode = '';
 
-    if (addr.elements && Array.isArray(addr.elements)) {
-      sido = addr.elements[0]?.types.includes('SIDO') ? addr.elements[0].longName : '';
-      sigugun = addr.elements[1]?.types.includes('SIGUGUN') ? addr.elements[1].longName : '';
-      dong = addr.elements[2]?.types.includes('DONGMYUN') ? addr.elements[2].longName : '';
-      jibunCode = (addr.jibunAddress || '').trim().split(' ').pop();
+    const fullJibun = (addr.jibunAddress || '').trim();
+    const parts = fullJibun.split(/\\s+/).filter(Boolean);
+
+    if (parts.length >= 3) {
+      // 마지막 요소가 지번인지 확인 (숫자 포함 여부)
+      const lastPart = parts[parts.length - 1];
+      const hasNumber = /\\d/.test(lastPart);
+      
+      if (hasNumber) {
+        jibunCode = lastPart;
+        parts.pop(); // 지번 제거
+      }
+
+      // 남은 배열 분석 (시/도 부분 제외)
+      const middle = parts.slice(1); 
+      
+      if (middle.length === 1) {
+        // 예: 세종특별자치시 나성동
+        dong = middle[0];
+        sigugun = parts[0]; 
+      } else if (middle.length >= 3 && middle[0].endsWith('시') && middle[1].endsWith('구')) {
+        // 예: 경기도 부천시 원미구 중동
+        sigugun = middle[1];
+        dong = middle[middle.length - 1]; // 마지막 읍면동리 추출
+      } else if (middle.length >= 2) {
+        // 예: 인천광역시 부평구 부평동, 제주특별자치도 제주시 애월읍
+        sigugun = middle[0];
+        dong = middle[middle.length - 1];
+      }
     } else {
-      // elements 속성이 없는 경우 jibunAddress 문자열 기반 Fallback 파싱
-      // 예: "인천광역시 부평구 부평동  546-96"
-      const parts = (addr.jibunAddress || '').split(/\s+/).filter(Boolean);
-      if (parts.length >= 4) {
-        sido = parts[0];
-        sigugun = parts[1];
-        dong = parts[2];
-        jibunCode = parts[parts.length - 1]; // 마지막 요소를 지번으로 간주
-      } else if (parts.length === 3) {
-        sido = parts[0];
-        sigugun = parts[1];
-        jibunCode = parts[2]; // 동 부분이 생략된 경우
-      } else if (parts.length > 0) {
-        jibunCode = parts[parts.length - 1];
+      // 매우 짧은 주소의 경우 fallback
+      if (parts.length > 0) {
+        const lastPart = parts[parts.length - 1];
+        if (/\\d/.test(lastPart)) jibunCode = lastPart;
       }
     }
 
     // 추출된 지번 정보가 진짜 지번 형식이 맞는지 검증
-    if (!jibunCode || jibunCode.includes('동') || jibunCode.includes('도') || jibunCode.includes('시') || jibunCode.includes('구') || jibunCode === (addr.jibunAddress || '').trim()) {
+    if (!jibunCode || jibunCode.endsWith('동') || jibunCode.endsWith('도') || jibunCode.endsWith('시') || jibunCode.endsWith('구') || jibunCode === fullJibun) {
       jibunCode = '';
     }
 
