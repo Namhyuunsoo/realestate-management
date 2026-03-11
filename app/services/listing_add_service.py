@@ -98,7 +98,7 @@ class ListingAddService:
                 spreadsheetId=sheet_id,
                 range=range_name,
                 valueInputOption='USER_ENTERED',
-                insertDataOption='OVERWRITE',
+                insertDataOption='INSERT_ROWS',
                 body=body
             ).execute()
 
