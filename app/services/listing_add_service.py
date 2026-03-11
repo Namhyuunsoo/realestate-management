@@ -91,15 +91,14 @@ class ListingAddService:
             target_row_number = last_row + 1
             row_data = self._prepare_dynamic_row_data(headers, listing_data, target_row_number)
 
-            # A열은 빈칸이므로 테이블을 B ~ Z 구간으로 명시하여 API 오작동 방지
-            range_name = f"'{sheet_name}'!B:Z"
+            # 수동 지정 방식(Update): B열부터 시작하는 정확한 줄 번호를 좌표로 타겟팅 (예: B36)
+            range_name = f"'{sheet_name}'!B{target_row_number}"
             body = {'values': [row_data]}
 
-            self.sheets_service.spreadsheets().values().append(
+            self.sheets_service.spreadsheets().values().update(
                 spreadsheetId=sheet_id,
                 range=range_name,
                 valueInputOption='USER_ENTERED',
-                insertDataOption='INSERT_ROWS',
                 body=body
             ).execute()
 
@@ -127,8 +126,16 @@ class ListingAddService:
             if not values:
                 return 1  # 아무것도 없으면 1(헤더 위치)
             
-            # 마지막 행 번호 반환 (데이터가 있는 실제 마지막 줄)
-            return len(values)
+            # 역순 스캔 알고리즘: 중간 이빠짐, 공백으로 인한 배열 압축 버그 완벽 차단
+            last_row = 1
+            for i in range(len(values) - 1, -1, -1):
+                row = values[i]
+                # 각 셀(칸)의 문자열 묶음 중 하나라도 빈 공백을 넘은 데이터가 존재하면 진짜 마지막 행으로 간주
+                if any(str(cell).strip() for cell in row):
+                    last_row = i + 1  # 0-based 인덱스를 1-based 시트 행 번호로 전환
+                    break
+                    
+            return last_row
             
         except Exception as e:
             current_app.logger.error(f"마지막 행 번호 조회 실패: {str(e)}")
