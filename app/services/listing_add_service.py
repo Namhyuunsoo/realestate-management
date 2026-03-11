@@ -91,7 +91,8 @@ class ListingAddService:
             target_row_number = last_row + 1
             row_data = self._prepare_dynamic_row_data(headers, listing_data, target_row_number)
 
-            range_name = f"'{sheet_name}'!A:Z"
+            # A열은 빈칸이므로 테이블을 B ~ Z 구간으로 명시하여 API 오작동 방지
+            range_name = f"'{sheet_name}'!B:Z"
             body = {'values': [row_data]}
 
             self.sheets_service.spreadsheets().values().append(
