@@ -2438,11 +2438,17 @@ div:has(> .cluster-bubble) {
   border-radius: 20px !important;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
   border: 1px solid #ddd !important;
-  height: 38px !important;
+  height: 34px !important;
+  top: 33px !important;
+  z-index: 1005 !important; /* 상위 레이어로 올려 상호작용 보장 */
+  pointer-events: auto !important; /* 클릭 이벤트 허용 */
+  user-select: auto !important; /* 텍스트 선택/입력 허용 */
   box-sizing: border-box !important;
 }
 
 .address-search-area input {
+  pointer-events: auto !important;
+  user-select: auto !important;
   border: none !important;
   outline: none !important;
   font-size: 13px !important;
@@ -5535,7 +5541,7 @@ body.hybrid-mode #topbar {
     margin: 0 !important;
   }
 
-  body.hybrid-mode #statusCounts>div:not(#filterChipBar):not(.count-info):not(.sheet-controls) {
+  body.hybrid-mode #statusCounts>div:not(#filterChipBar):not(.count-info):not(.sheet-controls):not(#addressSearchArea) {
     display: none !important;
   }
 

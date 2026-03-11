@@ -10,7 +10,7 @@
  *******************************/
 
 // 전역 캐시 버전
-const APP_VERSION = '20260310_v5';
+const APP_VERSION = '20260311_v9';
 
 // 모듈 로드 함수 (성능 측정 포함)
 function loadModule(modulePath) {

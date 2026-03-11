@@ -28,6 +28,9 @@
         });
     }
 
+    // 임시 검색 마커 저장 변수
+    let searchMarker = null;
+
     // 주소 검색 처리
     function handleSearch(query) {
         if (!query || query.trim() === '') {
@@ -75,12 +78,40 @@
                 window.MAP.setCenter(coord);
                 window.MAP.setZoom(17); // 상세 보기 수준으로 줌 조정
 
-                // 검색어 입력창 비우기 (선택 사항)
-                // document.getElementById('addressSearchInput').value = '';
-
-                if (typeof window.showToast === 'function') {
-                    window.showToast(`"${item.roadAddress || item.jibunAddress}" 위치로 이동했습니다.`, 'success');
+                // 기존 마커 제거
+                if (searchMarker) {
+                    searchMarker.setMap(null);
                 }
+
+                // 새 임시 마커 생성 (눈에 띄는 디자인)
+                searchMarker = new naver.maps.Marker({
+                    position: coord,
+                    map: window.MAP,
+                    icon: {
+                        content: `
+                            <div style="position: relative; width: 40px; height: 40px;">
+                                <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 20px; height: 20px; background-color: #ff3b30; border: 3px solid white; border-radius: 50%; box-shadow: 0 0 10px rgba(0,0,0,0.5); z-index: 1;"></div>
+                                <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 30px; height: 30px; background-color: rgba(255, 59, 48, 0.3); border-radius: 50%; animation: pulse 1.5s infinite;"></div>
+                            </div>
+                            <style>
+                                @keyframes pulse {
+                                    0% { transform: translate(-50%, -50%) scale(0.5); opacity: 1; }
+                                    100% { transform: translate(-50%, -50%) scale(1.5); opacity: 0; }
+                                }
+                            </style>
+                        `,
+                        anchor: new naver.maps.Point(20, 20)
+                    },
+                    zIndex: 2000
+                });
+
+                // 마커 클릭 시 제거 (선택적)
+                naver.maps.Event.addListener(searchMarker, 'click', function() {
+                    searchMarker.setMap(null);
+                    searchMarker = null;
+                });
+
+                // 사용자 요청에 따라 "위치로 이동했습니다" 알림은 제거함 (가시성 확보됨)
             } else {
                 console.error('❌ 지도 객체(MAP)를 찾을 수 없습니다.');
             }

@@ -27,20 +27,23 @@
     }
 
     (function () {
-      // 1) 모바일 감지 (가장 먼저 실행)
-      var isMobile = isMobileDevice() || window.innerWidth <= 768;
-      window.MOBILE_APP = isMobile;
+      // 1) 모바일 감지 (PC 브라우저 리사이즈와 실제 모바일 기기 구분 강화)
+      var isMobile = isMobileDevice() || (window.innerWidth <= 768 && isMobileDevice());
+      // PC에서 창만 줄인 경우는 모바일 모드로 보지 않음 (필요 시 조정 가능)
+      // 단, 창이 768 이하이면서 모바일 기기인 경우에만 엄격하게 적용하거나, 
+      // 기존처럼 너비로만 판단하되 style-mobile.css 내부에서 미디어 쿼리로 한 번 더 걸러줌
+      window.MOBILE_APP = isMobileDevice() || window.innerWidth <= 768;
 
       // 2) 앱 버전 (캐시 무효화용) - JS/CSS 통합 버전 관리
-      window.APP_VERSION = "20260310_v5";
+      window.APP_VERSION = "20260311_v9";
     })();
   </script>
 
   <!-- 파서 레벨에서 동기 로딩을 보장하는 표준 링크 태그 -->
-  <link rel="stylesheet" href="/static/css/style.css?v=20260310_v5">
+  <link rel="stylesheet" href="/static/css/style.css?v=20260311_v9">
 
   <!-- 모바일 환경에서만 style-mobile.css 로드 (media 쿼리 가중치) -->
-  <link rel="stylesheet" href="/static/css/style-mobile.css?v=20260310_v5" media="screen and (max-width: 768px)">
+  <link rel="stylesheet" href="/static/css/style-mobile.css?v=20260311_v9" media="screen and (max-width: 768px)">
 
   <!-- 
     태블릿 등 UA 기준 모바일이지만 해상도가 넓은 예외 케이스 처리
@@ -55,18 +58,18 @@
         link.rel = 'stylesheet';
         link.href = '/static/css/style-mobile.css?v=' + window.APP_VERSION;
         document.head.appendChild(link);
-        console.log('🚀 모바일 강제 스타일 주입됨 (v5)');
+        console.log('🚀 모바일 강제 스타일 주입됨 (v7)');
       }
     }
   </script>
-  <script src="/static/js/main-new.js?v=20260310_v5"></script>
-  <script src="/static/js/listing-add.js?v=20260310_v5"></script>
-  <script src="/static/js/customer-add.js?v=20260310_v5"></script>
-  <script src="/static/js/modules/ui/mobile-buttons.js?v=20260310_v5"></script>
-  <script src="/static/js/modules/ui/hybrid-filter.js?v=20260310_v5"></script>
-  <script src="/static/js/customer-list-modal.js?v=20260310_v5"></script>
-  <script src="/static/js/modules/admin/slot-management.js?v=20260310_v5"></script>
-  <script src="/static/js/modules/map/address-search.js?v=20260310_v5"></script>
+  <script src="/static/js/main-new.js?v=20260310_v7"></script>
+  <script src="/static/js/listing-add.js?v=20260310_v7"></script>
+  <script src="/static/js/customer-add.js?v=20260310_v7"></script>
+  <script src="/static/js/modules/ui/mobile-buttons.js?v=20260310_v7"></script>
+  <script src="/static/js/modules/ui/hybrid-filter.js?v=20260310_v7"></script>
+  <script src="/static/js/customer-list-modal.js?v=20260310_v7"></script>
+  <script src="/static/js/modules/admin/slot-management.js?v=20260310_v7"></script>
+  <script src="/static/js/modules/map/address-search.js?v=20260310_v7"></script>
   <script>
     async function loadNaverMapsAPI() {
       return new Promise(async (resolve, reject) => {
