@@ -99,8 +99,13 @@ class CustomerAddManager {
     }
     
     async submitCustomer() {
+        if (!window.currentUser) {
+            this.showErrorMessage('로그인이 필요합니다.');
+            return;
+        }
+
         try {
-            // 폼 데이터 수집
+            // 폼 데이터 수집 (PC방식 필터데이터 포함)
             const formData = this.collectFormData();
             
             // 유효성 검사
@@ -108,37 +113,35 @@ class CustomerAddManager {
                 return;
             }
             
-            // PC버전의 고객 저장 로직 사용
-            if (typeof window.saveCustomer === 'function') {
-                const result = await window.saveCustomer(formData);
+            // URL은 최신 RESTful API 방식 사용
+            const url = '/api/customers/';
+            
+            // formData에서 NaN 값 제거 (PC 로직 복제)
+            const cleanedFormData = window.cleanObject ? window.cleanObject(formData) : formData;
+            
+            // API 직접 호출
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-User': window.currentUser
+                },
+                body: JSON.stringify(cleanedFormData)
+            });
+            
+            if (response.ok) {
+                const result = await response.json();
+                this.showSuccessMessage('고객정보가 성공적으로 등록되었습니다.');
+                this.closeModal();
+                this.refreshCustomerList();
                 
-                if (result && result.success !== false) {
-                    this.showSuccessMessage('고객이 성공적으로 등록되었습니다.');
-                    this.closeModal();
-                    // 고객 목록 새로고침 (필요시)
-                    this.refreshCustomerList();
-                } else {
-                    this.showErrorMessage(result?.error || '고객등록에 실패했습니다.');
+                // 저장 후 발생 이벤트 트리거 (PC 동기화)
+                if (window.afterCustomerSaved) {
+                    window.afterCustomerSaved();
                 }
             } else {
-                // PC버전 저장 함수가 없으면 직접 API 호출
-                const response = await fetch('/api/customers/add', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(formData)
-                });
-                
-                const result = await response.json();
-                
-                if (result.success) {
-                    this.showSuccessMessage(result.message);
-                    this.closeModal();
-                    this.refreshCustomerList();
-                } else {
-                    this.showErrorMessage(result.error || '고객등록에 실패했습니다.');
-                }
+                const errorText = await response.text();
+                this.showErrorMessage('고객등록에 실패했습니다: ' + errorText);
             }
             
         } catch (error) {
@@ -148,29 +151,58 @@ class CustomerAddManager {
     }
     
     collectFormData() {
-        const formData = {};
+        const areaVal = window.cleanValue ? window.cleanValue(this.formContainer.querySelector('#frmArea')?.value) : (this.formContainer.querySelector('#frmArea')?.value || '');
+        const depositVal = window.cleanValue ? window.cleanValue(this.formContainer.querySelector('#frmDeposit')?.value) : (this.formContainer.querySelector('#frmDeposit')?.value || '');
+        const rentVal = window.cleanValue ? window.cleanValue(this.formContainer.querySelector('#frmRent')?.value) : (this.formContainer.querySelector('#frmRent')?.value || '');
+        const premiumVal = window.cleanValue ? window.cleanValue(this.formContainer.querySelector('#frmPremium')?.value) : (this.formContainer.querySelector('#frmPremium')?.value || '');
         
-        // 모달 내부의 폼 필드들 수집
-        const inputs = this.formContainer.querySelectorAll('input, textarea, select');
-        inputs.forEach(input => {
-            if (input.id && input.value !== '') {
-                // PC버전 필드 ID를 실제 필드명으로 매핑
-                const fieldMapping = {
-                    'frmManager': 'manager',
-                    'frmName': 'name',
-                    'frmPhone': 'phone',
-                    'frmRegions': 'regions',
-                    'frmFloor': 'floor_pref',
-                    'frmBudget': 'budget',
-                    'frmType': 'type_pref',
-                    'frmSize': 'size_pref',
-                    'frmNotes': 'notes'
-                };
-                
-                const fieldName = fieldMapping[input.id] || input.id;
-                formData[fieldName] = input.value;
+        const formData = {
+            manager: this.formContainer.querySelector('#frmManager')?.value || '',
+            name: this.formContainer.querySelector('#frmName')?.value || '',
+            phone: this.formContainer.querySelector('#frmPhone')?.value || '',
+            regions: this.formContainer.querySelector('#frmRegions')?.value || '',
+            floor: this.formContainer.querySelector('#frmFloor')?.value || '',
+            area: areaVal,
+            deposit: depositVal,
+            rent: rentVal,
+            premium: premiumVal,
+            notes: this.formContainer.querySelector('#frmNotes')?.value || '',
+            created_by: window.currentUser,
+            created_at: new Date().toISOString()
+        };
+        
+        // 지역명 정규화 (PC 동기화)
+        function normalizeRegion(region) {
+            if (!region) return region;
+            region = region.trim();
+            if (region.includes("구 전체") || region.includes("구 전부")) {
+                return region.split("구")[0] + "구";
             }
-        });
+            if (region.includes("구전체") || region.includes("구전부")) {
+                return region.split("구전체")[0] + "구";
+            }
+            if (region.includes("시 전체") || region.includes("시 전부")) {
+                return region.split("시")[0] + "시";
+            }
+            if (region.includes("시전체") || region.includes("시전부")) {
+                return region.split("시전체")[0] + "시";
+            }
+            return region;
+        }
+
+        const normalizedRegion = normalizeRegion(formData.regions);
+
+        // 필터 전용 데이터 구성
+        const filterData = {
+            region: normalizedRegion,
+            floor: formData.floor,
+            area_real: formData.area,
+            deposit: formData.deposit,
+            rent: formData.rent,
+            premium: formData.premium
+        };
+
+        formData.filter_data = JSON.stringify(filterData);
         
         return formData;
     }
