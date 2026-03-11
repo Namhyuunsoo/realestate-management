@@ -20,11 +20,19 @@ class CustomerListModalManager {
     }
     
     
-    // 인증 상태 확인
+    // 인증 상태 확인 및 복원 시도
     if (!window.currentUser) {
-      console.error('❌ 사용자가 로그인되지 않았습니다');
-      alert('로그인이 필요합니다.');
-      return;
+      const savedUser = localStorage.getItem('X-USER');
+      if (savedUser) {
+        window.currentUser = savedUser;
+        if (typeof currentUser !== 'undefined') {
+          currentUser = savedUser;
+        }
+      } else {
+        console.error('❌ 사용자가 로그인되지 않았습니다');
+        alert('로그인이 필요합니다.');
+        return;
+      }
     }
 
     // 모달 컨테이너 생성 또는 찾기
@@ -159,6 +167,17 @@ class CustomerListModalManager {
   }
 
   async loadCustomerList() {
+    
+    // 인증 상태 재확인 빛 복원
+    if (!window.currentUser) {
+      const savedUser = localStorage.getItem('X-USER');
+      if (savedUser) {
+        window.currentUser = savedUser;
+        if (typeof currentUser !== 'undefined') {
+          currentUser = savedUser;
+        }
+      }
+    }
     
     try {
       // 사용자 역할에 따라 필터 설정
