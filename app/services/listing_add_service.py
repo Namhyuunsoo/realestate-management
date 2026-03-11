@@ -134,8 +134,8 @@ class ListingAddService:
             return None
 
     def _prepare_dynamic_row_data(self, headers: list, listing_data: Dict[str, Any], row_number: int) -> list:
-        """가변 헤더 배열에 맞춰 전달된 데이터를 배치. A열 빈 값 고정"""
-        row_data = [""]  # A열 빈 값
+        """가변 헤더 배열에 맞춰 전달된 데이터를 배치. (API가 B열을 테이블 시작으로 인식하므로 첫 빈칸 제거)"""
+        row_data = []  # B열(접수일)부터 데이터가 1:1로 매칭됨
         
         for field in headers:
             if field == '현황':
