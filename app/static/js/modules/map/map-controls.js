@@ -993,12 +993,12 @@ function addListingAtCoord(coord, options = {}) {
     let jibunCode = '';
 
     const fullJibun = (addr.jibunAddress || '').trim();
-    const parts = fullJibun.split(/\\s+/).filter(Boolean);
+    const parts = fullJibun.split(' ').filter(Boolean);
 
     if (parts.length >= 3) {
       // 마지막 요소가 지번인지 확인 (숫자 포함 여부)
       const lastPart = parts[parts.length - 1];
-      const hasNumber = /\\d/.test(lastPart);
+      const hasNumber = /[0-9]/.test(lastPart);
       
       if (hasNumber) {
         jibunCode = lastPart;
@@ -1025,7 +1025,7 @@ function addListingAtCoord(coord, options = {}) {
       // 매우 짧은 주소의 경우 fallback
       if (parts.length > 0) {
         const lastPart = parts[parts.length - 1];
-        if (/\\d/.test(lastPart)) jibunCode = lastPart;
+        if (/[0-9]/.test(lastPart)) jibunCode = lastPart;
       }
     }
 
