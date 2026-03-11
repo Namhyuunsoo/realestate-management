@@ -91,7 +91,7 @@ class ListingAddService:
             target_row_number = last_row + 1
             row_data = self._prepare_dynamic_row_data(headers, listing_data, target_row_number)
 
-            range_name = f"'{sheet_name}'!A:A"
+            range_name = f"'{sheet_name}'!A:Z"
             body = {'values': [row_data]}
 
             self.sheets_service.spreadsheets().values().append(
@@ -115,8 +115,8 @@ class ListingAddService:
     def _get_last_row_number(self, sheet_id: str, sheet_name: str) -> Optional[int]:
         """시트의 마지막 행 번호 조회"""
         try:
-            # A열의 모든 값 조회
-            range_name = f"'{sheet_name}'!A:A"
+            # 전체 영역(A:Z)을 조회하여 진짜 마지막 행 번호를 찾음 (A열은 항상 비어있을 수 있기 때문)
+            range_name = f"'{sheet_name}'!A:Z"
             result = self.sheets_service.spreadsheets().values().get(
                 spreadsheetId=sheet_id,
                 range=range_name
@@ -124,9 +124,9 @@ class ListingAddService:
             
             values = result.get('values', [])
             if not values:
-                return 1  # 헤더만 있는 경우
+                return 1  # 아무것도 없으면 1(헤더 위치)
             
-            # 마지막 행 번호 반환 (1부터 시작)
+            # 마지막 행 번호 반환 (데이터가 있는 실제 마지막 줄)
             return len(values)
             
         except Exception as e:
