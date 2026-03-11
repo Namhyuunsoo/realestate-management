@@ -228,7 +228,10 @@ async function loadUserList() {
     }
     
     const data = await response.json();
-    const users = data.users || [];
+    let users = data.users || [];
+    
+    // 거절된 사용자(rejected)는 목록에서 제외
+    users = users.filter(user => user.status !== 'rejected');
     
     // 전역 변수 업데이트
     currentUsers = users;
@@ -574,7 +577,8 @@ function getUserActionButtons(user) {
     buttons.push(`<button class="user-action-btn deactivate" onclick="deactivateUser('${user.id}')">비활성화</button>`);
   }
   
-  buttons.push(`<button class="user-action-btn reset-password" onclick="resetUserPassword('${user.id}')">비밀번호 재설정</button>`);
+  buttons.push(`<button class="user-action-btn edit" onclick="editUser('${user.id}')">수정</button>`);
+  buttons.push(`<button class="user-action-btn reset-password" onclick="editUser('${user.id}')">비밀번호 재설정</button>`);
   buttons.push(`<button class="user-action-btn edit-role" onclick="editUserRole('${user.id}')">역할 변경</button>`);
   
   return buttons.join('');
@@ -700,6 +704,14 @@ function openUserFormModal(user = null) {
   }
 
   modal.classList.remove('hidden');
+  
+  // 비밀번호 재설정 버튼을 통해 들어온 경우 입력창에 포커스 (UX 개선)
+  if (user) {
+    const newPasswordInput = document.getElementById('userNewPassword');
+    if (newPasswordInput) {
+      setTimeout(() => newPasswordInput.focus(), 100);
+    }
+  }
 }
 
 // 사용자 폼 제출 처리
@@ -819,14 +831,14 @@ async function handlePasswordReset() {
   }
 
   try {
-    const response = await fetch('/api/auth/reset-password', {
+    const response = await fetch(`/api/admin/users/${editingUserId}/reset-password`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'X-User': currentUser
       },
+      credentials: 'include',
       body: JSON.stringify({
-        user_id: editingUserId,
         new_password: newPassword
       })
     });
@@ -837,7 +849,14 @@ async function handlePasswordReset() {
     }
 
     showToast('비밀번호가 재설정되었습니다.', 'success');
-    document.getElementById('userNewPassword').value = '';
+    
+    // 입력창 비우기
+    const passwordInput = document.getElementById('userNewPassword');
+    if (passwordInput) passwordInput.value = '';
+    
+    // 모달 닫기 (선택 사항)
+    // closeModalById('userFormModal');
+    
     // 목록 새로고침
     await loadUserList();
   } catch (error) {
@@ -937,6 +956,7 @@ window.approveUser = approveUser;
 window.rejectUser = rejectUser;
 window.deactivateUser = deactivateUser;
 window.resetUserPassword = resetUserPassword;
+window.editUser = editUser;
 window.editUserRole = editUserRole;
 
 // 사용자 승인

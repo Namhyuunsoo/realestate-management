@@ -91,7 +91,7 @@ class ListingAddService:
             target_row_number = last_row + 1
             row_data = self._prepare_dynamic_row_data(headers, listing_data, target_row_number)
 
-            range_name = f"{sheet_name}!A:A"
+            range_name = f"'{sheet_name}'!A:A"
             body = {'values': [row_data]}
 
             self.sheets_service.spreadsheets().values().append(
@@ -116,7 +116,7 @@ class ListingAddService:
         """시트의 마지막 행 번호 조회"""
         try:
             # A열의 모든 값 조회
-            range_name = f"{sheet_name}!A:A"
+            range_name = f"'{sheet_name}'!A:A"
             result = self.sheets_service.spreadsheets().values().get(
                 spreadsheetId=sheet_id,
                 range=range_name

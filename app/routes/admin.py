@@ -63,11 +63,17 @@ def create_user():
     if not user:
         return jsonify({"error": "사용자 생성에 실패했습니다."}), 500
     
-    # 역할, 직책, 담당자명 설정
+    # 역할, 승인 여부 등 설정
     user.role = role
     user.status = "approved"  # 관리자가 생성한 사용자는 바로 승인
     user.approved_at = time.time()
     user.approved_by = admin_id
+    
+    # password_hash 필드도 명시적으로 저장 (호환성)
+    if not hasattr(user, 'password_hash') or not user.password_hash:
+        from werkzeug.security import generate_password_hash
+        user.password_hash = generate_password_hash(password)
+    
     if job_title:
         user.set_job_title(job_title)
     if manager_name:

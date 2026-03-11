@@ -22,12 +22,14 @@ except Exception as e:
 
 # 초기화할 이메일 및 새 비밀번호 설정
 target_email = "darkbirth@naver.com"
-new_password = "password"
+new_password = "algus12~!"
 
 user_found = False
 for u in users:
     if u.get('email') == target_email:
-        u['password'] = generate_password_hash(new_password)
+        hashed = generate_password_hash(new_password)
+        u['password'] = hashed
+        u['password_hash'] = hashed
         u['status'] = 'approved' # 승인 상태로 강제 변경
         u['invalid_login_attempts'] = 0 # 잠금 해제
         u['locked_until'] = None
@@ -41,6 +43,7 @@ if not user_found:
         "id": "admin_reset",
         "email": target_email,
         "password": generate_password_hash(new_password),
+        "password_hash": generate_password_hash(new_password),
         "name": "관리자",
         "role": "admin",
         "status": "approved",

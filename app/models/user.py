@@ -185,10 +185,20 @@ class User:
         if "is_active" in data and "status" not in data:
             status = "approved" if data["is_active"] else "inactive"
         
+        # password_hash가 비어있거나 너무 짧으면(잘린 값 우려) password 필드 확인
+        p_hash = data.get("password_hash", "")
+        p_legacy = data.get("password", "")
+        
+        # Werkzeug 해시는 보통 50자 이상임. 짧은 값은 무시하고 legacy 필드(password) 시도
+        if len(p_hash) < 20 and len(p_legacy) >= 20:
+            password_hash = p_legacy
+        else:
+            password_hash = p_hash or p_legacy
+        
         return cls(
             id=data["id"],
             email=data["email"],
-            password_hash=data["password_hash"],
+            password_hash=password_hash,
             name=data["name"],
             role=data.get("role", "user"),
             status=status,

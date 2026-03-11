@@ -126,6 +126,7 @@ class FileUserRepository(UserRepository):
         for user in self.users.values():
             user_dict = user.to_dict()
             user_dict["password_hash"] = user.password_hash
+            user_dict["password"] = user.password_hash # 레거시 스크립트 및 로그인 호환성
             user_dict["is_active"] = user.is_active()
             users_data.append(user_dict)
         

@@ -25,22 +25,19 @@ function placeMarkers(arr) {
   window.PLACING_MARKERS = true;
 
   try {
-    if (CLUSTERER) {
-      try { CLUSTERER.setMap(null); } catch (e) { }
-      CLUSTERER = null;
-    }
-
     const targetIds = new Set(arr.map(item => item.id));
 
-    // 기존 마커 중 현재 화면에 없는 것 지도에서 제거
+    // 기존 마커 중 현재 화면(버퍼 포함)에 없는 것 지도에서 제거
     MARKER_MAP.forEach((marker, id) => {
       if (!targetIds.has(id)) {
         marker.setMap(null);
+        // 메모리 관리를 위해 완전히 제거하지 않고 Map에 유지하여 재사용 가능하게 함
+        // (단, 지번/필터가 바뀌어 아예 필요 없는 데이터라면 메모리 해제 고려 가능)
       }
     });
 
     const activeMarkers = [];
-    const BATCH_SIZE = 250;
+    const BATCH_SIZE = 300; // 배치 크기 약간 상향
     let index = 0;
 
     function processBatch() {
@@ -64,7 +61,7 @@ function placeMarkers(arr) {
 
           marker = new naver.maps.Marker({
             position: new naver.maps.LatLng(latNum, lngNum),
-            map: null,
+            map: null, // 클러스터러가 관리하도록 설정
             icon: { content: iconContent }
           });
           marker._listingId = item.id;
@@ -78,6 +75,7 @@ function placeMarkers(arr) {
 
           MARKER_MAP.set(item.id, marker);
         } else {
+          // 기존 마커가 있고 아이콘이 바뀌어야 하는 경우에만 업데이트 (성능 최적화)
           if (marker.getIcon().content !== iconContent) {
             marker.setIcon({ content: iconContent });
           }
@@ -105,9 +103,14 @@ function finalizeMarkers(activeMarkers) {
   MARKERS = activeMarkers;
 
   if (typeof MarkerClustering !== "undefined" && MarkerClustering) {
+    // 🔥 깜빡임 방지: 새로운 클러스터러를 만들기 직전에만 기존 것을 지움
+    if (CLUSTERER) {
+      try { CLUSTERER.setMap(null); } catch (e) { }
+    }
+
     CLUSTERER = new MarkerClustering({
       minClusterSize: 2,
-      maxZoom: 22, // 지도의 최대 줌 단계에서도 클러스트가 풀리지 않도록 설정
+      maxZoom: 22,
       map: MAP,
       markers: MARKERS,
       disableClickZoom: true,

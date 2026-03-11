@@ -13,6 +13,65 @@ function updateCountsDisplay(total, filtered) {
   if (filteredEl) filteredEl.textContent = filtered;
 }
 
+/**
+ * 🔥 Tabular JSON 압축 데이터를 기존 객체 형식으로 복원
+ */
+function decompactListings(data) {
+  if (!data || !data.rows) return data;
+  if (!data.compressed && !data.cols) return data; // 최소한의 구조 확인
+
+  const { cols, f_keys, n_keys, rows } = data;
+  const latIdx = cols.indexOf("lat");
+  const lngIdx = cols.indexOf("lng");
+  const fIdx = cols.length; // fields 데이터는 cols 뒤에 위치
+  const nIdx = fIdx + 1;    // numeric_cache 데이터는 fields 뒤에 위치
+  const gIdx = nIdx + 1;    // geocoded 플래그 위치
+
+  return rows.map(row => {
+    const item = {};
+    
+    // 1. 기본 컬럼 복원
+    cols.forEach((col, i) => {
+      if (col !== "lat" && col !== "lng") {
+        item[col] = row[i];
+      }
+    });
+
+    // 2. 좌표 복원
+    item.coords = {
+      lat: row[latIdx],
+      lng: row[lngIdx]
+    };
+
+    // 3. fields 복원 (k: v 매핑)
+    const fields = {};
+    const fValues = row[fIdx] || [];
+    f_keys.forEach((key, i) => {
+      if (fValues[i] !== null) {
+        fields[key] = fValues[i];
+      }
+    });
+    item.fields = fields;
+
+    // 4. numeric_cache 복원
+    const numeric = {};
+    const nValues = row[nIdx] || [];
+    n_keys.forEach((key, i) => {
+      if (nValues[i] !== null) {
+        numeric[key] = nValues[i];
+      }
+    });
+    item.numeric_cache = numeric;
+
+    // 5. 추가 플래그 (geocoded)
+    if (row[gIdx] !== undefined) {
+      item.geocoded = row[gIdx];
+    }
+
+    return item;
+  });
+}
+
 /**************************************
  * ===== 서버에서 매물 로드 =====
  **************************************/
@@ -74,20 +133,29 @@ async function fetchListings(force = false) {
     // 🔥 핵심 수정: API 응답 구조 확인 및 수정
     // console.log("🔍 fetchListings: API 응답 구조 확인:", data);
 
-    // API 응답이 배열인 경우와 객체인 경우 모두 처리
     let items = [];
-    if (Array.isArray(data)) {
-      items = data;
-      // console.log("🔍 fetchListings: API 응답이 배열입니다");
-    } else if (data.items && Array.isArray(data.items)) {
-      items = data.items;
-      // console.log("🔍 fetchListings: API 응답이 객체이고 items 배열을 포함합니다");
-    } else if (data.listings && Array.isArray(data.listings)) {
-      items = data.listings;
-      // console.log("🔍 fetchListings: API 응답이 객체이고 listings 배열을 포함합니다");
+    
+    // 1. 압축 데이터 여부 먼저 확인 및 해제
+    const hasCompactStructure = data.cols && data.rows;
+    const itemsHasCompactStructure = data.items && data.items.cols && data.items.rows;
+    const isCompact = data.compressed || (data.items && data.items.compressed) || hasCompactStructure || itemsHasCompactStructure;
+    
+    if (isCompact) {
+      const compactData = (data.cols && data.rows) ? data : data.items;
+      items = decompactListings(compactData);
+      console.log(`📦 JSON 압축 해제 완료: ${items.length}개 (감지 방식: ${hasCompactStructure ? 'Root' : (itemsHasCompactStructure ? 'Items' : 'Flag')})`);
     } else {
-      console.error("❌ fetchListings: API 응답 구조를 파악할 수 없습니다:", data);
-      throw new Error("API 응답 구조가 예상과 다릅니다.");
+      // 2. 기존 방식(비압축) 처리
+      if (Array.isArray(data)) {
+        items = data;
+      } else if (data.items && Array.isArray(data.items)) {
+        items = data.items;
+      } else if (data.listings && Array.isArray(data.listings)) {
+        items = data.listings;
+      } else {
+        console.error("❌ fetchListings: API 응답 구조를 파악할 수 없습니다:", data);
+        throw new Error("API 응답 구조가 예상과 다릅니다.");
+      }
     }
 
     ORIGINAL_LIST = items;
@@ -398,41 +466,45 @@ function applyAllFilters() {
     return true;
   });
 
-  // 🔥 핵심 수정: 지도 영역 필터링 추가 (초기 로딩 시 bounds 미확보 대비 예외 처리)
+  // 🔥 핵심 수정: 지도 영역 필터링 고도화 (버퍼 영역 추가 및 줌 제약 완화)
   if (MAP_READY && MAP) {
     const zoom = MAP.getZoom();
     const bounds = MAP.getBounds();
 
     if (bounds) {
-      // bounding box가 유효한지 파악 (초기화 직후 0에 가까운 값이 될 수 있음)
       const sw = bounds.getSW();
       const ne = bounds.getNE();
       const isValidBounds = sw && ne && Math.abs(sw.lat() - ne.lat()) > 0.0001;
 
       if (isValidBounds) {
-        if (zoom < 14) {
-          arr = [];
-        } else {
-          arr = arr.filter(item => {
-            const { lat, lng } = item.coords || {};
-            if (lat == null || lng == null) return false;
+        // 버퍼 영역 계산 (화면 영역의 30% 상하좌우 확장)
+        const latSpan = Math.abs(ne.lat() - sw.lat());
+        const lngSpan = Math.abs(ne.lng() - sw.lng());
+        const latBuffer = latSpan * 0.3;
+        const lngBuffer = lngSpan * 0.3;
 
-            try {
-              const latNum = parseFloat(lat);
-              const lngNum = parseFloat(lng);
-              if (isNaN(latNum) || isNaN(lngNum)) return false;
+        const expandedBounds = new naver.maps.LatLngBounds(
+          new naver.maps.LatLng(sw.lat() - latBuffer, sw.lng() - lngBuffer),
+          new naver.maps.LatLng(ne.lat() + latBuffer, ne.lng() + lngBuffer)
+        );
 
-              const latLng = new naver.maps.LatLng(latNum, lngNum);
-              return bounds.hasLatLng(latLng);
-            } catch (error) {
-              return false;
-            }
-          });
-        }
-      } else {
-        // bounds가 유효하지 않으면 필터링 건너뜀 (초기 렌더링 무시 방지)
-        // zoom 14 미만일 때 빈 배열 처리만 유지
-        if (zoom < 14) arr = [];
+        // 줌 레벨에 관계없이 버퍼링된 뷰포트 내 매물만 필터링
+        // (저배율에서도 클러스터링을 위해 데이터를 유지하되, 지나치게 먼 데이터는 제외)
+        arr = arr.filter(item => {
+          const { lat, lng } = item.coords || {};
+          if (lat == null || lng == null) return false;
+
+          try {
+            const latNum = parseFloat(lat);
+            const lngNum = parseFloat(lng);
+            if (isNaN(latNum) || isNaN(lngNum)) return false;
+
+            const latLng = new naver.maps.LatLng(latNum, lngNum);
+            return expandedBounds.hasLatLng(latLng);
+          } catch (error) {
+            return false;
+          }
+        });
       }
     }
   }

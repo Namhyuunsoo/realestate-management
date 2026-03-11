@@ -12,6 +12,7 @@ from ..services.user_service import mask_email, mask_ip
 from ..core.lazy_init import ensure_background_services
 
 from ..services.commercial_listings_service import fetch_all_commercial_listings, SUPABASE_AVAILABLE
+from ..core.json_utils import compact_listings
 
 bp = Blueprint("listings", __name__)
 
@@ -64,13 +65,18 @@ def api_listings():
     total = len(data)
     sliced = data[offset:offset+limit]
 
+    # 압축 옵션 확인
+    is_compact = request.args.get("compact") == "1"
+    current_app.logger.info(f"🔍 API Compaction: {is_compact} (args: {request.args.get('compact')})")
+    
     resp_dict = {
-        "items": sliced,
+        "items": compact_listings(sliced) if is_compact else sliced,
         "total": total,
         "limit": limit,
         "offset": offset,
         "force_reload": force,
-        "cache_used": not force and not SUPABASE_AVAILABLE
+        "cache_used": not force and not SUPABASE_AVAILABLE,
+        "compressed": is_compact
     }
     return current_app.response_class(
         json.dumps(resp_dict, ensure_ascii=False),
@@ -100,13 +106,16 @@ def api_listings_housing():
     if "error" in data and data["error"]:
         return jsonify({"error": data["error"]}), 400
 
+    is_compact = request.args.get("compact") == "1"
+
     resp_dict = {
-        "items": data["items"],
+        "items": compact_listings(data["items"]) if is_compact else data["items"],
         "total": data["total"],
         "limit": data["limit"],
         "offset": data["offset"],
         "force_reload": False,
         "cache_used": False,
+        "compressed": is_compact
     }
     return current_app.response_class(
         json.dumps(resp_dict, ensure_ascii=False),

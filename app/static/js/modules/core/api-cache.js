@@ -173,7 +173,7 @@ async function getCachedListings(status_raw = "생", force = false, signal = nul
   }
 
   try {
-    let url = `/api/listings?limit=100000&subtype=${subtype}&status_raw=${status_raw}`;
+    let url = `/api/listings?limit=100000&subtype=${subtype}&status_raw=${status_raw}&compact=1`;
     if (force) url += "&force=1";
 
     const data = await cachedFetch(url, {
@@ -205,7 +205,7 @@ async function getCachedHousingListings(subtype = "sale", status_raw = "생", fo
   }
 
   try {
-    const url = `/api/listings/housing?subtype=${subtype}&status_raw=${status_raw}&limit=100000`;
+    const url = `/api/listings/housing?subtype=${subtype}&status_raw=${status_raw}&limit=100000&compact=1`;
     const data = await cachedFetch(url, {
       credentials: 'include'
     });
