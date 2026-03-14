@@ -56,8 +56,8 @@ def _map_briefing_to_response(briefing: Dict[str, Any]) -> Dict[str, Any]:
 class SupabaseBriefingRepository(BriefingRepository):
     """Supabase 기반 브리핑 저장소"""
     
-    def __init__(self):
-        self.supabase = get_supabase_client()
+    def __init__(self, supabase_client: Client):
+        self.supabase = supabase_client
     
     def create_briefing(self, user_email: str, customer_id: str, listing_ids: List[str]) -> Dict[str, Any]:
         """브리핑 생성"""

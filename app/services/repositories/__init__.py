@@ -51,7 +51,7 @@ def get_user_repository() -> UserRepository:
     client = _get_supabase_client()
     if client:
         try:
-            return SupabaseUserRepository()
+            return SupabaseUserRepository(client)
         except Exception as e:
             if has_app_context() and current_app:
                 current_app.logger.error(f"SupabaseUserRepository 초기화 실패: {e}")

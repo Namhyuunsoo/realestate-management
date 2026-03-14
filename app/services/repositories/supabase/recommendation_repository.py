@@ -31,8 +31,8 @@ def _map_recommendation_to_response(recommendation: Dict[str, Any]) -> Dict[str,
 class SupabaseRecommendationRepository(RecommendationRepository):
     """Supabase 기반 추천매물 저장소"""
     
-    def __init__(self):
-        self.supabase = get_supabase_client()
+    def __init__(self, supabase_client: Client):
+        self.supabase = supabase_client
     
     def add_recommendation(self, listing_id: str, user_email: str, reason: str) -> bool:
         """매물 추천 추가"""

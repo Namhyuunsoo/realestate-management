@@ -307,7 +307,7 @@ function editSheetFromContextMenu(sheet) {
     showEditUserSheetModal(sheet.id); // sheet.id를 전달
   } else {
     console.error('showEditUserSheetModal 함수를 찾을 수 없습니다.');
-    alert('매물장 수정 기능을 사용할 수 없습니다. 페이지를 새로고침해주세요.');
+    showToast('매물장 수정 기능을 사용할 수 없습니다. 페이지를 새로고침해주세요.', 'error');
   }
 }
 
@@ -343,11 +343,11 @@ async function deleteSheetFromStatusBar(sheet) {
     await loadUserSheetsForStatusBar();
     
     // 성공 메시지
-    alert(`"${sheet.sheet_name}" 매물장이 삭제되었습니다.`);
+    showToast(`"${sheet.sheet_name}" 매물장이 삭제되었습니다.`, 'success');
     
   } catch (error) {
     console.error("❌ 매물장 삭제 실패:", error);
-    alert(`매물장 삭제에 실패했습니다: ${error.message}`);
+    showToast(`매물장 삭제에 실패했습니다: ${error.message}`, 'error');
   }
 }
 
@@ -357,12 +357,12 @@ async function deleteSheetFromStatusBar(sheet) {
 
 function openSelectedGoogleSheet() {
   if (!CURRENT_SELECTED_SHEET) {
-    alert('먼저 매물장을 선택해주세요.\n\n매물장 버튼을 클릭하여 원하는 시트를 선택한 후 다시 시도해주세요.');
+    showToast('먼저 매물장을 선택해주세요.', 'warning');
     return;
   }
   
   if (!CURRENT_SELECTED_SHEET.sheet_url) {
-    alert('선택된 매물장의 URL이 없습니다.');
+    showToast('선택된 매물장의 URL이 없습니다.', 'warning');
     return;
   }
   
@@ -371,7 +371,7 @@ function openSelectedGoogleSheet() {
     console.log(`✅ 선택된 매물장 열기: ${CURRENT_SELECTED_SHEET.sheet_name}`);
   } catch (error) {
     console.error(`❌ 구글 시트 열기 실패: ${CURRENT_SELECTED_SHEET.sheet_name}`, error);
-    alert('구글 시트를 열 수 없습니다.');
+    showToast('구글 시트를 열 수 없습니다.', 'error');
   }
 }
 
@@ -391,7 +391,7 @@ function showAddUserSheetModalFromStatusBar() {
     showAddUserSheetModal();
   } else {
     console.error('showAddUserSheetModal 함수를 찾을 수 없습니다.');
-    alert('매물장 추가 기능을 사용할 수 없습니다. 페이지를 새로고침해주세요.');
+    showToast('매물장 추가 기능을 사용할 수 없습니다. 페이지를 새로고침해주세요.', 'error');
   }
 }
 

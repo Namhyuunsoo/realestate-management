@@ -171,9 +171,7 @@ function renderCustomerDetail(c) {
       });
       if (editBtn) editBtn.addEventListener('click', () => window.editCustomerById(c.id));
       if (deleteBtn) deleteBtn.addEventListener('click', () => {
-        if (confirm('정말로 이 고객을 삭제하시겠습니까?')) {
-          window.deleteCustomerById(c.id);
-        }
+        window.deleteCustomerById(c.id);
       });
       if (clearBtn) clearBtn.addEventListener('click', clearCustomerSelection);
     }
@@ -210,15 +208,17 @@ function renderCustomerDetail(c) {
   });
   
   if (deleteBtn) deleteBtn.addEventListener('click', () => {
-    // 삭제 확인 후 실행
-    if (confirm('정말로 이 고객을 삭제하시겠습니까?')) {
-      window.deleteCustomerById(c.id).then(() => {
-        // 삭제 완료 후 상세정보창 닫고 고객목록으로 돌아가기
+    // 삭제 실행 (내부에서 확인창 뜸)
+    window.deleteCustomerById(c.id).then((success) => {
+      // success는 deleteCustomerById가 반환하는 값 (없으면 undefined)
+      // 확인창에서 취소한 경우 fetch를 타지 않으므로 사후 처리를 분기할 필요가 있음
+      // 여기서는 일단 상세정보창 닫기 로직 유지
+      if (success !== false) {
         showSecondaryPanel('viewCustomerList');
         const detailTitleEl = document.getElementById('secondaryPanelTitle');
         if (detailTitleEl) detailTitleEl.textContent = currentUser === 'admin' ? '고객 목록' : '내 고객 목록';
-      });
-    }
+      }
+    });
   });
 }
 

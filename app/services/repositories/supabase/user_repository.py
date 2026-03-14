@@ -8,14 +8,14 @@ from flask import current_app, has_app_context
 class SupabaseUserRepository(UserRepository):
     """Supabase 기반 사용자 저장소 (하이브리드 인증 지원)"""
     
-    def __init__(self):
+    def __init__(self, supabase_client: Client):
         self.supabase_url = os.getenv('SUPABASE_URL')
         self.supabase_key = os.getenv('SUPABASE_SERVICE_ROLE_KEY')
         
         if not self.supabase_url or not self.supabase_key:
             raise ValueError("SUPABASE_URL 또는 SUPABASE_SERVICE_ROLE_KEY가 설정되지 않았습니다.")
             
-        self.client: Client = create_client(self.supabase_url, self.supabase_key)
+        self.client: Client = supabase_client
 
     def get_user_by_email(self, email: str) -> Optional[User]:
         try:

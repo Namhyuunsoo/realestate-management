@@ -218,9 +218,7 @@ async function loadUserList() {
     });
     
     if (!response.ok) {
-      if (response.status === 401) {
-        throw new Error('로그인이 필요합니다. 다시 로그인해주세요.');
-      } else if (response.status === 403) {
+      if (response.status === 403) {
         throw new Error('관리자 권한이 필요합니다.');
       } else {
         throw new Error(`API 실패: ${response.status}`);

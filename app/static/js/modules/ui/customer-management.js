@@ -45,7 +45,7 @@ async function loadCustomerList(filter = null) {
     }
 
     const data = await res.json();
-    const customerList = data.items || data.itema || [];
+    const customerList = data.items || [];
 
     renderCustomerList(customerList);
   } catch (err) {
@@ -429,7 +429,7 @@ window.editCustomerById = async function (customerId) {
 // 고객 삭제 함수
 window.deleteCustomerById = async function (customerId) {
   if (!confirm('정말로 이 고객을 삭제하시겠습니까?')) {
-    return;
+    return false;
   }
 
   try {
@@ -446,14 +446,17 @@ window.deleteCustomerById = async function (customerId) {
       showToast('고객이 삭제되었습니다.', 'success');
       // 고객 목록 새로고침
       loadCustomerList();
+      return true;
     } else {
       const error = await response.text();
       console.error('❌ 삭제 실패:', error);
       alert(`삭제 실패: ${error}`);
+      return false;
     }
   } catch (error) {
     console.error('고객 삭제 중 오류:', error);
     alert('고객 삭제 중 오류가 발생했습니다.');
+    return false;
   }
 }
 

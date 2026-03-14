@@ -140,11 +140,11 @@ def _map_customer_to_response(customer: Dict[str, Any]) -> Dict[str, Any]:
 class SupabaseCustomerRepository(CustomerRepository):
     """Supabase 기반 고객 저장소"""
 
-    def __init__(self):
+    def __init__(self, supabase_client: Client):
         import logging
         logger = logging.getLogger(__name__)
 
-        self.supabase = get_supabase_client()
+        self.supabase = supabase_client
 
         # 연결 테스트: customers 테이블 존재 확인
         try:
