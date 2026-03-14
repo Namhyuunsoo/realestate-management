@@ -43,8 +43,9 @@ def push_supabase_to_master() -> Dict[str, Any]:
         
         for table_name, sheet_name in TABLE_TO_SHEET.items():
             try:
-                # 1. Supabase에서 전체 데이터 가져오기 (manager_name순 정렬)
-                response = supabase.table(table_name).select("*").order("manager_name", desc=False).execute()
+                # 1. Supabase에서 전체 데이터 가져오기 (접수일 오름차순 정렬)
+                # JSONB 필드 정렬을 위해 fields->접수일 사용
+                response = supabase.table(table_name).select("*").order("fields->접수일", desc=False).execute()
                 listings = response.data
                 
                 if not listings:
