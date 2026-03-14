@@ -334,7 +334,27 @@
           <!-- 2단계: 동적 폼 컨테이너 -->
           <form id="listingAddForm">
             <!-- 자바스크립트에 의해 선택된 유형의 헤더에 맞게 폼 필드가 동적으로 렌더링 됩니다 -->
-            <div id="dynamicFormContainer" style="display:none;"></div>
+            <div id="dynamicFormContainer" style="display: none;">
+          <!-- 동적으로 생성된 폼 필드들이 여기에 들어감 -->
+        </div>
+
+        <!-- 사진 업로드 섹션 -->
+        <div id="photoUploadSection" class="photo-upload-area" style="display: none;">
+          <label class="photo-upload-label">매물 사진 (최대 5장)</label>
+          <div class="photo-controls">
+            <button type="button" class="photo-btn" onclick="document.getElementById('photoInputCamera').click()">
+              <span>📸</span> 사진 찍기
+            </button>
+            <button type="button" class="photo-btn" onclick="document.getElementById('photoInputGallery').click()">
+              <span>🖼️</span> 앨범 선택
+            </button>
+            <input type="file" id="photoInputCamera" accept="image/*" capture="environment" style="display: none;">
+            <input type="file" id="photoInputGallery" accept="image/*" multiple style="display: none;">
+          </div>
+          <div id="photoPreviewContainer" class="photo-preview-container">
+            <!-- 선택된 사진 미리보기가 여기에 표시됨 -->
+          </div>
+        </div>
 
             <!-- 공통 숨김 필드: 매물 종류 저장용 -->
             <input type="hidden" id="매물유형" name="매물유형" value="">
@@ -1309,6 +1329,18 @@
       });
     </script>
   </div>
+    <!-- 사진 확대 보기 모달 (라이트박스) -->
+    <div id="photoLightbox" class="modal hidden" style="z-index: 10001;">
+      <div class="modal-content" style="max-width: 90%; max-height: 90%; padding: 10px; position: relative; background: #000; border: none; border-radius: 8px;">
+        <span id="closeLightbox" class="close" style="color: #fff; position: absolute; right: 15px; top: 10px; z-index: 10; font-size: 30px;">&times;</span>
+        <img id="lightboxImage" src="" style="width: 100%; height: auto; max-height: 80vh; object-fit: contain; border-radius: 4px;">
+        <div style="margin-top: 15px; display: flex; justify-content: center; padding-bottom: 10px;">
+          <a id="downloadPhotoBtn" href="" download class="btn" style="background: #28a745; color: white; padding: 10px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 14px; box-shadow: 0 4px 6px rgba(0,0,0,0.2);">
+            📥 원본 다운로드
+          </a>
+        </div>
+      </div>
+    </div>
 </body>
 
 </html>

@@ -51,6 +51,10 @@ class ListingAddManager {
         this.dynamicContainer = null;
         this.currentType = null;
         this.autoFillData = null; // 지도 등에서 넘어온 사전 입력 데이터
+        this.selectedFiles = []; // 선택된 파일 목록 관리
+        this.photoInput = null;
+        this.photoSection = null;
+        this.previewContainer = null;
         this.init();
     }
 
@@ -58,6 +62,10 @@ class ListingAddManager {
         this.modal = document.getElementById('listingAddModal');
         this.form = document.getElementById('listingAddForm');
         this.dynamicContainer = document.getElementById('dynamicFormContainer');
+        this.photoSection = document.getElementById('photoUploadSection');
+        this.photoInputCamera = document.getElementById('photoInputCamera');
+        this.photoInputGallery = document.getElementById('photoInputGallery');
+        this.previewContainer = document.getElementById('photoPreviewContainer');
         this.bindEvents();
     }
 
@@ -104,6 +112,14 @@ class ListingAddManager {
                 this.selectTypeAndRender(targetType);
             });
         });
+
+        // 사진 선택 이벤트
+        if (this.photoInputCamera) {
+            this.photoInputCamera.addEventListener('change', (e) => this.handlePhotoSelection(e));
+        }
+        if (this.photoInputGallery) {
+            this.photoInputGallery.addEventListener('change', (e) => this.handlePhotoSelection(e));
+        }
     }
 
     // 모달을 열 때, 사전에 넘겨받은 데이터(예: 지도 클릭)가 있다면 유지
@@ -132,6 +148,9 @@ class ListingAddManager {
         if (this.form) {
             this.form.reset();
             this.dynamicContainer.innerHTML = '';
+            this.selectedFiles = [];
+            if (this.previewContainer) this.previewContainer.innerHTML = '';
+            if (this.photoSection) this.photoSection.style.display = 'none';
         }
     }
 
@@ -207,6 +226,9 @@ class ListingAddManager {
         // 동적 영역 갱신 및 활성화
         this.dynamicContainer.innerHTML = htmlChunks.join('');
         this.dynamicContainer.style.display = 'block';
+
+        // 사진 업로드 섹션 노출
+        if (this.photoSection) this.photoSection.style.display = 'block';
 
         // 기초 데이터 렌더(날짜 및 넘겨받은 파라미터)
         this.setDefaultDate();
@@ -312,6 +334,52 @@ class ListingAddManager {
         }
     }
 
+
+    // 사진 선택 처리
+    handlePhotoSelection(e) {
+        const files = Array.from(e.target.files);
+        if (this.selectedFiles.length + files.length > 5) {
+            this.showErrorMessage("사진은 최대 5장까지 등록 가능합니다.");
+            return;
+        }
+
+        files.forEach(file => {
+            if (!file.type.startsWith('image/')) return;
+            this.selectedFiles.push(file);
+            this.renderPreview(file);
+        });
+
+        // input 초기화
+        if (this.photoInputCamera) this.photoInputCamera.value = '';
+        if (this.photoInputGallery) this.photoInputGallery.value = '';
+    }
+
+    // 미리보기 렌더링
+    renderPreview(file) {
+        if (!this.previewContainer) return;
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const item = document.createElement('div');
+            item.className = 'photo-preview-item';
+            item.dataset.fileName = file.name;
+            item.dataset.fileSize = file.size;
+
+            item.innerHTML = `
+                <img src="${e.target.result}" alt="미리보기">
+                <button type="button" class="photo-remove-btn">&times;</button>
+            `;
+
+            item.querySelector('.photo-remove-btn').addEventListener('click', () => {
+                this.selectedFiles = this.selectedFiles.filter(f => f.name !== file.name || f.size !== file.size);
+                item.remove();
+            });
+
+            this.previewContainer.appendChild(item);
+        };
+        reader.readAsDataURL(file);
+    }
+
     async submitListing() {
         if (!this.currentType) {
             this.showErrorMessage("먼저 매물 종류를 1단계에서 선택해주세요.");
@@ -328,6 +396,7 @@ class ListingAddManager {
                 submitBtn.innerText = "등록 중...";
             }
 
+            // 1. 매물 정보 등록
             const response = await fetch('/api/listing-add/add', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -337,6 +406,11 @@ class ListingAddManager {
             const result = await response.json();
 
             if (result.success) {
+                // 2. 사진 업로드 (매물 등록 성공 후)
+                if (this.selectedFiles.length > 0 && result.listing_id) {
+                    await this.uploadPhotos(result.listing_id);
+                }
+                
                 this.showSuccessMessage(result.message);
                 this.closeModal();
                 if (window.refreshListings) window.refreshListings();
@@ -351,6 +425,30 @@ class ListingAddManager {
             if (submitBtn) {
                 submitBtn.disabled = false;
                 submitBtn.innerText = "등록";
+            }
+        }
+    }
+
+    async uploadPhotos(listingId) {
+        for (const file of this.selectedFiles) {
+            const uploadFd = new FormData();
+            uploadFd.append('file', file);
+            
+            try {
+                const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || "";
+                const res = await fetch(`/api/listings/${listingId}/photos`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-Token': csrfToken
+                    },
+                    body: uploadFd
+                });
+                const uploadResult = await res.json();
+                if (!uploadResult.success) {
+                    console.error(`사진 업로드 실패 (${file.name}):`, uploadResult.error);
+                }
+            } catch (err) {
+                console.error(`사진 업로드 오류 (${file.name}):`, err);
             }
         }
     }

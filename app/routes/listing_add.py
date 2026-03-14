@@ -94,12 +94,13 @@ def add_listing():
         
         # 매물등록 서비스 호출
         listing_service = get_listing_service()
-        success = listing_service.add_listing_dynamic(target_sheet_id_or_url, target_sheet_type, data)
+        listing_id = listing_service.add_listing_dynamic(target_sheet_id_or_url, target_sheet_type, data)
         
-        if success:
-            current_app.logger.info(f"매물등록 성공 (유형: {target_sheet_type}): {user.email}")
+        if listing_id:
+            current_app.logger.info(f"매물등록 성공 (유형: {target_sheet_type}, ID: {listing_id}): {user.email}")
             return jsonify({
                 "success": True,
+                "listing_id": listing_id,
                 "message": f"{target_sheet_type} 매물이 성공적으로 등록되었습니다."
             })
         else:

@@ -4,6 +4,7 @@
 from flask import current_app
 import json
 from flask import Blueprint, request, jsonify, session
+from werkzeug.utils import secure_filename
 from ..services.listings_loader import load_listings
 from ..services.housing_listings_service import fetch_housing_listings
 from ..services.sheet_fetcher import clear_listing_cache
@@ -146,3 +147,70 @@ def clear_listings_cache():
             "success": False,
             "message": f"캐시 삭제 실패: {str(e)}"
         }), 500
+
+# --- 매물 사진 관리 API ---
+
+@bp.route("/api/listings/<listing_id>/photos", methods=["GET"])
+@require_user()
+def get_listing_photos_api(listing_id):
+    """특정 매물의 사진 목록 조회"""
+    from ..services.storage_service import storage_service
+    photos = storage_service.get_listing_photos(listing_id)
+    return jsonify({
+        "success": True,
+        "photos": photos
+    })
+
+@bp.route("/api/listings/<listing_id>/photos", methods=["POST"])
+@require_user()
+@validate_csrf_token()
+def upload_listing_photo_api(listing_id):
+    """매물 사진 업로드"""
+    if 'file' not in request.files:
+        return jsonify({"success": False, "error": "파일이 없습니다."}), 400
+    
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({"success": False, "error": "파일명이 없습니다."}), 400
+
+    from ..services.storage_service import storage_service
+    user = request.current_user
+    
+    # 파일 데이터 읽기
+    file_data = file.read()
+    filename = secure_filename(file.filename)
+    
+    result = storage_service.upload_photo(
+        listing_id=listing_id,
+        file_data=file_data,
+        filename=filename,
+        user_email=user.email
+    )
+    
+    if result:
+        return jsonify({
+            "success": True,
+            "photo": result
+        })
+    else:
+        return jsonify({
+            "success": False,
+            "error": "업로드 중 오류가 발생했습니다."
+        }), 500
+
+@bp.route("/api/listings/photos/<photo_id>", methods=["DELETE"])
+@require_user()
+@validate_csrf_token()
+def delete_listing_photo_api(photo_id):
+    """매물 사진 삭제"""
+    from ..services.storage_service import storage_service
+    user = request.current_user
+    
+    # TODO: 권한 체크 (본인 업로드 또는 관리자)
+    # 현재는 인증된 모든 사용자에게 삭제 권한 부여 (추후 고도화 가능)
+    
+    success = storage_service.delete_photo(photo_id, user_email=user.email)
+    if success:
+        return jsonify({"success": True})
+    else:
+        return jsonify({"success": False, "error": "삭제 중 오류가 발생했습니다."}), 500

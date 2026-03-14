@@ -66,7 +66,7 @@ class ListingAddService:
             return self._add_row_to_sheet_dynamic(sheet_id, sheet_name, listing_data)
         except Exception as e:
             current_app.logger.error(f"동적 매물 추가 실패: {str(e)}")
-            return False
+            return None
 
     def _add_row_to_sheet_dynamic(self, sheet_id: str, sheet_name: str, listing_data: Dict[str, Any]) -> bool:
         try:
@@ -103,7 +103,10 @@ class ListingAddService:
             ).execute()
 
             current_app.logger.info(f"동적 매물 추가 성공: {sheet_id}/{sheet_name}, 행 {target_row_number}")
-            return True
+            
+            # 생성된 ID 반환 (row 기반 ID 생성 규칙 적용)
+            from app.core.ids import listing_id_from_row
+            return listing_id_from_row(target_row_number)
 
         except HttpError as e:
             current_app.logger.error(f"Google Sheets API 오류: {e}")

@@ -146,7 +146,76 @@ async function renderDetailPanel(item) {
       }
     });
   }
+
+  // 매물 사진 갤러리 컨테이너 추가
+  const galleryContainer = document.createElement('div');
+  galleryContainer.id = 'listingPhotoGallery';
+  galleryContainer.className = 'detail-photo-gallery';
+  galleryContainer.innerHTML = '<div style="grid-column: span 3; color: #999; font-size: 12px; text-align: center; padding: 10px;">사진을 불러오는 중...</div>';
+  
+  const targetArea = detailEl.querySelector('div[style*="background: #f8f9fa"]');
+  if (targetArea) {
+    targetArea.appendChild(galleryContainer);
+  } else {
+    detailEl.prepend(galleryContainer);
+  }
+
+  // 사진 데이터 비동기 로드 및 렌더링
+  loadAndRenderPhotos(item.id);
 }
+
+// 사진 목록 로드 및 렌더링
+async function loadAndRenderPhotos(listingId) {
+  const gallery = document.getElementById('listingPhotoGallery');
+  if (!gallery) return;
+
+  try {
+    const response = await fetch(`/api/listings/${listingId}/photos`);
+    const data = await response.json();
+
+    if (data.success && data.photos && data.photos.length > 0) {
+      gallery.innerHTML = data.photos.map(photo => `
+        <div class="gallery-item" onclick="openLightbox('${photo.full_url}', '${photo.file_name}')">
+          <img src="${photo.full_url}" alt="매물사진" onerror="this.src='/static/img/no-image.png'">
+        </div>
+      `).join('');
+    } else {
+      gallery.innerHTML = '<div style="grid-column: span 3; color: #999; font-size: 11px; text-align: center; padding: 5px;">등록된 사진이 없습니다.</div>';
+      // 사진이 없으면 영역 숨김 처리 (선택 사항)
+      // gallery.style.display = 'none';
+    }
+  } catch (error) {
+    console.error('사진 로드 중 오류:', error);
+    gallery.innerHTML = '<div style="grid-column: span 3; color: #f44336; font-size: 11px; text-align: center; padding: 5px;">사진을 불러오지 못했습니다.</div>';
+  }
+}
+
+// 라이트박스 제어
+function openLightbox(url, filename) {
+  const lightbox = document.getElementById('photoLightbox');
+  const img = document.getElementById('lightboxImage');
+  const downloadBtn = document.getElementById('downloadPhotoBtn');
+  
+  if (lightbox && img && downloadBtn) {
+    img.src = url;
+    downloadBtn.href = url;
+    downloadBtn.setAttribute('download', filename || 'listing_photo.jpg');
+    lightbox.classList.remove('hidden');
+    
+    // 닫기 이벤트 (익명 함수 중복 방지를 위해 확인)
+    const closeBtn = document.getElementById('closeLightbox');
+    if (closeBtn && !closeBtn.dataset.bound) {
+      closeBtn.onclick = () => lightbox.classList.add('hidden');
+      lightbox.onclick = (e) => {
+        if (e.target === lightbox) lightbox.classList.add('hidden');
+      };
+      closeBtn.dataset.bound = "true";
+    }
+  }
+}
+
+// 전역 할당
+window.openLightbox = openLightbox;
 
 // 민감한 정보 필드 접기/펼치기 토글
 function toggleSensitiveField(fieldName) {
