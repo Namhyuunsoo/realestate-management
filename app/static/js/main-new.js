@@ -513,7 +513,6 @@ function showToast(message, type = 'info') {
 // 사이드바 토글 상태 관리
 const sidebarState = {
   primaryCollapsed: false, // 기본값: 펼쳐진 상태
-  secondaryCollapsed: false
 };
 
 // 1차 사이드바 토글
@@ -695,15 +694,6 @@ function restoreSidebarState() {
     }
   }
 
-  if (secondaryCollapsed) {
-    const secondaryPanel = document.getElementById('secondaryPanel');
-    const toggleBtn = document.getElementById('secondaryPanelToggleBtn');
-    if (secondaryPanel && toggleBtn) {
-      secondaryPanel.classList.add('collapsed');
-      toggleBtn.textContent = '▶';
-      sidebarState.secondaryCollapsed = true;
-    }
-  }
 }
 
 // 사이드바 토글 이벤트 리스너 설정
@@ -714,12 +704,6 @@ function setupSidebarToggles() {
     primaryToggleBtn.addEventListener('click', togglePrimarySidebar);
   }
 
-  // 2차 사이드바 토글
-  const secondaryToggleBtn = document.getElementById('secondaryPanelToggleBtn');
-  if (secondaryToggleBtn) {
-    // toggleSecondarySidebar 함수는 제거됨 (showSecondaryPanel/closeSecondaryPanel 사용)
-    // secondaryToggleBtn.addEventListener('click', toggleSecondarySidebar);
-  }
 
   // 상태 복원
   restoreSidebarState();
