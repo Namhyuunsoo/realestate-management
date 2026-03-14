@@ -225,7 +225,7 @@ def fetch_all_commercial_listings(subtype: Optional[str] = None) -> List[Dict[st
                 offset = 0
                 page_size = 1000
                 while True:
-                    result = supabase.table(table).select("*").in_("status_raw", ["생", "완", "보류", ""]).order("fields->접수일", desc=False).range(offset, offset + page_size - 1).execute()
+                    result = supabase.table(table).select("*").in_("status_raw", ["생", "완", "보류", ""]).order("fields->접수일", desc=True).range(offset, offset + page_size - 1).execute()
                     if not result.data:
                         break
                     
