@@ -27,3 +27,7 @@ class FileCustomerRepository(CustomerRepository):
     def delete_customer(self, customer_id: str, user_email: str) -> bool:
         """고객 삭제"""
         return store.delete_customer(customer_id, user_email)
+
+    def get_managers(self, user: User) -> List[str]:
+        """담당자 목록 조회"""
+        return store.get_managers(user.email)

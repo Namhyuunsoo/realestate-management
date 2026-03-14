@@ -30,6 +30,20 @@ function showCustomerDetail(c) {
   renderCustomerDetail(c);
 }
 
+// 날짜 포맷팅 함수 (YYYY-MM-DD -> YY.MM.DD)
+function formatDatePrefix(dateStr) {
+  if (!dateStr) return '';
+  try {
+    const date = new Date(dateStr);
+    const yy = String(date.getFullYear()).slice(-2);
+    const mm = String(date.getMonth() + 1).padStart(2, '0');
+    const dd = String(date.getDate()).padStart(2, '0');
+    return `${yy}.${mm}.${dd}`;
+  } catch (e) {
+    return '';
+  }
+}
+
 // 고객 상세정보 렌더링 함수
 function renderCustomerDetail(c) {
   const customerDetailContent = document.getElementById('customerDetailContent');
@@ -39,8 +53,16 @@ function renderCustomerDetail(c) {
     return;
   }
   
+  const regDate = formatDatePrefix(c.created_at);
+  
   customerDetailContent.innerHTML = `
     <div style="background: white; border: 1px solid #e0e0e0; border-radius: 8px; padding: 8px; margin-bottom: 8px;">
+      ${regDate ? `
+      <div class="detail-row" style="margin-bottom: 6px;">
+        <label style="display: block; font-weight: 600; color: #333; margin-bottom: 2px; font-size: 12px;">등록일</label>
+        <div style="padding: 4px 6px; background: #fff3cd; border: 1px solid #ffeeba; border-radius: 4px; font-size: 12px; color: #856404; font-weight: bold;">${regDate}</div>
+      </div>` : ''}
+      
       <div class="detail-row" style="margin-bottom: 6px;">
         <label style="display: block; font-weight: 600; color: #333; margin-bottom: 2px; font-size: 12px;">담당자</label>
         <div style="padding: 4px 6px; background: #f8f9fa; border: 1px solid #ddd; border-radius: 4px; font-size: 12px; color: #333;">${escapeHtml(c.manager || '담당자 없음')}</div>
@@ -220,6 +242,19 @@ function renderCustomerDetail(c) {
       }
     });
   });
+
+  // 헤더의 뒤로가기 화살표 바인딩
+  const headerBackBtn = document.getElementById('secondaryPanelBack');
+  if (headerBackBtn) {
+    headerBackBtn.onclick = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      console.log('🔙 뒤로가기 버튼 클릭됨');
+      showSecondaryPanel('viewCustomerList');
+      const detailTitleEl = document.getElementById('secondaryPanelTitle');
+      if (detailTitleEl) detailTitleEl.textContent = localStorage.getItem("X-USER-ROLE") === 'admin' ? '고객 목록' : '내 고객 목록';
+    };
+  }
 }
 
 function renderCustomerForm(c = {}) {

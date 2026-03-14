@@ -109,7 +109,7 @@ function renderCustomerList(list) {
           data.managers.forEach(manager => {
             const option = document.createElement('option');
             option.value = `manager:${manager}`;
-            option.textContent = `${manager} 고객`;
+            option.textContent = manager; // "담당자명 고객" -> "담당자명"
             managerFilter.appendChild(option);
           });
         }
@@ -242,7 +242,9 @@ function renderCustomerListItems(list) {
 
     customerCard.innerHTML = `
       <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 4px;">
-        <div style="font-weight: bold; color: #333; font-size: 14px;">${escapeHtml(c.name || '이름 없음')}</div>
+        <div style="font-weight: bold; color: #333; font-size: 14px;">
+          ${c.created_at ? `<span style="color: #888; font-size: 11px; font-weight: normal; margin-right: 4px;">[${formatDatePrefix(c.created_at)}]</span>` : ''}${escapeHtml(c.name || '이름 없음')}
+        </div>
         <div style="display: flex; align-items: center; gap: 4px;">
           <span style="color: #666; font-size: 11px;">👤 ${escapeHtml(c.manager || '담당자 없음')}</span>
           <span class="status-badge" 

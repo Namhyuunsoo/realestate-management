@@ -785,9 +785,8 @@ def get_managers(user_email: str) -> list:
         if "manager" not in df.columns:
             return []
         
-        # 담당자 목록 추출 (빈 값 제외)
-        managers = df['manager'].unique().tolist()
-        managers = [m for m in managers if m and m.strip()]
+        # 담당자 목록 추출 (빈 값 제외 및 정렬)
+        managers = sorted([m.strip() for m in df['manager'].unique() if m and str(m).strip()])
         
         # NaN 값 정리
         managers = clean_nan_values(managers)

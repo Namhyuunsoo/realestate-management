@@ -348,3 +348,29 @@ class SupabaseCustomerRepository(CustomerRepository):
         except Exception as e:
             logger.error(f"❌ Supabase 고객 삭제 중 오류: {e}", exc_info=True)
             raise
+
+    def get_managers(self, user: User) -> List[str]:
+        """담당자 목록 조회 (Supabase 실시간 데이터 반영)"""
+        import logging
+        logger = logging.getLogger(__name__)
+
+        try:
+            # 모든 고객에서 unique한 manager 값을 가져옴
+            # Supabase Python 클라이언트는 SELECT DISTINCT를 직접 지원하지 않으므로 전체를 가져와서 처리하거나 
+            # 혹은 count와 함께 사용하여 rpc 등을 쓸 수 있지만, 여기서는 고객 데이터가 아주 많지 않다고 가정하고 처리
+            result = self.supabase.table('customers').select('manager').execute()
+            
+            if not result.data:
+                return []
+            
+            # 중복 제거 및 정합성 검증
+            managers = sorted(list(set([
+                str(item['manager']).strip() 
+                for item in result.data 
+                if item.get('manager') and str(item['manager']).strip()
+            ])))
+            
+            return managers
+        except Exception as e:
+            logger.error(f"❌ Supabase 담당자 조회 중 오류: {e}", exc_info=True)
+            return []

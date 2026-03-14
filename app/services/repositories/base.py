@@ -81,6 +81,11 @@ class CustomerRepository(ABC):
         """고객 삭제"""
         pass
 
+    @abstractmethod
+    def get_managers(self, user: User) -> List[str]:
+        """담당자 목록 조회"""
+        pass
+
 class BriefingRepository(ABC):
     """브리핑 데이터 저장소 추상 인터페이스"""
     

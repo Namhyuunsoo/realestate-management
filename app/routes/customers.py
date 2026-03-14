@@ -200,10 +200,13 @@ def update_customer_api(customer_id):
 @require_user()
 @handle_errors()
 def get_managers_api():
-    user = request.headers.get("X-User")
+    # 데코레이터에서 이미 사용자 인증 완료, request.current_user 사용
+    user = request.current_user
+
+    # Repository 패턴 사용
+    from app.services.repositories import get_customer_repository
+    repo = get_customer_repository()
     
-    # 원래 store.py 함수 사용
-    from app.services import store
-    managers = store.get_managers(user)
+    managers = repo.get_managers(user)
     
     return jsonify({"managers": managers})
