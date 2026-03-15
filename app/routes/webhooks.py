@@ -234,27 +234,50 @@ def handle_sheets_changed():
                     current_app.logger.error(f"주택매물장 동기화 중 오류: {e}")
                     return jsonify({'status': 'error', 'message': str(e)}), 200
             
-            # 사용자 시트 웹훅 (기존 로직)
-            # 사용자의 시트 URL 조회
-            sheet_url = get_user_sheet_url(user_id)
-            if not sheet_url:
-                current_app.logger.warning(f"사용자 시트 URL 없음: {user_id}")
-                return jsonify({'status': 'no_sheet_url'}), 200
-            
-            # 시트 ID 추출
-            sheet_id = extract_sheet_id_from_url(sheet_url)
-            if not sheet_id:
-                current_app.logger.warning(f"시트 ID 추출 실패: {sheet_url}")
-                return jsonify({'status': 'invalid_sheet_url'}), 200
-            
-            # 입력 시트 변경 확인 (로깅용)
-            if not check_if_input_sheet_changed(sheet_id):
-                current_app.logger.info(f"입력 시트 변경 없음: {user_id}")
-                return jsonify({'status': 'no_input_sheet_changed'}), 200
-            
-            # 웹훅 수신 완료 (배포 기능 제거됨)
-            current_app.logger.info(f"웹훅 수신 완료: {user_id} (배포 기능 비활성화)")
-            return jsonify({'status': 'ok'}), 200
+            # 사용자 시트 웹훅 (상가 매물)
+            # 사용자의 시트 URL 및 슬롯 정보 조회
+            try:
+                from app.services.commercial_sync_service import CommercialSyncService
+                service = CommercialSyncService()
+                
+                # Supabase 레지스트리에서 슬롯 정보 조회
+                reg_res = service.supabase.table("sheet_registry").select("*").eq("user_id", user_id).execute()
+                if not reg_res.data:
+                    current_app.logger.warning(f"등록되지 않은 사용자 웹훅: {user_id}")
+                    return jsonify({'status': 'unregistered_user'}), 200
+                
+                slot = reg_res.data[0]
+                slot_id = str(slot.get("slot_id"))
+                sheet_url = slot.get("sheet_url")
+                manager_name = slot.get("manager_name")
+                
+                if not sheet_url:
+                    current_app.logger.warning(f"슬롯 {slot_id}에 시트 URL이 없습니다.")
+                    return jsonify({'status': 'no_sheet_url'}), 200
+                
+                # 시트 ID 추출 및 변경 확인
+                sheet_id = extract_sheet_id_from_url(sheet_url)
+                if not sheet_id:
+                    return jsonify({'status': 'invalid_sheet_url'}), 200
+                
+                if not check_if_input_sheet_changed(sheet_id):
+                    current_app.logger.info(f"입력 시트 변경 없음: {user_id} (슬롯 {slot_id})")
+                    return jsonify({'status': 'no_input_sheet_changed'}), 200
+                
+                # 실시간 동기화 실행
+                current_app.logger.info(f"상가 매물 변경 감지 (슬롯 {slot_id}) → 동기화 시작")
+                sync_result = service.sync_single_slot(slot_id, sheet_url, user_id, manager_name)
+                
+                if sync_result.get("success"):
+                    current_app.logger.info(f"상가 매물 동기화 완료: {slot_id} (담당자: {manager_name})")
+                    return jsonify({'status': 'ok', 'synced_count': sync_result.get('total_count', 0)}), 200
+                else:
+                    current_app.logger.error(f"상가 매물 동기화 실패: {sync_result.get('errors', [])}")
+                    return jsonify({'status': 'sync_failed', 'errors': sync_result.get('errors', [])}), 200
+                    
+            except Exception as e:
+                current_app.logger.error(f"상가 매물 동기화 처리 중 오류: {e}")
+                return jsonify({'status': 'error', 'message': str(e)}), 200
         
         # 기타 상태는 무시
         current_app.logger.info(f"알 수 없는 리소스 상태: {resource_state}")

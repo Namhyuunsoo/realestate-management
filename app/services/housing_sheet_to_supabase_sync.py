@@ -8,6 +8,7 @@
 
 import os
 import re
+import uuid
 from typing import List, Dict, Any, Optional
 from dotenv import load_dotenv
 from supabase import create_client, Client
@@ -90,12 +91,19 @@ def row_to_listing_housing(
     address_comp = {"region2": region2, "region": region, "lot": lot}
     status_raw = fields.get("현황", "")
 
-    # ID: 상가와 겹치지 않도록 h_시트이름_행번호 (공백 제거)
-    sheet_slug = sheet_name.replace(" ", "")
-    record_id = f"h_{sheet_slug}_{row_index:06d}"
+    # ID: 상가와 동일하게 UUID 사용 (최우선)
+    listing_uuid = fields.get("UUID", "").strip()
+    is_new_uuid = False
+    if not listing_uuid:
+        listing_uuid = str(uuid.uuid4())
+        is_new_uuid = True
+        fields["UUID"] = listing_uuid
+
+    record_id = listing_uuid
 
     return {
         "id": record_id,
+        "is_new_uuid": is_new_uuid,
         "table_name": get_table_name_for_sheet(sheet_name),
         "raw_row_index": row_index,
         "status_raw": status_raw,
@@ -136,21 +144,53 @@ def sync_housing_sheets_to_supabase(
     rows_by_table: Dict[str, List[Dict[str, Any]]] = {}
 
     for sheet_name in HOUSING_SHEET_NAMES:
-        values = read_sheet_values(gs, sid, sheet_name)
+        try:
+            spreadsheet = gs.open_by_key(sid)
+            ws = spreadsheet.worksheet(sheet_name)
+            values = ws.get_all_values()
+        except Exception:
+            result["by_sheet"][sheet_name] = 0
+            continue
+
         if not values:
             result["by_sheet"][sheet_name] = 0
             continue
-        header_row = values[0]
+
+        header_row = [h.strip() for h in values[0]]
+        
+        # UUID 컬럼 확인 및 추가
+        try:
+            uuid_col_idx = header_row.index("UUID")
+        except ValueError:
+            uuid_col_idx = len(header_row)
+            ws.add_cols(1)
+            ws.update_cell(1, uuid_col_idx + 1, "UUID")
+            header_row.append("UUID")
+
         data_rows = values[1:]
         count = 0
-        for idx, row in enumerate(data_rows, start=1):
+        uuid_updates = []
+
+        for idx, row in enumerate(data_rows, start=2): # 1행은 헤더이므로 데이터는 2행부터
             rec = row_to_listing_housing(sheet_name, idx, header_row, row)
             if rec:
+                if rec.pop("is_new_uuid", False):
+                    import gspread
+                    uuid_updates.append({
+                        'range': gspread.utils.rowcol_to_a1(idx, uuid_col_idx + 1),
+                        'values': [[rec["id"]]]
+                    })
+                
                 table_name = rec.pop("table_name")
                 if table_name not in rows_by_table:
                     rows_by_table[table_name] = []
                 rows_by_table[table_name].append(rec)
                 count += 1
+        
+        # 신규 UUID 시트 써기 (배치 업데이트)
+        if uuid_updates:
+            ws.batch_update(uuid_updates)
+            
         result["by_sheet"][sheet_name] = count
 
     if not rows_by_table:
