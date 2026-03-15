@@ -2,6 +2,7 @@
 
 import os
 import re
+import uuid
 from typing import Dict, Any, Optional
 from google.oauth2.service_account import Credentials
 from googleapiclient.discovery import build
@@ -89,6 +90,16 @@ class ListingAddService:
                 raise Exception(f"지원하지 않는 매물 유형입니다: {sheet_name}")
 
             target_row_number = last_row + 1
+            
+            # UUID 생성 및 추가
+            listing_uuid = str(uuid.uuid4())
+            listing_data['UUID'] = listing_uuid
+            
+            # 헤더에 'UUID'가 명시적으로 없더라도 row_data 준비 과정에서 UUID를 포함하도록 함
+            if 'UUID' not in headers:
+                # 시트의 맨 끝에 UUID 컬럼이 있다고 가정 (동기화 엔진의 관행)
+                headers.append('UUID')
+            
             row_data = self._prepare_dynamic_row_data(headers, listing_data, target_row_number)
 
             # 수동 지정 방식(Update): B열부터 시작하는 정확한 줄 번호를 좌표로 타겟팅 (예: B36)
@@ -102,11 +113,10 @@ class ListingAddService:
                 body=body
             ).execute()
 
-            current_app.logger.info(f"동적 매물 추가 성공: {sheet_id}/{sheet_name}, 행 {target_row_number}")
+            current_app.logger.info(f"동적 매물 추가 성공: {sheet_id}/{sheet_name}, 행 {target_row_number}, UUID: {listing_uuid}")
             
-            # 생성된 ID 반환 (row 기반 ID 생성 규칙 적용)
-            from app.core.ids import listing_id_from_row
-            return listing_id_from_row(target_row_number)
+            # 생성된 UUID 반환 (더 이상 row-based ID를 사용하지 않음)
+            return listing_uuid
 
         except HttpError as e:
             current_app.logger.error(f"Google Sheets API 오류: {e}")
