@@ -184,8 +184,8 @@ class CommercialSyncService:
                     
                     batch_data = []
                     for idx, row in enumerate(data_rows, start=header_idx + 2):
-                        # 슬롯 ID를 기반으로 레코드 처리
-                        record = self._process_row_v2(slot_id, sheet_name, idx, row, header_map, user_id, manager_name)
+                        # 슬롯 ID를 기반으로 레코드 처리 (UUID 우선 적용)
+                        record = self._process_row_v3(slot_id, sheet_name, idx, row, header_map, user_id, manager_name)
                         if record:
                             batch_data.append(record)
                     
@@ -219,13 +219,16 @@ class CommercialSyncService:
             
         return res
 
-    def _process_row_v2(self, slot_id: str, sheet_name: str, row_idx: int, row: List[str], header_map: Dict[str, int], 
+    def _process_row_v3(self, slot_id: str, sheet_name: str, row_idx: int, row: List[str], header_map: Dict[str, int], 
                        user_id: Optional[str] = None, manager_name: Optional[str] = None) -> Optional[Dict[str, Any]]:
-        """슬롯 기반 고유 ID를 사용하는 개선된 행 처리 로직"""
+        """UUID 우선, 없으면 슬롯 기반 고유 ID를 사용하는 개선된 행 처리 로직"""
         try:
             fields = {}
             for h, i in header_map.items():
                 fields[h] = row[i].strip() if i < len(row) else ""
+            
+            # UUID 확인 (최우선)
+            listing_uuid = fields.get("UUID", "").strip()
             
             # 주소 추출
             region2 = fields.get("지역2", fields.get("시군구", ""))
@@ -233,9 +236,12 @@ class CommercialSyncService:
             lot = fields.get("지번", "")
             address_full = f"{region2} {region} {lot}".strip()
             
-            # 고유 ID 생성 규칙: c_{시트약어}_slot{슬롯ID}_{행번호}
-            sheet_slug = "r" if "임대" in sheet_name else "s" if "구분" in sheet_name else "l"
-            record_id = f"c_{sheet_slug}_slot{slot_id}_{row_idx:06d}"
+            if listing_uuid:
+                record_id = listing_uuid
+            else:
+                # 고유 ID 생성 규칙: c_{시트약어}_slot{슬롯ID}_{행번호}
+                sheet_slug = "r" if "임대" in sheet_name else "s" if "구분" in sheet_name else "l"
+                record_id = f"c_{sheet_slug}_slot{slot_id}_{row_idx:06d}"
             
             return {
                 "id": record_id,
