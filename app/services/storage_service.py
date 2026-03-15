@@ -1,5 +1,6 @@
 import os
 import uuid
+import re
 from typing import List, Dict, Any, Optional
 from werkzeug.utils import secure_filename
 from .commercial_listings_service import get_supabase_client
@@ -9,26 +10,34 @@ class StorageService:
         self.supabase = get_supabase_client()
         self.bucket_name = 'listing_photos'
 
+    def _normalize_listing_id(self, listing_id: str) -> str:
+        """프론트엔드에서 넘어온 접두사(r_, u_, l_, h_ 등)가 붙은 ID를 순수 UUID/ID로 정규화"""
+        if not listing_id: return listing_id
+        # 일반적인 접두사 패턴 (한 글자 + 언더바) 제거
+        return re.sub(r'^[rulph]_', '', listing_id)
+
     def upload_photo(self, listing_id: str, file_data: bytes, filename: str, user_email: str = None) -> Optional[Dict[str, Any]]:
         """Supabase Storage에 사진 업로드 및 DB 기록"""
         if not self.supabase:
             return None
 
-        # 1. 파일 경로 준비 (listing_id별로 폴더 구분)
+        # ID 정규화
+        normalized_id = self._normalize_listing_id(listing_id)
+
+        # 1. 파일 경로 준비 (ID별로 폴더 구분)
         ext = os.path.splitext(filename)[1].lower()
         if not ext: ext = '.jpg'
         
         unique_id = str(uuid.uuid4())
-        storage_path = f"{listing_id}/{unique_id}{ext}"
+        storage_path = f"{normalized_id}/{unique_id}{ext}"
         
         try:
             # 2. Storage 업로드
-            # content_type 자동 추정 (기본 image/jpeg)
             content_type = "image/jpeg"
             if ext == '.png': content_type = "image/png"
             elif ext == '.webp': content_type = "image/webp"
 
-            res = self.supabase.storage.from_(self.bucket_name).upload(
+            self.supabase.storage.from_(self.bucket_name).upload(
                 path=storage_path,
                 file=file_data,
                 file_options={"content-type": content_type}
@@ -39,7 +48,7 @@ class StorageService:
 
             # 4. DB 기록
             photo_data = {
-                "listing_id": listing_id,
+                "listing_id": normalized_id,
                 "storage_path": storage_path,
                 "full_url": full_url,
                 "file_name": filename,
@@ -59,14 +68,16 @@ class StorageService:
             return None
 
     def get_listing_photos(self, listing_id: str) -> List[Dict[str, Any]]:
-        """특정 매물의 사진 목록 조회"""
+        """특정 매물의 사진 목록 조회 (ID 정규화 포함)"""
         if not self.supabase:
             return []
+        
+        normalized_id = self._normalize_listing_id(listing_id)
         
         try:
             res = self.supabase.table("listing_photos") \
                 .select("*") \
-                .eq("listing_id", listing_id) \
+                .eq("listing_id", normalized_id) \
                 .order("created_at") \
                 .execute()
             return res.data or []
