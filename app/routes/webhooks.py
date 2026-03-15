@@ -260,16 +260,15 @@ def handle_sheets_changed():
                 if not sheet_id:
                     return jsonify({'status': 'invalid_sheet_url'}), 200
                 
-                if not check_if_input_sheet_changed(sheet_id):
-                    current_app.logger.info(f"입력 시트 변경 없음: {user_id} (슬롯 {slot_id})")
-                    return jsonify({'status': 'no_input_sheet_changed'}), 200
+                # 상가 매물은 입력 시트(상가임대차 등)가 워낙 많으므로 
+                # 특정 담당자 시트가 변경되었다는 신호가 오면 즉시 동기화하도록 유동적으로 처리
+                current_app.logger.info(f"상가 매물 변경 웹훅 수신 (슬롯 {slot_id}, 담당자: {manager_name})")
                 
                 # 실시간 동기화 실행
-                current_app.logger.info(f"상가 매물 변경 감지 (슬롯 {slot_id}) → 동기화 시작")
                 sync_result = service.sync_single_slot(slot_id, sheet_url, user_id, manager_name)
                 
                 if sync_result.get("success"):
-                    current_app.logger.info(f"상가 매물 동기화 완료: {slot_id} (담당자: {manager_name})")
+                    current_app.logger.info(f"상가 매물 동기화 완료: {slot_id} (담당자: {manager_name}, 건수: {sync_result.get('total_count', 0)})")
                     return jsonify({'status': 'ok', 'synced_count': sync_result.get('total_count', 0)}), 200
                 else:
                     current_app.logger.error(f"상가 매물 동기화 실패: {sync_result.get('errors', [])}")
