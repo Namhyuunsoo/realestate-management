@@ -201,8 +201,9 @@ def fetch_all_commercial_listings(subtype: Optional[str] = None, select_format: 
     if select_format == "search_skeleton":
         # 핵심 5대 필터링 필드 포함 (지역, 실평수, 보증금, 월세, 권리금)
         # 중요: address_full과 status_raw는 좌표 및 기본 상태 필터링에 필수입니다.
-        # fields와 numeric_cache는 decompact_listings에서 처리될 수 있도록 전체를 가져옵니다.
-        select_query = "id, address_full, status_raw, user_id, raw_row_index, slot_id, manager_name, fields, numeric_cache"
+        # fields는 decompact_listings에서 처리될 수 있도록 선택합니다.
+        # (주의: numeric_cache는 테이블에 상단 레벨 컬럼으로 존재하지 않을 수 있어 제외)
+        select_query = "id, address_full, status_raw, user_id, raw_row_index, slot_id, manager_name, fields"
     else:
         select_query = "*"
 
