@@ -1,5 +1,5 @@
-import os
 import json
+import concurrent.futures
 from typing import Dict, List, Any, Optional, Tuple
 from dotenv import load_dotenv
 from flask import current_app
@@ -148,11 +148,13 @@ def _normalize_row(row: Dict[str, Any], coords_map: Dict[str, Tuple[float, float
     """Supabase 행 데이터를 프론트엔드 호환 포맷으로 변환 (ID 충돌 방지 접두사 포함)"""
     address_full = (row.get("address_full") or "").strip()
     
-    # coords_map에서 좌표 조회 (유연한 매칭 결과 포함)
-    lat, lng = coords_map.get(address_full, (None, None))
-
-    coords = {"lat": None, "lng": None}
-    if lat is not None and lng is not None:
+    # 상가 매물 데이터베이스에 이미 좌표가 있는 경우 우선 사용
+    row_coords = row.get("coords")
+    if row_coords and isinstance(row_coords, dict) and row_coords.get("lat") and row_coords.get("lng"):
+        coords = {"lat": float(row_coords["lat"]), "lng": float(row_coords["lng"])}
+    else:
+        # DB에 좌표가 없는 경우에만 coords_map(캐시 테이블)에서 조회
+        lat, lng = coords_map.get(address_full, (None, None))
         coords = {"lat": lat, "lng": lng}
     
     fields = row.get("fields") or {}
@@ -218,6 +220,44 @@ def fetch_all_commercial_listings(subtype: Optional[str] = None, select_format: 
     all_addresses = []
     registry_map = _load_sheet_registry()
 
+    def _fetch_table_worker(table):
+        prefix = table_prefix_map.get(table, "")
+        local_results = []
+        try:
+            offset = 0
+            page_size = 1000
+            while True:
+                q = supabase.table(table).select(select_query).in_("status_raw", ["생", "완", "보류", ""])
+                if min_lat is not None and max_lat is not None:
+                    q = q.gte("coords->lat", min_lat).lte("coords->lat", max_lat)
+                if min_lng is not None and max_lng is not None:
+                    q = q.gte("coords->lng", min_lng).lte("coords->lng", max_lng)
+                
+                q = q.order("fields->접수일", desc=True)
+                res = q.range(offset, offset + page_size - 1).execute()
+                
+                if not res.data:
+                    break
+                
+                rows = list(res.data)
+                for r in rows:
+                    local_results.append((r, prefix))
+                    
+                    # 좌표가 없는 행에 대해서만 주소 수집 (캐시 테이블 조회용)
+                    row_coords = r.get("coords")
+                    has_coords = row_coords and isinstance(row_coords, dict) and row_coords.get("lat")
+                    if not has_coords:
+                        addr = (r.get("address_full") or "").strip()
+                        if addr:
+                            all_addresses.append(addr)
+                
+                if len(rows) < page_size:
+                    break
+                offset += page_size
+        except Exception as e:
+            print(f"Error fetching from {table} in parallel: {e}")
+        return local_results
+
     try:
         table_prefix_map = {
             "listings_rent": "r_",
@@ -226,47 +266,13 @@ def fetch_all_commercial_listings(subtype: Optional[str] = None, select_format: 
         }
 
         all_items_with_prefix = []
-
-        for table in target_tables:
-            prefix = table_prefix_map.get(table, "")
-            try:
-                offset = 0
-                page_size = 1000
-                while True:
-                    query = supabase.table(table).select(select_query).in_("status_raw", ["생", "완", "보류", ""])
-                    
-                    # BBox 필터 적용 (JSONB coords 필드 기준)
-                    if min_lat is not None and max_lat is not None:
-                        query = query.gte("coords->lat", min_lat).lte("coords->lat", max_lat)
-                    if min_lng is not None and max_lng is not None:
-                        query = query.gte("coords->lng", min_lng).lte("coords->lng", max_lng)
-
-                    # 정렬 조건
-                    query = query.order("fields->접수일", desc=True)
-                    
-                    result = query.range(offset, offset + page_size - 1).execute()
-                    
-                    # DEBUG: 결과 확인
-                    if offset == 0:
-                        print(f"DEBUG: {table} query with {select_query} returned {len(result.data) if result.data else 0} items")
-                    
-                    if not result.data:
-                        break
-                    
-                    data = list(result.data)
-                    for r in data:
-                        all_items_with_prefix.append((r, prefix))
-                        addr = (r.get("address_full") or "").strip()
-                        if addr:
-                            all_addresses.append(addr)
-                    
-                    if len(data) < page_size:
-                        break
-                    offset += page_size
-                    
-            except Exception as e:
-                print(f"Error fetching from {table}: {e}")
-                continue
+        
+        # 병렬 실행: 각 테이블 조회를 별도 스레드에서 수행
+        with concurrent.futures.ThreadPoolExecutor(max_workers=len(target_tables)) as executor:
+            future_to_table = {executor.submit(_fetch_table_worker, table): table for table in target_tables}
+            for future in concurrent.futures.as_completed(future_to_table):
+                table_result = future.result()
+                all_items_with_prefix.extend(table_result)
 
         if not all_items_with_prefix:
             return []
