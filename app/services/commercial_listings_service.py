@@ -180,15 +180,18 @@ def _normalize_row(row: Dict[str, Any], coords_map: Dict[str, Tuple[float, float
         "manager_name": manager_name
     }
 
-def fetch_all_commercial_listings(subtype: Optional[str] = None, select_format: Optional[str] = None) -> List[Dict[str, Any]]:
+def fetch_all_commercial_listings(subtype: Optional[str] = None, select_format: Optional[str] = None, bbox: Optional[tuple] = None) -> List[Dict[str, Any]]:
     """
     상가 매물 데이터를 조회하여 반환합니다.
     subtype: 'lease'(상가임대차), 'unit'(구분상가매매), 'land'(건물토지매매)
     select_format: 'search_skeleton' (핵심 필드만 조회)
+    bbox: (min_lat, max_lat, min_lng, max_lng) 튜플
     """
     supabase = get_supabase_client()
     if not supabase:
         return []
+
+    min_lat, max_lat, min_lng, max_lng = bbox if bbox else (None, None, None, None)
 
     # 서브타입에 따른 테이블 매핑
     subtype_table_map = {
@@ -199,11 +202,8 @@ def fetch_all_commercial_listings(subtype: Optional[str] = None, select_format: 
 
     # 조회할 필드 결정
     if select_format == "search_skeleton":
-        # 핵심 5대 필터링 필드 포함 (지역, 실평수, 보증금, 월세, 권리금)
-        # 중요: address_full과 status_raw는 좌표 및 기본 상태 필터링에 필수입니다.
-        # fields는 decompact_listings에서 처리될 수 있도록 선택합니다.
-        # (주의: numeric_cache는 테이블에 상단 레벨 컬럼으로 존재하지 않을 수 있어 제외)
-        select_query = "id, address_full, status_raw, user_id, raw_row_index, slot_id, manager_name, fields"
+        # 핵심 필드 + 좌표(coords) 추가 (BBox 필터링 및 마커 표시 필수)
+        select_query = "id, address_full, status_raw, user_id, raw_row_index, slot_id, manager_name, fields, coords"
     else:
         select_query = "*"
 
@@ -235,6 +235,12 @@ def fetch_all_commercial_listings(subtype: Optional[str] = None, select_format: 
                 while True:
                     query = supabase.table(table).select(select_query).in_("status_raw", ["생", "완", "보류", ""])
                     
+                    # BBox 필터 적용 (JSONB coords 필드 기준)
+                    if min_lat is not None and max_lat is not None:
+                        query = query.gte("coords->lat", min_lat).lte("coords->lat", max_lat)
+                    if min_lng is not None and max_lng is not None:
+                        query = query.gte("coords->lng", min_lng).lte("coords->lng", max_lng)
+
                     # 정렬 조건
                     query = query.order("fields->접수일", desc=True)
                     

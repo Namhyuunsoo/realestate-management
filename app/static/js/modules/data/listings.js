@@ -168,7 +168,10 @@ async function fetchListings(force = false) {
       updateAppProgressBar(50);
       console.log(`✅ [Hybrid Phase 1] 완료: ${items.length}개 마커 즉시 표시됨`);
 
-      // 2단계: 백그라운드 상세 데이터 로드 (비동기)
+      // 1.5단계: 현재 화면 영역(BBox)의 상세 데이터 우선 로드
+      loadBBoxData(status_raw);
+
+      // 2단계: 백그라운드 전체 상세 데이터 로드 (비동기)
       loadFullDataInBackground(status_raw, force);
     }
 
@@ -218,21 +221,56 @@ async function processListingData(data) {
 }
 
 /**
+ * 현재 화면 영역(BBox)의 상세 데이터를 로드하여 즉시 병합
+ */
+async function loadBBoxData(status_raw) {
+  if (!MAP || !MAP_READY || UI_STATE.listingMode !== "commercial") return;
+  
+  // status_raw가 전달되지 않으면 현재 필터 값 사용
+  if (!status_raw) {
+    status_raw = _lastCommercialStatusRaw || "생";
+  }
+  if (!bounds) return;
+  
+  const sw = bounds.getSW();
+  const ne = bounds.getNE();
+  
+  const bbox = {
+    min_lat: sw.lat(),
+    max_lat: ne.lat(),
+    min_lng: sw.lng(),
+    max_lng: ne.lng()
+  };
+
+  try {
+    console.log("🚀 [Hybrid Phase 1.5] 현재 영역 상세 데이터 우선 로드 시작...");
+    const data = await getCachedListings(status_raw, false, null, bbox);
+    const items = await processListingData(data);
+    
+    if (items && items.length > 0) {
+      mergeListingsData(items, "Phase 1.5 (BBox)");
+    }
+  } catch (error) {
+    console.warn("⚠️ BBox 데이터 로드 실패:", error);
+  }
+}
+
+/**
  * 백그라운드에서 상세 데이터를 로드하고 기존 리스트에 병합
  */
 async function loadFullDataInBackground(status_raw, force) {
   try {
     console.log("🚀 [Hybrid Phase 2] 상세 데이터 백그라운드 로드 시작...");
-    const fullData = await getCachedListings(status_raw, force, null); // format 없이 호출
+    const fullData = await getCachedListings(status_raw, force, null, null); // format 및 bbox 없이 호출
     const fullItems = await processListingData(fullData);
     
     updateAppProgressBar(75);
 
     // 병합 작업 (메인 스레드 점유 최소화를 위해 requestIdleCallback 사용)
     if ('requestIdleCallback' in window) {
-      requestIdleCallback(() => mergeListingsData(fullItems));
+      requestIdleCallback(() => mergeListingsData(fullItems, "Phase 2 (Global)"));
     } else {
-      setTimeout(() => mergeListingsData(fullItems), 100);
+      setTimeout(() => mergeListingsData(fullItems, "Phase 2 (Global)"), 100);
     }
 
   } catch (error) {
@@ -244,8 +282,8 @@ async function loadFullDataInBackground(status_raw, force) {
 /**
  * 상세 데이터를 기존 리스트에 병합 (매핑)
  */
-function mergeListingsData(fullItems) {
-  console.log("🧬 [Hybrid Phase 2] 데이터 병합 중...");
+function mergeListingsData(fullItems, label = "Data Merge") {
+  console.log(`🧬 [Hybrid ${label}] 데이터 병합 중... (${fullItems.length}개)`);
   
   // 만약 1단계(스켈레톤)에서 데이터가 없었거나 리스트가 비어있다면, 2단계 데이터를 전체 리스트로 설정
   if (!LISTINGS || LISTINGS.length === 0) {
@@ -764,4 +802,6 @@ window.readTopFilterInputs = readTopFilterInputs;
 window.buildEffectiveFilters = buildEffectiveFilters;
 window.applyAllFilters = applyAllFilters;
 window.resetSortCycles = resetSortCycles;
-window.sortListingsInPlace = sortListingsInPlace; 
+window.sortListingsInPlace = sortListingsInPlace;
+window.loadBBoxData = loadBBoxData;
+ 

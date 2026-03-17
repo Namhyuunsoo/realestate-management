@@ -162,11 +162,17 @@ async function getCurrentUserInfo() {
 let listingsCache = {}; // subtype별 캐시
 let listingsCacheTime = {}; // subtype별 캐시 시간
 
-async function getCachedListings(status_raw = "생", force = false, format = null, signal = null) {
+async function getCachedListings(status_raw = "생", force = false, format = null, bbox = null, signal = null) {
   const now = Date.now();
   const subtype = UI_STATE.commercialSubtype || "lease";
-  // 포맷이 있으면 캐시 키에 포함하여 별도 관리
-  const cacheKey = `${subtype}_${status_raw}${format ? '_' + format : ''}`;
+  
+  // BBox가 있으면 캐시 키에 포함
+  let bboxKey = "";
+  if (bbox) {
+    bboxKey = `_bb_${bbox.min_lat.toFixed(4)}_${bbox.max_lat.toFixed(4)}_${bbox.min_lng.toFixed(4)}_${bbox.max_lng.toFixed(4)}`;
+  }
+  
+  const cacheKey = `${subtype}_${status_raw}${format ? '_' + format : ''}${bboxKey}`;
 
   // 강제 새로고침이 아니고 캐시가 유효한 경우
   if (!force && listingsCache[cacheKey] && (now - listingsCacheTime[cacheKey]) < 60000) { // 1분간 유효
@@ -177,6 +183,9 @@ async function getCachedListings(status_raw = "생", force = false, format = nul
     let url = `/api/listings?limit=100000&subtype=${subtype}&status_raw=${status_raw}&compact=1`;
     if (force) url += "&force=1";
     if (format) url += `&format=${format}`;
+    if (bbox) {
+      url += `&min_lat=${bbox.min_lat}&max_lat=${bbox.max_lat}&min_lng=${bbox.min_lng}&max_lng=${bbox.max_lng}`;
+    }
 
     const data = await cachedFetch(url, {
       credentials: 'include',

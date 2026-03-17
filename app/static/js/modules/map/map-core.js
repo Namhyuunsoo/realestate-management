@@ -132,6 +132,11 @@ function registerMapEvents() {
       if (typeof applyAllFilters === 'function') {
         window.applyAllFilters();
       }
+
+      // 범용 BBox 하이브리드: 현재 영역 상세 정보 우선 로드 (상가 모드일 때만)
+      if (typeof window.loadBBoxData === 'function') {
+        window.loadBBoxData();
+      }
     } catch (err) {
       console.error("❌ idle 이벤트 처리 중 오류:", err);
     } finally {
