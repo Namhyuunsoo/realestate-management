@@ -218,7 +218,7 @@ def validate_csrf_token():
             if not current_app.config.get('CSRF_PROTECTION', True):
                 return f(*args, **kwargs)
             
-            if request.method in ['GET', 'POST', 'PUT', 'DELETE']:
+            if request.method in ['POST', 'PUT', 'DELETE']:
                 token = request.headers.get('X-CSRF-Token') or request.form.get('csrf_token')
                 session_token = session.get('csrf_token')
                 

@@ -221,13 +221,19 @@ def fetch_all_commercial_listings(subtype: Optional[str] = None, select_format: 
     registry_map = _load_sheet_registry()
 
     def _fetch_table_worker(table):
+        # 각 스레드마다 별도의 Supabase 클라이언트 생성 (쓰레드 세이프)
+        supabase_local = get_supabase_client()
+        if not supabase_local:
+            return [], []
+
         prefix = table_prefix_map.get(table, "")
         local_results = []
+        local_addresses = []
         try:
             offset = 0
             page_size = 1000
             while True:
-                q = supabase.table(table).select(select_query).in_("status_raw", ["생", "완", "보류", ""])
+                q = supabase_local.table(table).select(select_query).in_("status_raw", ["생", "완", "보류", ""])
                 if min_lat is not None and max_lat is not None:
                     q = q.gte("coords->lat", min_lat).lte("coords->lat", max_lat)
                 if min_lng is not None and max_lng is not None:
@@ -243,20 +249,20 @@ def fetch_all_commercial_listings(subtype: Optional[str] = None, select_format: 
                 for r in rows:
                     local_results.append((r, prefix))
                     
-                    # 좌표가 없는 행에 대해서만 주소 수집 (캐시 테이블 조회용)
+                    # 좌표가 없는 행에 대해서만 주소 수집
                     row_coords = r.get("coords")
                     has_coords = row_coords and isinstance(row_coords, dict) and row_coords.get("lat")
                     if not has_coords:
                         addr = (r.get("address_full") or "").strip()
                         if addr:
-                            all_addresses.append(addr)
+                            local_addresses.append(addr)
                 
                 if len(rows) < page_size:
                     break
                 offset += page_size
         except Exception as e:
             print(f"Error fetching from {table} in parallel: {e}")
-        return local_results
+        return local_results, local_addresses
 
     try:
         table_prefix_map = {
@@ -266,13 +272,15 @@ def fetch_all_commercial_listings(subtype: Optional[str] = None, select_format: 
         }
 
         all_items_with_prefix = []
+        all_addresses = []
         
         # 병렬 실행: 각 테이블 조회를 별도 스레드에서 수행
         with concurrent.futures.ThreadPoolExecutor(max_workers=len(target_tables)) as executor:
             future_to_table = {executor.submit(_fetch_table_worker, table): table for table in target_tables}
             for future in concurrent.futures.as_completed(future_to_table):
-                table_result = future.result()
+                table_result, table_addresses = future.result()
                 all_items_with_prefix.extend(table_result)
+                all_addresses.extend(table_addresses)
 
         if not all_items_with_prefix:
             return []
