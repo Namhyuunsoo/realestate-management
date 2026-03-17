@@ -180,10 +180,11 @@ def _normalize_row(row: Dict[str, Any], coords_map: Dict[str, Tuple[float, float
         "manager_name": manager_name
     }
 
-def fetch_all_commercial_listings(subtype: Optional[str] = None) -> List[Dict[str, Any]]:
+def fetch_all_commercial_listings(subtype: Optional[str] = None, select_format: Optional[str] = None) -> List[Dict[str, Any]]:
     """
     상가 매물 데이터를 조회하여 반환합니다.
     subtype: 'lease'(상가임대차), 'unit'(구분상가매매), 'land'(건물토지매매)
+    select_format: 'search_skeleton' (핵심 필드만 조회)
     """
     supabase = get_supabase_client()
     if not supabase:
@@ -196,12 +197,20 @@ def fetch_all_commercial_listings(subtype: Optional[str] = None) -> List[Dict[st
         "land": "listings_sale_land"
     }
 
+    # 조회할 필드 결정
+    if select_format == "search_skeleton":
+        # 핵심 5대 필터링 필드 포함 (지역, 실평수, 보증금, 월세, 권리금)
+        # 중요: address_full과 status_raw는 좌표 및 기본 상태 필터링에 필수입니다.
+        # fields와 numeric_cache는 decompact_listings에서 처리될 수 있도록 전체를 가져옵니다.
+        select_query = "id, address_full, status_raw, user_id, raw_row_index, slot_id, manager_name, fields, numeric_cache"
+    else:
+        select_query = "*"
+
     # 조회할 테이블 목록 결정
     target_tables = []
     if subtype and subtype in subtype_table_map:
         target_tables = [subtype_table_map[subtype]]
     else:
-        # 서브타입이 지정되지 않은 경우 지도 표시용 기본 테이블들 조회
         target_tables = MAP_DISPLAY_TABLES
 
     all_items = []
@@ -209,15 +218,13 @@ def fetch_all_commercial_listings(subtype: Optional[str] = None) -> List[Dict[st
     registry_map = _load_sheet_registry()
 
     try:
-        # 테이블별 ID 접두사 매핑
         table_prefix_map = {
             "listings_rent": "r_",
             "listings_sale_unit": "u_",
             "listings_sale_land": "l_"
         }
 
-        all_addresses = []
-        all_items_with_prefix = [] # (item, prefix) 튜플 저장
+        all_items_with_prefix = []
 
         for table in target_tables:
             prefix = table_prefix_map.get(table, "")
@@ -225,7 +232,17 @@ def fetch_all_commercial_listings(subtype: Optional[str] = None) -> List[Dict[st
                 offset = 0
                 page_size = 1000
                 while True:
-                    result = supabase.table(table).select("*").in_("status_raw", ["생", "완", "보류", ""]).order("fields->접수일", desc=True).range(offset, offset + page_size - 1).execute()
+                    query = supabase.table(table).select(select_query).in_("status_raw", ["생", "완", "보류", ""])
+                    
+                    # 정렬 조건
+                    query = query.order("fields->접수일", desc=True)
+                    
+                    result = query.range(offset, offset + page_size - 1).execute()
+                    
+                    # DEBUG: 결과 확인
+                    if offset == 0:
+                        print(f"DEBUG: {table} query with {select_query} returned {len(result.data) if result.data else 0} items")
+                    
                     if not result.data:
                         break
                     
@@ -247,17 +264,10 @@ def fetch_all_commercial_listings(subtype: Optional[str] = None) -> List[Dict[st
         if not all_items_with_prefix:
             return []
 
-        # 2. 좌표 맵 구축
         coords_map = _fetch_coords_map(supabase, all_addresses)
-
-        # 3. 데이터 정규화 (ID 접두사 포함)
         normalized_items = [_normalize_row(item, coords_map, registry_map, prefix) for item, prefix in all_items_with_prefix]
         
-        # 4. 사용자의 "1개 행 = 1개 매물" 원칙에 따라 시트 데이터를 그대로 반환합니다.
-        final_items = normalized_items
-        current_app.logger.info(f"✅ 조회 완료: 총 {len(final_items)}개 매물 (중복 제거 미적용)")
-        
-        return final_items
+        return normalized_items
 
     except Exception as e:
         print(f"fetch_all_commercial_listings failed: {e}")

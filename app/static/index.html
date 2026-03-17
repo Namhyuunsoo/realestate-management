@@ -170,6 +170,40 @@
       loadNaverMapsAPI();
     }
   </script>
+  <style>
+    /* 하이브리드 로딩 프로그레스 바 스타일 */
+    .app-progress-bar {
+      position: fixed;
+      top: 40px; /* PC/Mobile 상단바 하단 */
+      left: 0;
+      width: 100%;
+      height: 3px;
+      background: rgba(0, 0, 0, 0.05);
+      z-index: 9999;
+      display: none;
+      pointer-events: none;
+    }
+    .app-progress-bar.active {
+      display: block;
+    }
+    .app-progress-bar .progress-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #007bff, #00d2ff);
+      transition: width 0.3s cubic-bezier(0.1, 0.5, 0.5, 1);
+      box-shadow: 0 0 8px rgba(0, 123, 255, 0.5);
+    }
+    .app-progress-bar .progress-text {
+      position: absolute;
+      top: 6px;
+      right: 12px;
+      font-size: 11px;
+      font-weight: 700;
+      color: #007bff;
+      text-shadow: 0 0 2px white;
+      font-family: 'Inter', sans-serif;
+    }
+  </style>
 </head>
 
 <body>
@@ -223,6 +257,12 @@
 
   <!-- 실제 앱 화면 -->
   <div id="appRoot" class="hidden">
+    <!-- 로딩 프로그레스 바 -->
+    <div id="appProgressBar" class="app-progress-bar">
+      <div class="progress-fill"></div>
+      <div class="progress-text">0%</div>
+    </div>
+
     <!-- 상단바 -->
     <header id="topbar">
       <div class="office-info">

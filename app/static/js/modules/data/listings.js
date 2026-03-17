@@ -14,6 +14,29 @@ function updateCountsDisplay(total, filtered) {
 }
 
 /**
+ * 전역 프로그레스 바 업데이트
+ */
+function updateAppProgressBar(percent, active = true) {
+  const bar = document.getElementById("appProgressBar");
+  if (!bar) return;
+
+  if (active) {
+    bar.classList.add("active");
+    const fill = bar.querySelector(".progress-fill");
+    const text = bar.querySelector(".progress-text");
+    if (fill) fill.style.width = `${percent}%`;
+    if (text) text.textContent = `${Math.round(percent)}%`;
+  } else {
+    // 100% 도달 후 부드럽게 사라짐
+    const fill = bar.querySelector(".progress-fill");
+    if (fill) fill.style.width = "100%";
+    setTimeout(() => {
+      bar.classList.remove("active");
+    }, 500);
+  }
+}
+
+/**
  * 🔥 Tabular JSON 압축 데이터를 기존 객체 형식으로 복원
  */
 function decompactListings(data) {
@@ -89,104 +112,184 @@ async function fetchListings(force = false) {
     }
   }
 
-  // 기존 마커들 제거
+  // 상가 모드인 경우 하이브리드 로딩 적용 여부 결정
+  const isHybridMode = UI_STATE.listingMode === "commercial";
+
+  // 기본 UI 초기화
   if (MARKERS && MARKERS.length > 0) {
-    MARKERS.forEach(marker => {
-      if (marker && marker.setMap) {
-        marker.setMap(null);
-      }
-    });
+    MARKERS.forEach(marker => { if (marker && marker.setMap) marker.setMap(null); });
     MARKERS = [];
   }
-
-  // 클러스터 그룹 초기화
   if (CLUSTER_GROUP && typeof CLUSTER_GROUP.clear === 'function') {
     CLUSTER_GROUP.clear();
   }
 
   const ul = document.getElementById("listingList");
-  if (ul) ul.innerHTML = "<li>로딩...</li>";
+  if (ul) ul.innerHTML = isHybridMode ? "<li>빠른 로딩 중...</li>" : "<li>로딩...</li>";
   updateCountsDisplay(0, 0);
+
+  // 프로그레스 바 시작
+  if (isHybridMode) updateAppProgressBar(10);
 
   const label = "fetchListings";
   timeStart(label);
   try {
-    // 모드에 따라 다른 API 호출
     let data = null;
+    let items = [];
+
     if (UI_STATE.listingMode === "housing") {
-      // 주택 모드: 주택 API 호출
+      // [주택 모드] 기존 방식 유지
       const subtype = UI_STATE.housingSubtype || "sale";
       const statusEl = document.getElementById("modal_tf_h_status") || document.getElementById("tf_h_status");
       const status_raw = (statusEl && statusEl.value && statusEl.value.trim()) ? statusEl.value.trim() : "생";
       _lastHousingStatusRaw = status_raw;
       data = await getCachedHousingListings(subtype, status_raw, force);
+      items = await processListingData(data);
     } else {
-      // 상가 모드: 상가 API 호출 (getCachedListings 내부에서 UI_STATE.commercialSubtype 참조함)
+      // [상가 모드] 하이브리드(2단계) 로딩
       const statusEl = document.getElementById("modal_tf_status") || document.getElementById("tf_status");
       const status_raw = (statusEl && statusEl.value && statusEl.value.trim()) ? statusEl.value.trim() : "생";
       _lastCommercialStatusRaw = status_raw;
-      data = await getCachedListings(status_raw, force);
+
+      // 1단계: 스켈레톤(검색용 핵심 필드) 데이터 먼저 로드
+      console.log("🚀 [Hybrid Phase 1] 스켈레톤 데이터 요청...");
+      data = await getCachedListings(status_raw, force, "search_skeleton");
+      items = await processListingData(data);
+      
+      // 1단계 데이터 즉시 렌더링
+      ORIGINAL_LIST = items;
+      LISTINGS = ORIGINAL_LIST.map(x => ({ ...x }));
+      window.LISTINGS = LISTINGS;
+      window.ORIGINAL_LIST = ORIGINAL_LIST;
+
+      if (window.assignTempCoords) await window.assignTempCoords();
+      window.applyAllFilters();
+      
+      updateAppProgressBar(50);
+      console.log(`✅ [Hybrid Phase 1] 완료: ${items.length}개 마커 즉시 표시됨`);
+
+      // 2단계: 백그라운드 상세 데이터 로드 (비동기)
+      loadFullDataInBackground(status_raw, force);
     }
 
-    if (!data) throw new Error("매물 데이터를 가져올 수 없습니다.");
-
-    // 🔥 핵심 수정: API 응답 구조 확인 및 수정
-    // console.log("🔍 fetchListings: API 응답 구조 확인:", data);
-
-    let items = [];
-    
-    // 1. 압축 데이터 여부 먼저 확인 및 해제
-    const hasCompactStructure = data.cols && data.rows;
-    const itemsHasCompactStructure = data.items && data.items.cols && data.items.rows;
-    const isCompact = data.compressed || (data.items && data.items.compressed) || hasCompactStructure || itemsHasCompactStructure;
-    
-    if (isCompact) {
-      const compactData = (data.cols && data.rows) ? data : data.items;
-      items = decompactListings(compactData);
-      console.log(`📦 JSON 압축 해제 완료: ${items.length}개 (감지 방식: ${hasCompactStructure ? 'Root' : (itemsHasCompactStructure ? 'Items' : 'Flag')})`);
-    } else {
-      // 2. 기존 방식(비압축) 처리
-      if (Array.isArray(data)) {
-        items = data;
-      } else if (data.items && Array.isArray(data.items)) {
-        items = data.items;
-      } else if (data.listings && Array.isArray(data.listings)) {
-        items = data.listings;
-      } else {
-        console.error("❌ fetchListings: API 응답 구조를 파악할 수 없습니다:", data);
-        throw new Error("API 응답 구조가 예상과 다릅니다.");
-      }
+    if (!items || items.length === 0) {
+      if (!isHybridMode) throw new Error("매물 데이터를 가져올 수 없습니다.");
     }
 
-    ORIGINAL_LIST = items;
-    LISTINGS = ORIGINAL_LIST.map(x => ({ ...x }));
-
-    // 🔥 핵심 수정: 전역 변수 동기화 보장
-    window.LISTINGS = LISTINGS;
-    window.ORIGINAL_LIST = ORIGINAL_LIST;
-
-    // 🔥 성능 최적화: console.log 최소화
-    // console.log(`🔍 fetchListings: 매물 ${LISTINGS.length}개 로드됨`);
-    // console.log(`🔍 fetchListings: window.LISTINGS 동기화 완료, 개수: ${window.LISTINGS.length}`);
-
-    // 좌표 할당 (전역 함수 호출)
-    if (window.assignTempCoords) await window.assignTempCoords();
-    // await computeDistancesIfNeeded(); // ⚠️ 존재하지 않는 함수이므로 주석 처리
-
-    // 필터 적용
-    window.applyAllFilters();
-
-    // 🔥 핵심 수정: FILTERED_LISTINGS도 전역 변수로 동기화
-    window.FILTERED_LISTINGS = FILTERED_LISTINGS;
-    // 🔥 성능 최적화: console.log 최소화
-    // console.log(`🔍 fetchListings: window.FILTERED_LISTINGS 동기화 완료, 개수: ${window.FILTERED_LISTINGS.length}`);
+    // 주택 모드인 경우에만 여기서 나머지 처리 (상가는 이미 위에서 처리함)
+    if (UI_STATE.listingMode === "housing") {
+      ORIGINAL_LIST = items;
+      LISTINGS = ORIGINAL_LIST.map(x => ({ ...x }));
+      window.LISTINGS = LISTINGS;
+      window.ORIGINAL_LIST = ORIGINAL_LIST;
+      if (window.assignTempCoords) await window.assignTempCoords();
+      window.applyAllFilters();
+    }
 
   } catch (e) {
     if (ul) ul.innerHTML = `<li style="color:red;">에러: ${escapeHtml(e.message)}</li>`;
     console.error("❌ fetchListings 오류:", e);
+    updateAppProgressBar(0, false);
   } finally {
     timeEnd(label, { count: LISTINGS.length });
+    if (UI_STATE.listingMode === "housing") updateAppProgressBar(100, false);
   }
+}
+
+/**
+ * API 응답 데이터를 아이템 배열로 공통 처리
+ */
+async function processListingData(data) {
+  if (!data) return [];
+  let items = [];
+  const hasCompactStructure = data.cols && data.rows;
+  const itemsHasCompactStructure = data.items && data.items.cols && data.items.rows;
+  const isCompact = data.compressed || (data.items && data.items.compressed) || hasCompactStructure || itemsHasCompactStructure;
+  
+  if (isCompact) {
+    const compactData = (data.cols && data.rows) ? data : data.items;
+    items = decompactListings(compactData);
+  } else {
+    if (Array.isArray(data)) items = data;
+    else if (data.items && Array.isArray(data.items)) items = data.items;
+    else if (data.listings && Array.isArray(data.listings)) items = data.listings;
+  }
+  return items;
+}
+
+/**
+ * 백그라운드에서 상세 데이터를 로드하고 기존 리스트에 병합
+ */
+async function loadFullDataInBackground(status_raw, force) {
+  try {
+    console.log("🚀 [Hybrid Phase 2] 상세 데이터 백그라운드 로드 시작...");
+    const fullData = await getCachedListings(status_raw, force, null); // format 없이 호출
+    const fullItems = await processListingData(fullData);
+    
+    updateAppProgressBar(75);
+
+    // 병합 작업 (메인 스레드 점유 최소화를 위해 requestIdleCallback 사용)
+    if ('requestIdleCallback' in window) {
+      requestIdleCallback(() => mergeListingsData(fullItems));
+    } else {
+      setTimeout(() => mergeListingsData(fullItems), 100);
+    }
+
+  } catch (error) {
+    console.warn("⚠️ 백그라운드 데이터 로드 실패 (기능상 문제는 없음):", error);
+    updateAppProgressBar(100, false);
+  }
+}
+
+/**
+ * 상세 데이터를 기존 리스트에 병합 (매핑)
+ */
+function mergeListingsData(fullItems) {
+  console.log("🧬 [Hybrid Phase 2] 데이터 병합 중...");
+  
+  // 만약 1단계(스켈레톤)에서 데이터가 없었거나 리스트가 비어있다면, 2단계 데이터를 전체 리스트로 설정
+  if (!LISTINGS || LISTINGS.length === 0) {
+    console.log("ℹ️ [Hybrid Phase 2] 기존 리스트가 비어있어 상세 데이터를 전체 리스트로 교체합니다.");
+    ORIGINAL_LIST = fullItems;
+    LISTINGS = ORIGINAL_LIST.map(x => ({ ...x }));
+    window.LISTINGS = LISTINGS;
+    window.ORIGINAL_LIST = ORIGINAL_LIST;
+    
+    // 좌표 할당 및 필터/마커 업데이트 강제 실행
+    if (window.assignTempCoords) window.assignTempCoords();
+    window.applyAllFilters();
+    updateAppProgressBar(100, false);
+    return;
+  }
+
+  const itemMap = new Map();
+  fullItems.forEach(item => itemMap.set(item.id, item));
+
+  let mergedCount = 0;
+  // 기존 리스트 순회하며 상세 정보 보강
+  LISTINGS.forEach(item => {
+    const full = itemMap.get(item.id);
+    if (full) {
+      // skeleton에 없던 필드들 병합 (기존 좌표 등은 유지)
+      item.fields = { ...full.fields, ...item.fields };
+      item.numeric_cache = { ...full.numeric_cache, ...item.numeric_cache };
+      mergedCount++;
+    }
+  });
+
+  // ORIGINAL_LIST도 동기화
+  const originalMap = new Map();
+  ORIGINAL_LIST.forEach(item => originalMap.set(item.id, item));
+  fullItems.forEach(full => {
+    const orig = originalMap.get(full.id);
+    if (orig) {
+      orig.fields = { ...full.fields, ...orig.fields };
+      orig.numeric_cache = { ...full.numeric_cache, ...orig.numeric_cache };
+    }
+  });
+
+  console.log(`✅ [Hybrid Phase 2] 병합 완료: ${mergedCount}개 매물 상세 정보 업데이트됨`);
+  updateAppProgressBar(100, false);
 }
 
 /**************************************

@@ -61,12 +61,13 @@ def find_header_row(worksheet: gspread.Worksheet) -> Optional[int]:
             row_values = worksheet.row_values(row_num)
             if len(row_values) > 1:  # B열(인덱스 1)부터 확인
                 # B열부터 헤더로 보이는 키워드 확인
-                header_keywords = ['접수일', '지역', '지번', '건물명', '층수', '가게명']
-                # B열부터 6개 컬럼 확인 (인덱스 1부터 6까지)
-                b_to_g_values = row_values[1:7] if len(row_values) > 1 else []
-                row_str = ' '.join([str(v).strip() for v in b_to_g_values])
-                if any(keyword in row_str for keyword in header_keywords):
-                    current_app.logger.info(f"헤더 행 발견: 행 {row_num}, B열 값: {b_to_g_values[:3]}")
+                # 헤더 키워드를 포함하는지 훨씬 유연하게 확인 (공백 제거 및 부분 일치)
+                header_keywords = ['접수일', '지역', '지번', '건물명', '층수', '가게명', '매매가', '보증금']
+                b_to_g_values = [str(v).replace(' ', '') for v in row_values[1:10]]
+                row_combined = ''.join(b_to_g_values)
+                
+                if any(keyword in row_combined for keyword in header_keywords):
+                    current_app.logger.info(f"헤더 행 발견: 행 {row_num}, 내용: {row_combined[:50]}...")
                     return row_num
         # 키워드가 없으면 B열부터 첫 번째 비어있지 않은 행 반환
         for row_num in range(1, 11):

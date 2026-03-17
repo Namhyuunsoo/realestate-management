@@ -76,18 +76,19 @@ def push_supabase_to_master() -> Dict[str, Any]:
                         # fields JSON에서 값을 찾음
                         val = fields.get(header, "")
                         
-                        # 숫자 포맷팅 (GAS 로직 재현: 특정 필드는 정수화)
-                        # [5, 8, 9, 10, 11] 인덱스 필드들: 보증금, 권리금, 월세 등
-                        # 여기서는 헤더 이름 기반으로 안전하게 처리
-                        numeric_fields = ["보증금", "월세", "권리금", "분양", "실평수", "매매가", "수익율", "평당가격"]
-                        if any(nf in header for nf in numeric_fields):
+                        # 숫자 필드 여부 확인 (헤더의 공백 무시하고 비교)
+                        numeric_fields = ["보증금", "월세", "권리금", "분양", "실평수", "매매가", "수익율", "평당가격", "층수"]
+                        header_stripped = str(header).replace(' ', '')
+                        if any(nf in header_stripped for nf in numeric_fields):
                             try:
                                 if val and str(val).strip():
-                                    val = format(float(str(val).replace(',', '')), '.0f')
+                                    val = float(str(val).replace(',', ''))
                             except:
                                 pass
+                        else:
+                            val = str(val) if val is not None else ""
                                 
-                        row.append(str(val))
+                        row.append(val)
                     rows_to_write.append(row)
                 
                 # 4. 시트에 쓰기 (2행부터 덮어쓰기)

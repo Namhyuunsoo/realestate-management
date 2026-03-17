@@ -31,6 +31,8 @@ def api_listings():
     force = request.args.get("force") == "1"
     status_raw = request.args.get("status_raw")
     subtype = request.args.get("subtype") # 상가 하위 카테고리 (lease, unit, land)
+    select_format = request.args.get("format") # 'search_skeleton' 등 선택적 조회
+
     # 매물 데이터 접근 제한 제거
     requested_limit = int(request.args.get("limit", 100))
     limit = requested_limit  
@@ -43,8 +45,8 @@ def api_listings():
     try:
         # Supabase 사용 가능 시 Supabase에서 로드, 아니면 레거시 로컬 파일 사용
         if SUPABASE_AVAILABLE:
-            data = fetch_all_commercial_listings(subtype=subtype)
-            current_app.logger.info(f"✅ Supabase에서 {len(data)}개 매물 로드됨 (subtype: {subtype})")
+            data = fetch_all_commercial_listings(subtype=subtype, select_format=select_format)
+            current_app.logger.info(f"✅ Supabase에서 {len(data)}개 매물 로드됨 (subtype: {subtype}, format: {select_format})")
         else:
             data = load_listings(force_reload=force)
             current_app.logger.info(f"ℹ️ 로컬 파일에서 {len(data)}개 매물 로드됨 (Supabase 미사용)")
