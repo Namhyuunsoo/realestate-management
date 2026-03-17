@@ -230,6 +230,7 @@ async function loadBBoxData(status_raw) {
   if (!status_raw) {
     status_raw = _lastCommercialStatusRaw || "생";
   }
+  const bounds = MAP.getBounds();
   if (!bounds) return;
   
   const sw = bounds.getSW();
