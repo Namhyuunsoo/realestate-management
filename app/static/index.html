@@ -62,14 +62,18 @@
       }
     }
   </script>
-  <script src="/static/js/main-new.js?v=20260310_v7"></script>
-  <script src="/static/js/listing-add.js?v=20260310_v7"></script>
-  <script src="/static/js/customer-add.js?v=20260310_v7"></script>
-  <script src="/static/js/modules/ui/mobile-buttons.js?v=20260310_v7"></script>
-  <script src="/static/js/modules/ui/hybrid-filter.js?v=20260310_v7"></script>
-  <script src="/static/js/customer-list-modal.js?v=20260310_v7"></script>
-  <script src="/static/js/modules/admin/slot-management.js?v=20260310_v7"></script>
-  <script src="/static/js/modules/map/address-search.js?v=20260310_v7"></script>
+  <!-- Supabase JS SDK (for Real-time) -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <script src="/static/js/main-new.js?v=20260310_v7" defer></script>
+  <script src="/static/js/listing-add.js?v=20260310_v7" defer></script>
+  <script src="/static/js/customer-add.js?v=20260310_v7" defer></script>
+  <script src="/static/js/modules/ui/mobile-buttons.js?v=20260310_v7" defer></script>
+  <script src="/static/js/modules/ui/hybrid-filter.js?v=20260310_v7" defer></script>
+  <script src="/static/js/customer-list-modal.js?v=20260310_v7" defer></script>
+  <script src="/static/js/modules/admin/slot-management.js?v=20260310_v7" defer></script>
+  <script src="/static/js/modules/data/realtime.js?v=20260310_v7" defer></script>
+  <script src="/static/js/modules/map/address-search.js?v=20260310_v7" defer></script>
   <script>
     async function loadNaverMapsAPI() {
       return new Promise(async (resolve, reject) => {
@@ -83,6 +87,18 @@
 
           const config = await response.json();
           console.log('🔑 네이버 지도 API 설정 로드됨');
+
+          // 실시간 동기화 초기화 (Supabase)
+          if (config.supabaseUrl && config.supabaseKey) {
+            // realtime.js가 defer로 로드되므로 정의될 때까지 대기하거나 즉시 호출
+            if (typeof window.initRealtimeSync === 'function') {
+              window.initRealtimeSync(config.supabaseUrl, config.supabaseKey);
+            } else {
+              // 아직 로드 전이면 전역 변수에 설정을 임시 보관하여 realtime.js에서 처리하도록 함
+              window._supabaseConfig = { url: config.supabaseUrl, key: config.supabaseKey };
+              console.log('⏳ Realtime 설정 보관됨 (realtime.js 로드 대기)');
+            }
+          }
 
           // API 키 유효성 검사
           if (!config.ncpKeyId) {

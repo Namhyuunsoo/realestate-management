@@ -414,12 +414,54 @@ function updateClusterBubblesRecommendationStatus() {
   // console.log('✅ 클러스터 버블 추천 상태 업데이트 완료');
 }
 
+/**
+ * 특정 마커 하나만 실시간 업데이트
+ */
+function updateSingleMarker(id, data) {
+  const marker = MARKER_MAP.get(id);
+  if (!marker) {
+    if (window.placeMarkers && window.LISTINGS) {
+       const item = window.LISTINGS.find(x => x.id === id);
+       if (item) window.placeMarkers([item]);
+    }
+    return;
+  }
+
+  const color = STATUS_COLORS[data.status_raw] || "#007AFF";
+  const isActive = (id === SELECTED_MARKER_ID);
+  const briefingStatus = (typeof getBriefingStatus === 'function') ? getBriefingStatus(id) : null;
+  const isRecommended = (window.USER_RECOMMENDATIONS && window.USER_RECOMMENDATIONS.has) ? window.USER_RECOMMENDATIONS.has(id) : false;
+  const iconContent = createMarkerIcon(color, isActive, briefingStatus, isRecommended);
+
+  marker.setIcon({ content: iconContent });
+  marker._listingData = data;
+  console.log(`📍 [Marker] 마커 ${id} 실시간 업데이트 완료`);
+}
+
+/**
+ * 특정 마커 하나만 제거
+ */
+function removeSingleMarker(id) {
+  const marker = MARKER_MAP.get(id);
+  if (marker) {
+    marker.setMap(null);
+    MARKER_MAP.delete(id);
+    const clusterer = window.CLUSTERER || CLUSTERER;
+    if (clusterer) {
+      clusterer.removeMarker(marker);
+    }
+    console.log(`📍 [Marker] 마커 ${id} 제거 완료`);
+  }
+}
+
 // 전역 함수로 export
 window.updateMapMarkerRecommendation = updateMapMarkerRecommendation;
 window.updateAllMarkersRecommendationStatus = updateAllMarkersRecommendationStatus;
 window.updateClusterBubblesRecommendationStatus = updateClusterBubblesRecommendationStatus;
+window.updateSingleMarker = updateSingleMarker;
+window.removeSingleMarker = removeSingleMarker;
 window.fixMapLayoutAfterShow = fixMapLayoutAfterShow;
 window.calcHaversineMeters = calcHaversineMeters;
 window.getDistanceMeters = getDistanceMeters;
 window.assignTempCoords = assignTempCoords;
-window.CLUSTERER = CLUSTERER; // 클러스터 객체 전역 노출 
+window.CLUSTERER = CLUSTERER; // 클러스터 객체 전역 노출

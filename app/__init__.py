@@ -251,13 +251,16 @@ def create_app(config_object=None):
     
     @app.route("/api/config/maps")
     def get_maps_config():
-        """네이버 지도 API 설정을 반환 (보안: 시크릿 키 제외)"""
+        """네이버 지도 API 및 Supabase 설정을 반환 (보안: 시크릿 키 제외)"""
         ncp_client_id = app.config.get("NAVER_MAPS_NCP_CLIENT_ID", "")
+        supabase_url = os.getenv("SUPABASE_REAL_URL") or os.getenv("SUPABASE_URL", "")
+        supabase_anon_key = os.getenv("SUPABASE_ANON_KEY", "")
         
-        # 보안을 위해 ncpClientSecret은 절대 프론트엔드에 노출하지 않음
+        # 보안을 위해 ncpClientSecret/ServiceRoleKey는 절대 프론트엔드에 노출하지 않음
         return jsonify({
             "ncpKeyId": ncp_client_id,
-            "ncpClientId": ncp_client_id
+            "supabaseUrl": supabase_url,
+            "supabaseKey": supabase_anon_key
         })
 
     # 압축 상태 확인 API
