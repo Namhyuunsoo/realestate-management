@@ -36,6 +36,12 @@
 
       // 2) 앱 버전 (캐시 무효화용) - JS/CSS 통합 버전 관리
       window.APP_VERSION = "20260311_v9";
+      
+      // 3) 전역 디버그 설정 (로딩 순서 안전성 확보)
+      window.DEBUG = false;
+      window.dbg = function(...args) {
+        if (window.DEBUG) console.log(...args);
+      };
     })();
   </script>
 

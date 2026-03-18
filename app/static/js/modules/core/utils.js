@@ -80,9 +80,7 @@ function focusListing(listingId) {
   }
 }
 
-function dbg(...args) {
-  if (window.DEBUG) console.log(...args);
-}
+// dbg 함수는 index.html / globals.js로 이동됨
 
 function timeStart(label) {
   if (window.DEBUG) console.time(label);

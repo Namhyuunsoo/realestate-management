@@ -15,6 +15,11 @@ let FETCH_CALLED_ONCE = false;
 let PLACING_MARKERS = false; // 🔥 성능 최적화: placeMarkers 중복 호출 방지
 window.DEBUG = false; // 🔥 성능 최적화: 디버그 모드 전역 플래그
 
+// 🔥 전역 디버그 함수 (로딩 순서 안전성 확보)
+window.dbg = function(...args) {
+  if (window.DEBUG) console.log(...args);
+};
+
 // 매물 데이터 관련 전역 변수
 let MARKERS = [];
 let LISTINGS = [];
