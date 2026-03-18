@@ -145,7 +145,7 @@ def _fetch_coords_map(supabase: Client, addresses: List[str]) -> Dict[str, Tuple
                 
     return coords_map
 
-def _normalize_row(row: Dict[str, Any], coords_map: Dict[str, Tuple[float, float]], registry_map: Dict[str, Dict[str, Any]], id_prefix: str = "") -> Dict[str, Any]:
+def _normalize_row(row: Dict[str, Any], coords_map: Dict[str, Tuple[float, float]], registry_map: Dict[str, Dict[str, Any]], id_prefix: str = "", prune_fields: bool = False) -> Dict[str, Any]:
     """Supabase 행 데이터를 프론트엔드 호환 포맷으로 변환 (ID 충돌 방지 접두사 포함)"""
     address_full = (row.get("address_full") or "").strip()
     
@@ -159,6 +159,13 @@ def _normalize_row(row: Dict[str, Any], coords_map: Dict[str, Tuple[float, float
         coords = {"lat": lat, "lng": lng}
     
     fields = row.get("fields") or {}
+    
+    # [최적화] 스켈레톤 로딩 시 필드 경량화
+    if prune_fields:
+        # 사용자 요청 핵심 필드: 지역, 지번, 층수, 실평수, 보증금, 월세
+        allowed_keys = ["지역", "지번", "층수", "실평수", "보증금", "월세", "지역2", "현황", "건물명"]
+        fields = {k: v for k, v in fields.items() if k in allowed_keys}
+
     user_id = row.get("user_id") or ""
     
     # 레지스트리 정보를 기반으로 담당자명과 슬롯 ID 보완
@@ -287,7 +294,8 @@ def fetch_all_commercial_listings(subtype: Optional[str] = None, select_format: 
             return []
 
         coords_map = _fetch_coords_map(supabase, all_addresses)
-        normalized_items = [_normalize_row(item, coords_map, registry_map, prefix) for item, prefix in all_items_with_prefix]
+        is_skeleton = select_format == "search_skeleton"
+        normalized_items = [_normalize_row(item, coords_map, registry_map, prefix, prune_fields=is_skeleton) for item, prefix in all_items_with_prefix]
         
         return normalized_items
 

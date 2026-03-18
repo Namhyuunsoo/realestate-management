@@ -16,7 +16,7 @@ function updateCountsDisplay(total, filtered) {
 /**
  * 전역 프로그레스 바 업데이트
  */
-function updateAppProgressBar(percent, active = true) {
+function updateAppProgressBar(percent, active = true, label = "") {
   const bar = document.getElementById("appProgressBar");
   if (!bar) return;
 
@@ -25,14 +25,16 @@ function updateAppProgressBar(percent, active = true) {
     const fill = bar.querySelector(".progress-fill");
     const text = bar.querySelector(".progress-text");
     if (fill) fill.style.width = `${percent}%`;
-    if (text) text.textContent = `${Math.round(percent)}%`;
+    if (text) text.textContent = label ? `${label} (${Math.round(percent)}%)` : `${Math.round(percent)}%`;
   } else {
     // 100% 도달 후 부드럽게 사라짐
     const fill = bar.querySelector(".progress-fill");
+    const text = bar.querySelector(".progress-text");
     if (fill) fill.style.width = "100%";
+    if (text) text.textContent = label || "완료";
     setTimeout(() => {
       bar.classList.remove("active");
-    }, 500);
+    }, 800);
   }
 }
 
@@ -129,7 +131,7 @@ async function fetchListings(force = false) {
   updateCountsDisplay(0, 0);
 
   // 프로그레스 바 시작
-  if (isHybridMode) updateAppProgressBar(10);
+  if (isHybridMode) updateAppProgressBar(10, true, "매물 위치 파악 중...");
 
   const label = "fetchListings";
   timeStart(label);
@@ -165,7 +167,7 @@ async function fetchListings(force = false) {
       if (window.assignTempCoords) await window.assignTempCoords();
       window.applyAllFilters();
       
-      updateAppProgressBar(50);
+      updateAppProgressBar(50, true, "마커 표시 완료, 상세 정보 로드 중...");
       console.log(`✅ [Hybrid Phase 1] 완료: ${items.length}개 마커 즉시 표시됨`);
 
       // 1.5단계: 현재 화면 영역(BBox)의 상세 데이터 우선 로드
@@ -265,7 +267,7 @@ async function loadFullDataInBackground(status_raw, force) {
     const fullData = await getCachedListings(status_raw, force, null, null); // format 및 bbox 없이 호출
     const fullItems = await processListingData(fullData);
     
-    updateAppProgressBar(75);
+    updateAppProgressBar(85, true, "전체 상세 데이터 병합 중...");
 
     // 병합 작업 (메인 스레드 점유 최소화를 위해 requestIdleCallback 사용)
     if ('requestIdleCallback' in window) {
@@ -328,7 +330,15 @@ function mergeListingsData(fullItems, label = "Data Merge") {
   });
 
   console.log(`✅ [Hybrid Phase 2] 병합 완료: ${mergedCount}개 매물 상세 정보 업데이트됨`);
-  updateAppProgressBar(100, false);
+  
+  // 병합된 상세 정보를 리스트 UI에 반영하기 위해 필터 재적용 (마커는 그대로 둠)
+  if (typeof applyAllFilters === 'function') {
+      // 마커를 새로 그리지 않도록 로직을 분리하는 것이 좋으나, 
+      // 현재 구조에서는 마커도 새로 그려짐. 데이터가 바뀌었으므로 안전한 선택.
+      applyAllFilters(); 
+  }
+  
+  updateAppProgressBar(100, false, "모든 데이터 로드 완료");
 }
 
 /**************************************
