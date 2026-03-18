@@ -100,12 +100,23 @@ class WebhookRenewalScheduler:
         from .sheets_webhook_service import SheetsWebhookService
 
         service = SheetsWebhookService()
-        result = service.register_housing_sheet_webhook(expiration_hours=24)
-
-        if result:
-            self.logger.info("웹훅 등록 성공")
+        
+        # 1. 주택매물장 웹훅 등록
+        housing_result = service.register_housing_sheet_webhook(expiration_hours=24)
+        if housing_result:
+            self.logger.info("주택매물장 웹훅 등록 성공")
         else:
-            self.logger.warning("웹훅 등록 실패")
+            self.logger.warning("주택매물장 웹훅 등록 실패")
+            
+        # 2. 상가 매물 슬롯(Slot 1~7) 웹훅 등록
+        commercial_results = service.register_all_commercial_webhooks(expiration_hours=24)
+        success_count = commercial_results.get("success", 0)
+        total_count = commercial_results.get("total", 0)
+        
+        if success_count > 0:
+            self.logger.info(f"상가 매물 웹훅 등록 완료: {success_count}/{total_count} 성공")
+        else:
+            self.logger.warning("상가 매물 웹훅 등록 실패 또는 활성 슬롯 없음")
 
     def run_now(self) -> bool:
         """즉시 웹훅 등록 실행 (수동 호출용)"""

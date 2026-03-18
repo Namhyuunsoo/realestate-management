@@ -67,11 +67,11 @@ class SheetScheduler:
                 time.sleep(10)  # 오류 발생 시 10초 대기
     
     def _execute_download(self):
-        """시트 다운로드 실행"""
+        """시트 다운로드 실행 및 Supabase 동기화 트리거"""
         try:
-            self.logger.info(f"시트 다운로드 시작 (실행 횟수: {self.run_count + 1})")
+            self.logger.info(f"시트 다운로드 및 동기화 시작 (실행 횟수: {self.run_count + 1})")
             
-            # 모든 시트 다운로드
+            # 1. 모든 시트 Excel 다운로드 (기존 로직 유지)
             results = self.download_service.download_all_sheets()
             
             # 결과 로깅
@@ -79,13 +79,23 @@ class SheetScheduler:
             total_count = len(results)
             
             if success_count == total_count:
-                self.logger.info(f"✅ 모든 시트 다운로드 성공 ({success_count}/{total_count})")
+                self.logger.info(f"✅ 모든 시트 로컬 업데이트 성공 ({success_count}/{total_count})")
             else:
                 failed_sheets = [name for name, success in results.items() if not success]
-                self.logger.warning(f"⚠️ 일부 시트 다운로드 실패: {failed_sheets}")
+                self.logger.warning(f"⚠️ 일부 시트 로컬 업데이트 실패: {failed_sheets}")
+
+            # 2. 🔥 상가 매물 Supabase 실시간 동기화 강제 트리거
+            from .commercial_sync_service import CommercialSyncService
+            sync_service = CommercialSyncService()
+            sync_results = sync_service.sync_all_users()
+            
+            if sync_results.get("success"):
+                self.logger.info(f"✅ 상가 매물 Supabase 동기화 완료: {sync_results.get('total_synced', 0)}개 항목")
+            else:
+                self.logger.error(f"❌ 상가 매물 Supabase 동기화 실패: {sync_results.get('error')}")
             
         except Exception as e:
-            self.logger.error(f"시트 다운로드 실행 실패: {str(e)}")
+            self.logger.error(f"시트 다운로드/동기화 실행 실패: {str(e)}")
     
     def get_status(self) -> dict:
         """스케줄러 상태 조회"""

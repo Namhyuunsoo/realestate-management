@@ -394,3 +394,18 @@ window.formatRoomsBath = formatRoomsBath;
 window.scrollToListing = scrollToListing;
 window.switchToListingMode = switchToListingMode;
 window.toggleBriefingList = toggleBriefingList; 
+  }
+}
+
+// 기존 함수명 유지 (하위 호환성)
+function toggleBriefingList() {
+  switchToListingMode(UI_STATE.isBriefingListMode ? 'property' : 'briefing');
+}
+
+// 매물 리스트 UI 관련 함수들을 전역으로 export
+window.renderListingList = renderListingList;
+window.formatSupplyExclusive = formatSupplyExclusive;
+window.formatRoomsBath = formatRoomsBath;
+window.scrollToListing = scrollToListing;
+window.switchToListingMode = switchToListingMode;
+window.toggleBriefingList = toggleBriefingList; 

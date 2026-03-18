@@ -27,6 +27,7 @@ class CommercialSyncService:
     def __init__(self):
         self.supabase = self._get_supabase_client()
         self.gs = self._get_google_sheets_client()
+        self.geocode_cache = {}  # 주소별 {lat, lng} 캐시
         
     def _get_supabase_client(self) -> Client:
         url = os.getenv("SUPABASE_URL")
@@ -94,6 +95,9 @@ class CommercialSyncService:
         }
         
         try:
+            # 0. 지오코딩 캐시 미리 로드 (성능 최적화)
+            self._load_geocode_cache()
+
             # 1. DB에서 활성 슬롯 목록 조회
             response = self.supabase.table("sheet_registry").select("*").eq("is_active", True).execute()
             slots = response.data if response.data else []
@@ -190,6 +194,12 @@ class CommercialSyncService:
                             batch_data.append(record)
                     
                     if batch_data:
+                        # [De-duplication] 동일한 ID(UUID)가 한 배치에 중복될 경우 대비 (마지막 발생 항목 유지)
+                        unique_data = {}
+                        for item in batch_data:
+                            unique_data[item["id"]] = item
+                        batch_data = list(unique_data.values())
+
                         # [Atomic Sync] Upsert 기반 동기화 (1행 = 1레코드 보장)
                         # ID(slot_id + row_idx)가 같으면 무조건 덮어쓰기하여 중복 방지
                         try:
@@ -253,11 +263,28 @@ class CommercialSyncService:
                 "address_comp": {"region2": region2, "region": region, "lot": lot},
                 "fields": fields,
                 "status_raw": fields.get("현황", ""),
-                "coords": None,
-                "geocoded": False
+                "coords": self.geocode_cache.get(address_full),
+                "geocoded": self.geocode_cache.get(address_full) is not None
             }
         except Exception:
             return None
+
+
+    def _load_geocode_cache(self):
+        """Supabase에서 지오코딩 캐시를 메모리로 로드"""
+        try:
+            # 대량 데이터 대비 4000개 정도는 한 번에 가져와도 무방
+            response = self.supabase.table("address_geocode_cache").select("address_full, lat, lng").execute()
+            if response.data:
+                for row in response.data:
+                    addr = row.get("address_full")
+                    lat = row.get("lat")
+                    lng = row.get("lng")
+                    if addr and lat and lng:
+                        self.geocode_cache[addr] = {"lat": lat, "lng": lng}
+            logger.info(f"지오코딩 캐시 {len(self.geocode_cache)}개 로드 완료")
+        except Exception as e:
+            logger.warning(f"지오코딩 캐시 로드 실패: {e}")
 
 if __name__ == "__main__":
     # 수동 실행 테스트
