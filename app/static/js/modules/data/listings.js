@@ -154,7 +154,7 @@ async function fetchListings(force = false) {
       _lastCommercialStatusRaw = status_raw;
 
       // 1단계: 스켈레톤(검색용 핵심 필드) 데이터 먼저 로드
-      console.log("🚀 [Hybrid Phase 1] 스켈레톤 데이터 요청...");
+      dbg("🚀 [Hybrid Phase 1] 스켈레톤 데이터 요청...");
       data = await getCachedListings(status_raw, force, "search_skeleton");
       items = await processListingData(data);
       
@@ -168,7 +168,7 @@ async function fetchListings(force = false) {
       window.applyAllFilters();
       
       updateAppProgressBar(50, true, "마커 표시 완료, 상세 정보 로드 중...");
-      console.log(`✅ [Hybrid Phase 1] 완료: ${items.length}개 마커 즉시 표시됨`);
+      dbg(`✅ [Hybrid Phase 1] 완료: ${items.length}개 마커 즉시 표시됨`);
 
       // 1.5단계: 현재 화면 영역(BBox)의 상세 데이터 우선 로드
       loadBBoxData(status_raw);
@@ -246,7 +246,7 @@ async function loadBBoxData(status_raw) {
   };
 
   try {
-    console.log("🚀 [Hybrid Phase 1.5] 현재 영역 상세 데이터 우선 로드 시작...");
+    dbg("🚀 [Hybrid Phase 1.5] 현재 영역 상세 데이터 우선 로드 시작...");
     const data = await getCachedListings(status_raw, false, null, bbox);
     const items = await processListingData(data);
     
@@ -263,7 +263,7 @@ async function loadBBoxData(status_raw) {
  */
 async function loadFullDataInBackground(status_raw, force) {
   try {
-    console.log("🚀 [Hybrid Phase 2] 상세 데이터 백그라운드 로드 시작...");
+    dbg("🚀 [Hybrid Phase 2] 상세 데이터 백그라운드 로드 시작...");
     const fullData = await getCachedListings(status_raw, force, null, null); // format 및 bbox 없이 호출
     const fullItems = await processListingData(fullData);
     
@@ -286,7 +286,7 @@ async function loadFullDataInBackground(status_raw, force) {
  * 상세 데이터를 기존 리스트에 병합 (매핑)
  */
 function mergeListingsData(fullItems, label = "Data Merge") {
-  console.log(`🧬 [Hybrid ${label}] 데이터 병합 중... (${fullItems.length}개)`);
+  dbg(`🧬 [Hybrid ${label}] 데이터 병합 중... (${fullItems.length}개)`);
   
   // 만약 1단계(스켈레톤)에서 데이터가 없었거나 리스트가 비어있다면, 2단계 데이터를 전체 리스트로 설정
   if (!LISTINGS || LISTINGS.length === 0) {
@@ -329,7 +329,7 @@ function mergeListingsData(fullItems, label = "Data Merge") {
     }
   });
 
-  console.log(`✅ [Hybrid Phase 2] 병합 완료: ${mergedCount}개 매물 상세 정보 업데이트됨`);
+  dbg(`✅ [Hybrid Phase 2] 병합 완료: ${mergedCount}개 매물 상세 정보 업데이트됨`);
   
   // 병합된 상세 정보를 리스트 UI에 반영하기 위해 필터 재적용 (마커는 그대로 둠)
   if (typeof applyAllFilters === 'function') {
@@ -723,7 +723,7 @@ function applyAllFilters() {
 
   // 마커 표시
   if (MAP_READY && MAP && typeof placeMarkers === 'function') {
-    console.log(`📍 placeMarkers 호출: ${FILTERED_LISTINGS.length}개`);
+    dbg(`📍 placeMarkers 호출: ${FILTERED_LISTINGS.length}개`);
     placeMarkers(FILTERED_LISTINGS);
   }
 

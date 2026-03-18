@@ -20,7 +20,7 @@ window.initRealtimeSync = function(url, key) {
 
   try {
     _supabase = supabase.createClient(url, key);
-    console.log("🚀 Supabase Realtime 초기화 완료");
+    dbg("🚀 Supabase Realtime 초기화 완료");
 
     // 상가 임대차, 구분상가, 건물토지 테이블 구독 시작
     const tables = ["listings_rent", "listings_sale_unit", "listings_sale_land"];
@@ -43,7 +43,7 @@ window.initRealtimeSync = function(url, key) {
  */
 function handleRealtimeEvent(table, payload) {
   const { eventType, new: newRow, old: oldRow } = payload;
-  console.log(`📡 [Realtime] ${table} ${eventType} 감지:`, newRow || oldRow);
+  dbg(`📡 [Realtime] ${table} ${eventType} 감지: ID ${prefix + (payload.new?.id || payload.old?.id)}`);
 
   // 테이블별 ID 접두사 매핑
   const prefixMap = {

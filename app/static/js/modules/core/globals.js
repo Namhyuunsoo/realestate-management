@@ -13,6 +13,7 @@ let MAP = null;
 let MAP_READY = false;
 let FETCH_CALLED_ONCE = false;
 let PLACING_MARKERS = false; // 🔥 성능 최적화: placeMarkers 중복 호출 방지
+window.DEBUG = false; // 🔥 성능 최적화: 디버그 모드 전역 플래그
 
 // 매물 데이터 관련 전역 변수
 let MARKERS = [];

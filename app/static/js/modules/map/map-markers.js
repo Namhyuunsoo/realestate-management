@@ -272,7 +272,7 @@ function assignTempCoords() {
     return;
   }
 
-  console.log("🔍 assignTempCoords 시작, 매물 수:", LISTINGS.length);
+  dbg("🔍 assignTempCoords 시작, 매물 수:", LISTINGS.length);
 
   let validCoords = 0;
   let invalidCoords = 0;
@@ -299,7 +299,7 @@ function assignTempCoords() {
     }
   });
 
-  console.log(`✅ assignTempCoords 완료: 유효한 좌표 ${validCoords}개, 좌표 없는 매물 ${invalidCoords}개`);
+  dbg(`✅ assignTempCoords 완료: 유효한 좌표 ${validCoords}개, 좌표 없는 매물 ${invalidCoords}개`);
 }
 
 // 마커 관련 함수들을 전역으로 export
@@ -435,7 +435,7 @@ function updateSingleMarker(id, data) {
 
   marker.setIcon({ content: iconContent });
   marker._listingData = data;
-  console.log(`📍 [Marker] 마커 ${id} 실시간 업데이트 완료`);
+  dbg(`📍 [Marker] 마커 ${id} 실시간 업데이트 완료`);
 }
 
 /**
@@ -450,7 +450,7 @@ function removeSingleMarker(id) {
     if (clusterer) {
       clusterer.removeMarker(marker);
     }
-    console.log(`📍 [Marker] 마커 ${id} 제거 완료`);
+    dbg(`📍 [Marker] 마커 ${id} 제거 완료`);
   }
 }
 
