@@ -458,6 +458,12 @@ window.initializeApp = async function () {
         // console.log('✅ 마커 배치 완료 (map-ready 이벤트), MARKERS:', window.MARKERS?.length);
       }
 
+      // 5. 초기 로딩 완료 후 실시간 동기화 시작 (성능 최적화: 초기 로딩 완료 후 구독)
+      if (window._supabaseConfig && typeof window.initRealtimeSync === 'function') {
+        const { url, key } = window._supabaseConfig;
+        window.initRealtimeSync(url, key);
+      }
+
       // 초기 로딩 완료 후 추천 상태 동기화 (한 번만)
       setTimeout(() => {
         if (window.syncAllRecommendationUI) {

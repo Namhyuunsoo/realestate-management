@@ -15,18 +15,9 @@ except ImportError:
     SUPABASE_AVAILABLE = False
 
 def get_supabase_client() -> Optional[Client]:
-    """Supabase 클라이언트 생성 (서비스 역할 키 사용)"""
-    if not SUPABASE_AVAILABLE:
-        return None
-    try:
-        url = os.getenv("SUPABASE_REAL_URL") or os.getenv("SUPABASE_URL")
-        key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
-        if not url or not key:
-            print("Supabase Config error: no URL or KEY")
-            return None
-        return create_client(url.strip(), key.strip())
-    except Exception:
-        return None
+    """Supabase 클라이언트 반환 (싱글톤 재사용)"""
+    from app.services.repositories import _get_supabase_client
+    return _get_supabase_client()
 
 # 동기화 대상 테이블 전체 목록 (sync에서 사용)
 COMMERCIAL_TABLES = [

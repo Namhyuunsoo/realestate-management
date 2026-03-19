@@ -30,11 +30,11 @@ class CommercialSyncService:
         self.geocode_cache = {}  # 주소별 {lat, lng} 캐시
         
     def _get_supabase_client(self) -> Client:
-        url = os.getenv("SUPABASE_URL")
-        key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
-        if not url or not key:
-            raise ValueError("SUPABASE 환경변수가 설정되지 않았습니다.")
-        return create_client(url, key)
+        from app.services.repositories import _get_supabase_client
+        client = _get_supabase_client()
+        if not client:
+            raise ValueError("Supabase 클라이언트를 초기화할 수 없습니다. 환경변수 설정을 확인하세요.")
+        return client
 
     def _get_google_sheets_client(self) -> gspread.Client:
         from app.core.google_auth import get_gspread_client
@@ -141,6 +141,32 @@ class CommercialSyncService:
             "errors": []
         }
         
+        # 동기화 작업 중복 실행 방지 (optimistic locking)
+        # 현재 시간으로 `last_sync_attempt`를 업데이트하고, 이전 값이 현재 시간보다 오래된 경우에만 진행
+        try:
+            now = datetime.now().isoformat()
+            response = self.supabase.table("sheet_registry") \
+                .update({"last_sync_attempt": now}) \
+                .eq("slot_id", slot_id) \
+                .is_("is_syncing", False) \
+                .execute()
+            
+            if not response.data:
+                logger.info(f"슬롯 {slot_id}는 이미 동기화 중이거나 최근에 동기화 시도가 있었습니다. 건너뜁니다.")
+                res["errors"].append("Already syncing or recently synced.")
+                return res
+            
+            # 동기화 시작 플래그 설정
+            self.supabase.table("sheet_registry") \
+                .update({"is_syncing": True, "last_sync_start": now}) \
+                .eq("slot_id", slot_id) \
+                .execute()
+
+        except Exception as e:
+            logger.error(f"슬롯 {slot_id} 동기화 시작 플래그 설정 중 오류 발생: {e}")
+            res["errors"].append(f"Failed to set sync flag: {e}")
+            return res
+
         try:
             m = re.search(r"/d/([a-zA-Z0-9-_]+)", sheet_url)
             if not m:
@@ -226,6 +252,16 @@ class CommercialSyncService:
             res["success"] = True
         except Exception as e:
             res["errors"].append(f"Fatal Error: {e}")
+        finally:
+            # 동기화 상태 해제 (성공/실패 여부와 관계없이)
+            try:
+                self.supabase.table("sheet_registry") \
+                    .update({"is_syncing": False, "last_sync_end": datetime.now().isoformat()}) \
+                    .eq("slot_id", slot_id) \
+                    .execute()
+                logger.info(f"슬롯 {slot_id} 동기화 상태 해제 및 종료 시간 기록 완료")
+            except Exception as final_err:
+                logger.error(f"슬롯 {slot_id} 동기화 상태 해제 실패: {final_err}")
             
         return res
 

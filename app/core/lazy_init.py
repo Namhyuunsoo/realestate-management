@@ -33,9 +33,10 @@ def ensure_background_services():
             if data_manager.initialize_webhook_renewal_scheduler(current_app):
                 if data_manager.start_webhook_renewal():
                     print("✅ 웹훅 자동 갱신 스케줄러가 시작되었습니다. (매일 05:00)")
-                    # 첫 기동 시 즉시 웹훅 등록 시도
-                    if data_manager.run_webhook_renewal_now():
-                        print("✅ 초기 웹훅 등록이 완료되었습니다.")
+                    # 첫 기동 시 즉시 웹훅 등록 시도 (비동기 스레드 실행으로 응답 속도 확보)
+                    import threading
+                    threading.Thread(target=data_manager.run_webhook_renewal_now, daemon=True).start()
+                    print("📡 초기 웹훅 등록이 백그라운드에서 시작되었습니다.")
             data_manager._webhook_renewal_started = True
         except Exception as e:
             print(f"⚠️ 웹훅 갱신 스케줄러 시작 실패: {e}")

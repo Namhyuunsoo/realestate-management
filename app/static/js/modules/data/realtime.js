@@ -43,8 +43,6 @@ window.initRealtimeSync = function(url, key) {
  */
 function handleRealtimeEvent(table, payload) {
   const { eventType, new: newRow, old: oldRow } = payload;
-  dbg(`📡 [Realtime] ${table} ${eventType} 감지: ID ${prefix + (payload.new?.id || payload.old?.id)}`);
-
   // 테이블별 ID 접두사 매핑
   const prefixMap = {
     "listings_rent": "r_",
@@ -53,6 +51,8 @@ function handleRealtimeEvent(table, payload) {
   };
   const prefix = prefixMap[table] || "";
   const listingId = prefix + (newRow?.id || oldRow?.id);
+
+  dbg(`📡 [Realtime] ${table} ${eventType} 감지: ID ${listingId}`);
 
   if (eventType === 'INSERT' || eventType === 'UPDATE') {
     // 1. 데이터 정규화 (프론트엔드 포맷으로 변환)
@@ -71,7 +71,7 @@ function handleRealtimeEvent(table, payload) {
       window.updateSingleListingUI(listingId, normalized);
     }
 
-    showToast(`매물 정보가 실시간으로 반영되었습니다.`, 'info');
+
   } 
   else if (eventType === 'DELETE') {
     // 1. 전역 데이터에서 삭제
@@ -82,7 +82,7 @@ function handleRealtimeEvent(table, payload) {
       window.removeSingleMarker(listingId);
     }
     
-    showToast(`매물이 삭제되었습니다.`, 'warning');
+
   }
 }
 
@@ -137,8 +137,4 @@ function removeGlobalListing(id) {
   }
 }
 
-// 페이지 로드 시 기존 보관된 설정이 있으면 자동 초기화
-if (window._supabaseConfig) {
-  const { url, key } = window._supabaseConfig;
-  window.initRealtimeSync(url, key);
-}
+
