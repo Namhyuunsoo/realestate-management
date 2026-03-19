@@ -158,7 +158,7 @@ class CommercialSyncService:
             
             # 동기화 시작 플래그 설정
             self.supabase.table("sheet_registry") \
-                .update({"is_syncing": True, "last_sync_start": now}) \
+                .update({"is_syncing": True, "last_synced_at": now}) \
                 .eq("slot_id", slot_id) \
                 .execute()
 
@@ -256,7 +256,7 @@ class CommercialSyncService:
             # 동기화 상태 해제 (성공/실패 여부와 관계없이)
             try:
                 self.supabase.table("sheet_registry") \
-                    .update({"is_syncing": False, "last_sync_end": datetime.now().isoformat()}) \
+                    .update({"is_syncing": False, "last_synced_at": datetime.now().isoformat(), "last_sync_status": "success" if res["success"] else "error"}) \
                     .eq("slot_id", slot_id) \
                     .execute()
                 logger.info(f"슬롯 {slot_id} 동기화 상태 해제 및 종료 시간 기록 완료")
