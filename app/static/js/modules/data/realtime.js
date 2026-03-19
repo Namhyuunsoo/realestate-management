@@ -18,6 +18,19 @@ window.initRealtimeSync = function(url, key) {
     return;
   }
 
+  // 🔥 성능 최적화: 실시간 드로잉 디바운스 처리 (500ms~1s 대기 후 지도 동시 갱신)
+  // 개별 업데이트마다 지도를 그리면 마커 소실 및 클러스터 깨짐 현상이 발생하므로 표준 필터링 로직을 활용
+  const debouncedApplyAllFilters = (typeof window.debounce === 'function') 
+    ? window.debounce(() => {
+        if (typeof window.applyAllFilters === 'function') {
+          dbg("📡 [Realtime] Debounced Redraw 실행 (전체 마커 상태 동기화)");
+          window.applyAllFilters();
+        }
+      }, 700) 
+    : null;
+  
+  window._debouncedApplyAllFilters = debouncedApplyAllFilters;
+
   try {
     _supabase = supabase.createClient(url, key);
     dbg("🚀 Supabase Realtime 초기화 완료");
@@ -71,6 +84,11 @@ function handleRealtimeEvent(table, payload) {
       window.updateSingleListingUI(listingId, normalized);
     }
 
+    // 5. 🔥 핵심: 디바운스된 지도 동기화 호출
+    if (window._debouncedApplyAllFilters) {
+      window._debouncedApplyAllFilters();
+    }
+
 
   } 
   else if (eventType === 'DELETE') {
@@ -82,6 +100,10 @@ function handleRealtimeEvent(table, payload) {
       window.removeSingleMarker(listingId);
     }
     
+    // 3. 🔥 핵심: 삭제 시에도 디바운스된 지도 동기화 호출
+    if (window._debouncedApplyAllFilters) {
+      window._debouncedApplyAllFilters();
+    }
 
   }
 }
