@@ -420,9 +420,44 @@ function updateClusterBubblesRecommendationStatus() {
 function updateSingleMarker(id, data) {
   const marker = MARKER_MAP.get(id);
   if (!marker) {
-    if (window.placeMarkers && window.LISTINGS) {
-       const item = window.LISTINGS.find(x => x.id === id);
-       if (item) window.placeMarkers([item]);
+    // ⚠️ 수정: placeMarkers([item]) 호출은 전체 마커를 지워버리므로 절대 사용 금지
+    // 대신 새로운 마커를 만들어 안전하게 개별 추가
+    if (window.LISTINGS) {
+      const item = window.LISTINGS.find(x => x.id === id);
+      if (item && item.coords && item.coords.lat && item.coords.lng) {
+        const color = STATUS_COLORS[item.status_raw] || "#007AFF";
+        const briefingStatus = (typeof getBriefingStatus === 'function') ? getBriefingStatus(id) : null;
+        const isRecommended = (window.USER_RECOMMENDATIONS && window.USER_RECOMMENDATIONS.has) ? window.USER_RECOMMENDATIONS.has(id) : false;
+        const iconContent = createMarkerIcon(color, false, briefingStatus, isRecommended);
+
+        const newMarker = new naver.maps.Marker({
+          position: new naver.maps.LatLng(parseFloat(item.coords.lat), parseFloat(item.coords.lng)),
+          map: null,
+          icon: { content: iconContent }
+        });
+        newMarker._listingId = id;
+        newMarker._listingData = item;
+
+        // 클릭 이벤트 등록
+        naver.maps.Event.addListener(newMarker, "click", () => {
+          if (typeof hideClusterList === 'function') hideClusterList();
+          if (typeof setActiveMarker === 'function') setActiveMarker(id);
+          if (typeof scrollToListing === 'function') scrollToListing(id);
+          if (typeof renderDetailPanel === 'function') renderDetailPanel(item);
+        });
+
+        MARKER_MAP.set(id, newMarker);
+        MARKERS.push(newMarker);
+        
+        // 클러스터러에 개별 추가
+        const clusterer = window.CLUSTERER || CLUSTERER;
+        if (clusterer) {
+          clusterer.addMarker(newMarker);
+        } else {
+          newMarker.setMap(MAP);
+        }
+        dbg(`📍 [Marker] 새 매물 마커 인스턴스 생성 및 개별 추가 완료: ${id}`);
+      }
     }
     return;
   }
