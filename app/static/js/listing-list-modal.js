@@ -457,17 +457,17 @@ class ListingListModalManager {
             this.detailContent.innerHTML = `
                 <div style="background: #f8f9fa; padding: 12px; border-radius: 8px; margin-bottom: 15px; position: relative;">
                     <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px;">
-                        <div style="font-size: 16px; font-weight: bold; color: #333;">${escapeHtml(titleName)}</div>
-                        <button id="mobilePhotoEditBtn" style="background: #6c757d; color: white; border: none; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 3px;">
-                            <span>⚙️</span> 사진편집
-                        </button>
+                        <div style="font-size: 16px; font-weight: bold; color: #333; flex: 1; margin-right: 10px; line-height: 1.3;">${escapeHtml(titleName)}</div>
+                        <div style="display: flex; gap: 8px; flex-shrink: 0;">
+                            <button id="mobilePhotoCountBtn" style="background: #f1f3f4; color: #5f6368; border: 1px solid #dadce0; padding: 5px 10px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 4px;">
+                                <span>📷</span> <span id="mobilePhotoCountText">사진(-)</span>
+                            </button>
+                            <button id="mobilePhotoEditBtn" style="background: #6c757d; color: white; border: none; padding: 5px 10px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 4px;">
+                                <span>⚙️</span> <span>편집</span>
+                            </button>
+                        </div>
                     </div>
                     <div style="font-size: 14px; color: #666; margin-bottom: 10px;">📍 ${escapeHtml(addr || '주소 정보 없음')}${briefingHtml}</div>
-                    
-                    <!-- 사진 갤러리 영역 -->
-                    <div id="mobilePhotoGallery" class="detail-photo-gallery" style="margin-top: 10px; border-top: 1px dashed #ddd; padding-top: 10px;">
-                        <div style="grid-column: span 3; color: #999; font-size: 11px; text-align: center; padding: 10px;">사진을 불러오는 중...</div>
-                    </div>
                     
                     <!-- 숨김 파일 입력 -->
                     <input type="file" id="mobilePhotoInput" style="display: none;" accept="image/*">
@@ -495,6 +495,15 @@ class ListingListModalManager {
                 editBtn.onclick = (e) => {
                     e.stopPropagation();
                     this.enterPhotoEditMode(listing);
+                };
+            }
+
+            // 사진 보기 버튼 이벤트 바인딩 (슬라이드업 갤러리 호출)
+            const countBtn = document.getElementById('mobilePhotoCountBtn');
+            if (countBtn) {
+                countBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    this.openSlideUpGallery(listing.id, titleName);
                 };
             }
 
@@ -698,33 +707,172 @@ class ListingListModalManager {
     }
 
     async loadMobilePhotos(listingId) {
-        const gallery = document.getElementById('mobilePhotoGallery');
-        if (!gallery) return;
+        // UI 요소들 찾기
+        const countText = document.getElementById('mobilePhotoCountText');
+        const countBtn = document.getElementById('mobilePhotoCountBtn');
+        const editGallery = document.getElementById('mobilePhotoGallery'); // 편집 모드일 때만 존재함
 
-        // 🔥 가드(Guard): 로딩 중 매물이 바뀌는 경우 대비
-        gallery.setAttribute('data-loading-id', listingId);
+        if (!countText && !editGallery) return;
 
         try {
             const response = await fetch(`/api/listings/${listingId}/photos`);
             const data = await response.json();
 
-            // 다른 매물 사진이 도착했으면 무시
-            if (gallery.getAttribute('data-loading-id') !== String(listingId)) return;
+            if (data.success && data.photos) {
+                // 1. 메모리 캐싱 (불필요한 재호출 방지, 슬라이드업 갤러리 즉시 로딩용)
+                window._cachedMobilePhotos = window._cachedMobilePhotos || {};
+                window._cachedMobilePhotos[listingId] = data.photos;
 
-            if (data.success && data.photos && data.photos.length > 0) {
-                gallery.innerHTML = data.photos.map(photo => `
-                    <div class="gallery-item ${this.isPhotoDeleteMode ? 'edit-mode' : ''} ${this.selectedPhotoFiles.has(photo.file_name) ? 'selected' : ''}" 
-                         data-filename="${photo.file_name}"
-                         onclick="${this.isPhotoDeleteMode ? `listingListModalManager.togglePhotoSelection('${photo.file_name}')` : `window.openLightbox && window.openLightbox('${photo.full_url}', '${photo.file_name}')`}">
-                        <img src="${photo.full_url}" alt="매물사진" onerror="this.src='/static/img/no-image.png'">
-                    </div>
-                `).join('');
-            } else {
-                gallery.innerHTML = '<div style="grid-column: span 3; color: #999; font-size: 11px; text-align: center; padding: 5px;">등록된 사진이 없습니다.</div>';
+                // 2. 항시 노출형 '사진 개수 버튼' 업데이트 (메인 상세창)
+                if (countText) {
+                    if (data.photos.length > 0) {
+                        countText.innerHTML = `사진(${data.photos.length})`;
+                        countBtn.style.color = '#1a73e8'; // 파란색으로 활성화 표시
+                        countBtn.style.borderColor = '#1a73e8';
+                        countBtn.style.background = '#e8f0fe';
+                    } else {
+                        countText.innerHTML = `사진(0)`;
+                        countBtn.style.color = '#5f6368'; // 회색으로 비활성화 표시
+                        countBtn.style.borderColor = '#dadce0';
+                        countBtn.style.background = '#f1f3f4';
+                    }
+                }
+
+                // 3. 편집 모드 갤러리 업데이트
+                if (editGallery && this.isPhotoEditMode) {
+                    // 가드: 매물이동 시 렌더링 무시
+                    if (editGallery.getAttribute('data-loading-id') && editGallery.getAttribute('data-loading-id') !== String(listingId)) return;
+                    
+                    if (data.photos.length > 0) {
+                        editGallery.innerHTML = data.photos.map(photo => `
+                            <div class="gallery-item ${this.isPhotoDeleteMode ? 'edit-mode' : ''} ${this.selectedPhotoFiles.has(photo.file_name) ? 'selected' : ''}" 
+                                 data-filename="${photo.file_name}"
+                                 onclick="${this.isPhotoDeleteMode ? `listingListModalManager.togglePhotoSelection('${photo.file_name}')` : `window.openLightbox && window.openLightbox('${photo.full_url}', '${photo.file_name}')`}">
+                                <img src="${photo.full_url}" alt="매물사진" onerror="this.src='/static/img/no-image.png'">
+                            </div>
+                        `).join('');
+                    } else {
+                        editGallery.innerHTML = '<div style="grid-column: span 3; color: #999; font-size: 11px; text-align: center; padding: 5px;">등록된 사진이 없습니다.</div>';
+                    }
+                }
             }
         } catch (error) {
             console.error('사진 로드 중 오류:', error);
-            gallery.innerHTML = '<div style="grid-column: span 3; color: #f44336; font-size: 11px; text-align: center; padding: 5px;">사진 로딩 실패</div>';
+            if (editGallery && this.isPhotoEditMode) {
+                editGallery.innerHTML = '<div style="grid-column: span 3; color: #f44336; font-size: 11px; text-align: center; padding: 5px;">사진 로딩 실패</div>';
+            }
+            if (countText) {
+                countText.innerHTML = '사진(오류)';
+            }
+        }
+    }
+
+    // 슬라이드업 갤러리 메서드들 추가
+    openSlideUpGallery(listingId, titleName) {
+        let overlay = document.getElementById('mobileGalleryOverlay');
+        const overlayHtml = `
+            <div style="padding: 15px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center;">
+                <div style="font-weight: bold; font-size: 15px; color: #333; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">📷 사진 감상</div>
+                <button id="closeGalleryBtn" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #666; padding: 0 5px;">&times;</button>
+            </div>
+            <div id="slideUpGalleryContent" class="detail-photo-gallery" style="padding: 15px; overflow-y: auto; flex: 1; display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; align-content: start;">
+                <div style="grid-column: span 3; color: #999; font-size: 13px; text-align: center; padding: 20px;">사진을 불러오는 중...</div>
+            </div>
+        `;
+
+        if (!overlay) {
+            overlay = document.createElement('div');
+            overlay.id = 'mobileGalleryOverlay';
+            overlay.style.position = 'fixed';
+            overlay.style.bottom = '-100%';
+            overlay.style.left = '0';
+            overlay.style.right = '0';
+            overlay.style.height = '70vh';
+            overlay.style.backgroundColor = '#fff';
+            overlay.style.borderTopLeftRadius = '20px';
+            overlay.style.borderTopRightRadius = '20px';
+            overlay.style.boxShadow = '0 -4px 20px rgba(0,0,0,0.3)';
+            overlay.style.zIndex = '9999'; // 터치 막기 (1순위)
+            overlay.style.transition = 'bottom 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+            overlay.style.display = 'flex';
+            overlay.style.flexDirection = 'column';
+            document.body.appendChild(overlay);
+
+            const backdrop = document.createElement('div');
+            backdrop.id = 'mobileGalleryBackdrop';
+            backdrop.style.position = 'fixed';
+            backdrop.style.top = '0';
+            backdrop.style.left = '0';
+            backdrop.style.right = '0';
+            backdrop.style.bottom = '0';
+            backdrop.style.backgroundColor = 'rgba(0,0,0,0.5)';
+            backdrop.style.zIndex = '9998'; // 모달 전체 덮기
+            backdrop.style.opacity = '0';
+            backdrop.style.transition = 'opacity 0.3s ease';
+            backdrop.style.display = 'none';
+            backdrop.onclick = () => this.closeSlideUpGallery();
+            document.body.appendChild(backdrop);
+        }
+        
+        overlay.innerHTML = overlayHtml;
+        document.getElementById('closeGalleryBtn').onclick = () => this.closeSlideUpGallery();
+
+        // 뷰 띄우기
+        const backdrop = document.getElementById('mobileGalleryBackdrop');
+        backdrop.style.display = 'block';
+        void overlay.offsetWidth; // Reflow 트리거
+        backdrop.style.opacity = '1';
+        overlay.style.bottom = '0';
+
+        // 갤러리 렌더링 호출
+        this.renderGalleryPhotos(listingId);
+    }
+
+    closeSlideUpGallery() {
+        const overlay = document.getElementById('mobileGalleryOverlay');
+        const backdrop = document.getElementById('mobileGalleryBackdrop');
+        if (overlay && backdrop) {
+            overlay.style.bottom = '-100%';
+            backdrop.style.opacity = '0';
+            setTimeout(() => { backdrop.style.display = 'none'; }, 300);
+        }
+    }
+
+    async renderGalleryPhotos(listingId) {
+        const content = document.getElementById('slideUpGalleryContent');
+        if (!content) return;
+
+        // 캐싱된 데이터 우선 사용 (No Timeout/Glitch)
+        let photos = window._cachedMobilePhotos && window._cachedMobilePhotos[listingId];
+
+        if (!photos) {
+            // 캐시 미스 시 재시도 호출 (네트워크 지연 엣지 케이스 대응)
+            try {
+                const response = await fetch(`/api/listings/${listingId}/photos`);
+                const photoData = await response.json();
+                if (photoData.success) {
+                    photos = photoData.photos;
+                    window._cachedMobilePhotos = window._cachedMobilePhotos || {};
+                    window._cachedMobilePhotos[listingId] = photos;
+                    
+                    // 버튼 업데이트 연계 보완
+                    const countText = document.getElementById('mobilePhotoCountText');
+                    if(countText) countText.innerHTML = `사진(${photos.length})`;
+                }
+            } catch (e) {
+                content.innerHTML = '<div style="grid-column: span 3; color: #f44336; text-align: center; padding: 20px;">사진 로컬 호출에 실패했습니다.</div>';
+                return;
+            }
+        }
+
+        if (photos && photos.length > 0) {
+            content.innerHTML = photos.map(photo => `
+                <div class="gallery-item-slideup" onclick="window.openLightbox && window.openLightbox('${photo.full_url}', '${photo.file_name}')" style="cursor:pointer; aspect-ratio: 1; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                    <img src="${photo.full_url}" alt="매물사진" onerror="this.src='/static/img/no-image.png'" style="width: 100%; height: 100%; object-fit: cover;">
+                </div>
+            `).join('');
+        } else {
+            content.innerHTML = '<div style="grid-column: span 3; color: #999; text-align: center; padding: 30px 10px; font-size: 14px;">등록된 사진이 0장입니다.</div>';
         }
     }
 
