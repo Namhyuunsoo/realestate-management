@@ -604,4 +604,6 @@ function onCustomerSelectionChanged() {
   }
 }
 
+window.onCustomerSelectionChanged = onCustomerSelectionChanged;
+
 window.onCustomerSelectionChanged = onCustomerSelectionChanged; 

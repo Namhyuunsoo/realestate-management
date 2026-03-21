@@ -314,7 +314,7 @@ function bindClusterClickDelegation() {
           const isModalOpen = listingListModal && !listingListModal.classList.contains('hidden');
 
           if (!isModalOpen) {
-            window.listingListModalManager.openModal().then(() => {
+            window.listingListModalManager.openModal('open').then(() => {
               // 🔥 수정: 모달이 실제로 열렸는지 재확인
               const listingListModal = document.getElementById('listingListModal');
               const isModalActuallyOpen = listingListModal && !listingListModal.classList.contains('hidden');
@@ -369,7 +369,7 @@ function bindClusterClickDelegation() {
         const isModalOpen = listingListModal && !listingListModal.classList.contains('hidden');
 
         if (!isModalOpen) {
-          window.listingListModalManager.openModal().then(() => {
+          window.listingListModalManager.openModal('open').then(() => {
             // 🔥 수정: 모달이 실제로 열렸는지 재확인
             const listingListModal = document.getElementById('listingListModal');
             const isModalActuallyOpen = listingListModal && !listingListModal.classList.contains('hidden');

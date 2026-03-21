@@ -66,7 +66,13 @@ function placeMarkers(arr) {
           });
           marker._listingId = item.id;
 
-          naver.maps.Event.addListener(marker, "click", () => {
+          naver.maps.Event.addListener(marker, "click", (e) => {
+            // 🔥 근본 원인 해결: 마커 클릭 시 지도로 이벤트가 전파(Bubbling)되는 것을 차단
+            if (e && e.domEvent) {
+              e.domEvent.stopPropagation();
+              if (e.domEvent.cancelBubble !== undefined) e.domEvent.cancelBubble = true;
+            }
+
             if (typeof hideClusterList === 'function') hideClusterList();
             setActiveMarker(item.id);
             if (typeof scrollToListing === 'function') scrollToListing(item.id);

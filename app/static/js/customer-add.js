@@ -61,13 +61,15 @@ class CustomerAddManager {
                     const originalContent = originalView.innerHTML;
                     
                     // 모바일 환경에서는 showSecondaryPanel 호출을 건너뛰도록 플래그 설정
-                    window.isMobileModalMode = true;
+                    if (window.MOBILE_APP) window.isMobileModalMode = true;
                     
-                    // PC버전 함수로 폼 렌더링
-                    window.renderCustomerForm();
-                    
-                    // 모바일 플래그 제거
-                    window.isMobileModalMode = false;
+                    try {
+                        // PC버전 함수로 폼 렌더링
+                        window.renderCustomerForm();
+                    } finally {
+                        // 모바일 플래그 제거
+                        window.isMobileModalMode = false;
+                    }
                     
                     // 렌더링된 내용을 모달로 복사
                     this.formContainer.innerHTML = originalView.innerHTML;

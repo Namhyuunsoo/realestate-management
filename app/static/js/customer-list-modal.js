@@ -12,11 +12,16 @@ class CustomerListModalManager {
     this.isScrolling = false;
   }
 
-  async openModal() {
-    // 🔥 모바일 토글 기능: 이미 열려있으면 닫기
-    if (this.isOpen && this.container && !this.container.classList.contains('hidden')) {
+  async openModal(mode = 'toggle') {
+    const isHidden = !this.container || this.container.classList.contains('hidden') || this.container.style.display === 'none';
+    
+    // 'open' 모드이거나, 'toggle' 인데 닫혀있는 경우에만 엽니다.
+    if (mode === 'open' || (mode === 'toggle' && isHidden)) {
+      if (!isHidden && this.isOpen) return Promise.resolve();
+      // ... 아래 로직 진행 ...
+    } else if (mode === 'close' || (mode === 'toggle' && !isHidden)) {
       this.closeModal();
-      return;
+      return Promise.resolve();
     }
     
     

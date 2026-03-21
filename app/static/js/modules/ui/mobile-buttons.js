@@ -87,7 +87,7 @@ async function addMobileButtons() {
     try {
       // 🔥 토글 기능: 이미 열려있으면 닫기 (openModal 내부에서 처리됨)
       if (window.listingListModalManager) {
-        await window.listingListModalManager.openModal();
+        await window.listingListModalManager.openModal('toggle');
       } else {
         console.error('❌ listingListModalManager를 찾을 수 없습니다');
       }
@@ -131,7 +131,7 @@ async function addMobileButtons() {
     try {
       // 🔥 토글 기능: 이미 열려있으면 닫기 (openModal 내부에서 처리됨)
       if (window.customerListModalManager) {
-        await window.customerListModalManager.openModal();
+        await window.customerListModalManager.openModal('toggle');
       } else {
         console.error('❌ customerListModalManager를 찾을 수 없습니다');
       }

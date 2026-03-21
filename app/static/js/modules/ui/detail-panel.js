@@ -24,7 +24,8 @@ async function renderDetailPanel(item) {
       const isModalOpen = listingListModal && !listingListModal.classList.contains('hidden');
 
       if (!isModalOpen) {
-        await window.listingListModalManager.openModal();
+        // 상세정보 표시 시 모달을 명시적으로 '열기' (이미 열려있으면 유지)
+        await window.listingListModalManager.openModal('open');
         // 모달이 열린 후 상세정보 표시 (단일 마커 진입 플래그)
         setTimeout(() => {
           window.listingListModalManager.showListingDetail(item, { fromMarker: true });
@@ -117,13 +118,19 @@ async function renderDetailPanel(item) {
     : (fields['가게명'] || fields['건물명'] || '매물명 없음');
 
   detailEl.innerHTML = `
-    <div style="background: #f8f9fa; padding: 12px; border-radius: 8px; margin-bottom: 15px;">
-      <div style="font-size: 16px; font-weight: bold; color: #333; margin-bottom: 6px;">${escapeHtml(titleName)}</div>
-      <div style="color: #666; font-size: 13px;">📍 ${escapeHtml(addr || '주소 없음')} <span class="listing-detail-briefing-status briefing-${getBriefingStatus(item.id)}" onclick="cycleBriefingStatus('${item.id}')">${getBriefingStatusText(getBriefingStatus(item.id))}</span></div>
+    <div style="background: #f8f9fa; padding: 12px; border-radius: 8px; margin-bottom: 15px; position: relative;">
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px;">
+        <div style="font-size: 16px; font-weight: bold; color: #333;">${escapeHtml(titleName)}</div>
+        <button id="pcPhotoUploadBtn" style="background: #007bff; color: white; border: none; padding: 4px 10px; border-radius: 4px; font-size: 12px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 4px;">
+          <span>📷</span> 사진추가
+        </button>
+      </div>
+      <div style="color: #666; font-size: 13px; margin-bottom: 10px;">📍 ${escapeHtml(addr || '주소 없음')} <span class="listing-detail-briefing-status briefing-${getBriefingStatus(item.id)}" onclick="cycleBriefingStatus('${item.id}')">${getBriefingStatusText(getBriefingStatus(item.id))}</span></div>
     </div>
     <div style="background: white; border: 1px solid #e0e0e0; border-radius: 8px; padding: 12px;">
       ${detailRows}
     </div>
+    <input type="file" id="pcPhotoInput" style="display: none;" accept="image/*">
   `;
 
   // 브리핑 모드인 경우 민감한 정보 자동 접기 (동기 실행)
@@ -152,7 +159,7 @@ async function renderDetailPanel(item) {
   galleryContainer.id = 'listingPhotoGallery';
   galleryContainer.className = 'detail-photo-gallery';
   galleryContainer.innerHTML = '<div style="grid-column: span 3; color: #999; font-size: 12px; text-align: center; padding: 10px;">사진을 불러오는 중...</div>';
-  
+
   const targetArea = detailEl.querySelector('div[style*="background: #f8f9fa"]');
   if (targetArea) {
     targetArea.appendChild(galleryContainer);
@@ -162,6 +169,54 @@ async function renderDetailPanel(item) {
 
   // 사진 데이터 비동기 로드 및 렌더링
   loadAndRenderPhotos(item.id);
+
+  // 업로드 버튼 이벤트 바인딩
+  const uploadBtn = document.getElementById('pcPhotoUploadBtn');
+  const fileInput = document.getElementById('pcPhotoInput');
+  if (uploadBtn && fileInput) {
+    uploadBtn.onclick = () => fileInput.click();
+    fileInput.onchange = (e) => handlePhotoUpload(item.id, e);
+  }
+}
+
+// 사진 업로드 처리 (PC)
+async function handlePhotoUpload(listingId, event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const uploadBtn = document.getElementById('pcPhotoUploadBtn');
+  const originalText = uploadBtn.innerHTML;
+
+  try {
+    uploadBtn.disabled = true;
+    uploadBtn.innerHTML = '<span>⏳</span>...';
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response = await fetch(`/api/listings/${listingId}/photos`, {
+      method: 'POST',
+      body: formData,
+      headers: {
+        'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.content || ''
+      }
+    });
+
+    const data = await response.json();
+    if (data.success) {
+      if (typeof showToast === 'function') showToast('사진이 등록되었습니다.', 'success');
+      loadAndRenderPhotos(listingId);
+    } else {
+      alert('업로드 실패: ' + (data.error || '알 수 없는 오류'));
+    }
+  } catch (error) {
+    console.error('사진 업로드 중 오류:', error);
+    alert('사진 업로드 중 오류가 발생했습니다.');
+  } finally {
+    uploadBtn.disabled = false;
+    uploadBtn.innerHTML = originalText;
+    event.target.value = '';
+  }
 }
 
 // 사진 목록 로드 및 렌더링
@@ -195,13 +250,13 @@ function openLightbox(url, filename) {
   const lightbox = document.getElementById('photoLightbox');
   const img = document.getElementById('lightboxImage');
   const downloadBtn = document.getElementById('downloadPhotoBtn');
-  
+
   if (lightbox && img && downloadBtn) {
     img.src = url;
     downloadBtn.href = url;
     downloadBtn.setAttribute('download', filename || 'listing_photo.jpg');
     lightbox.classList.remove('hidden');
-    
+
     // 닫기 이벤트 (익명 함수 중복 방지를 위해 확인)
     const closeBtn = document.getElementById('closeLightbox');
     if (closeBtn && !closeBtn.dataset.bound) {

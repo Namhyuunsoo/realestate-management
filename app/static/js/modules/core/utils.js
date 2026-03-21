@@ -127,23 +127,28 @@ function parseFloorInputToRange(str) {
   cleanedStr = cleanedStr.replace(/b(\d+)/g, '-$1');    // B2 -> -2
   cleanedStr = cleanedStr.replace(/[^\d~-]/g, ''); // Remove other non-numeric/range chars
 
-  // Try to match a range pattern: optional_minus_digit+ (range_separator) optional_minus_digit+
-  const rangeMatch = cleanedStr.match(/^(-?\d+)[~-](-?\d+)$/);
+  // Improved Regex for floor ranges
+  const rangeMatch = cleanedStr.match(/^(-?\d+)[~-](-?\d+)$/); // 1~5, -1~5
+  const gteMatch = cleanedStr.match(/^(-?\d+)[~-]$/); // 10-
+  const lteMatch = cleanedStr.match(/^[~-](-?\d+)$/); // ~5
+  const singleMatch = cleanedStr.match(/^(-?\d+)$/); // 5
+
   if (rangeMatch) {
     const min = parseInt(rangeMatch[1]);
     const max = parseInt(rangeMatch[2]);
-    if (!isNaN(min) && !isNaN(max)) {
-      return { min: Math.min(min, max), max: Math.max(min, max) }; // Ensure min <= max
-    }
+    if (!isNaN(min) && !isNaN(max)) return { min: Math.min(min, max), max: Math.max(min, max), type: 'range' };
   }
-
-  // Try to match a single number pattern: optional_minus_digit+
-  const singleMatch = cleanedStr.match(/^(-?\d+)$/);
+  if (gteMatch) {
+    const min = parseInt(gteMatch[1]);
+    if (!isNaN(min)) return { min: min, type: 'gte' };
+  }
+  if (lteMatch) {
+    const max = parseInt(lteMatch[1]);
+    if (!isNaN(max)) return { max: max, type: 'lte' };
+  }
   if (singleMatch) {
     const single = parseInt(singleMatch[1]);
-    if (!isNaN(single)) {
-      return { min: single, max: single };
-    }
+    if (!isNaN(single)) return { min: single, max: single, type: 'range' }; // For floor, single number usually implies exact match
   }
 
   return null;
@@ -187,51 +192,77 @@ function parseFloorValue(raw) {
 function parseRangeFlexible(str) {
   if (!str) return null;
   const clean = str.toString().replace(/[^\d~-]/g, '');
-  if (clean.includes('~') || clean.includes('-')) {
-    const parts = clean.split(/[~-]/);
+  
+  // Determine if the input is actually meant to be a range.
+  // Must contain '~' OR must contain '-' that is NOT at the very beginning (index > 0).
+  if (clean.includes('~') || (clean.includes('-') && clean.indexOf('-') > 0)) {
+    let parts = [];
+    if (clean.includes('~')) {
+      parts = clean.split('~');
+    } else {
+      parts = clean.split('-');
+    }
+    
     if (parts.length === 2) {
       const min = parseFloat(parts[0]);
       const max = parseFloat(parts[1]);
       if (!isNaN(min) && !isNaN(max)) {
-        return { min, max };
+        return { min, max, type: 'range' };
       }
-      // "20-" 같은 형식 처리 (최소값만 있고 최대값이 없는 경우)
       if (!isNaN(min) && parts[1] === '') {
-        return { min, type: 'gte' };
+        return { min, type: 'gte' }; // e.g. "10-"
+      }
+      if (parts[0] === '' && !isNaN(max)) {
+        return { max, type: 'lte' }; // e.g. "~10"
       }
     }
   }
-  const single = parseFloat(clean);
-  return isNaN(single) ? null : { min: single, max: single };
+  
+  // Explicit leading range prefixes
+  if (clean.startsWith('~')) {
+     const max = parseFloat(clean.replace('~', ''));
+     if (!isNaN(max)) return { max, type: 'lte' };
+  }
+  
+  // IF IT IS NOT A RANGE, return null so that buildNumFilter handles it as a single number!
+  return null;
 }
 
 function buildNumFilter(input, kind) {
   if (!input) return null;
+  
+  // Try parsing as a flexible range first
   const range = parseRangeFlexible(input);
   if (range) {
-    // parseRangeFlexible에서 이미 type이 설정된 경우 그대로 사용
-    if (range.type) {
-      return range;
-    }
-    // 범위 검색인 경우 type을 'range'로 설정
-    return { ...range, type: 'range' };
+    if (!range.type) range.type = 'range';
+    return range;
   }
-  const single = parseFloat(input);
+  
+  // If it's not a range, treat it as a single number and apply intended logic
+  const clean = input.toString().replace(/[^\d.-]/g, '');
+  const single = parseFloat(clean);
+  
   if (!isNaN(single)) {
-    // 면적 필터의 경우 단일값은 '이상' 검색으로 처리
     if (kind === 'area_real' || kind === 'gte') {
       return { min: single, type: 'gte' };
     }
-    return { min: single, max: single, type: kind };
+    if (kind === 'lte') {
+      return { max: single, type: 'lte' };
+    }
+    // 기본 fallback 값
+    return { min: single, max: single, type: 'eq' };
   }
   return null;
 }
 
 function checkNumFilter(value, filter) {
+  // 사장님 실무 운영 방침 결재 내용: "빈칸인 정보도 데이터 누락 방지를 위해 띄우도록 유지할 것"
   if (!filter || value == null) return true;
+  
   if (filter.type === 'gte') return value >= filter.min;
   if (filter.type === 'lte') return value <= filter.max;
   if (filter.type === 'range') return value >= filter.min && value <= filter.max;
+  if (filter.type === 'eq') return value === filter.min;
   return value >= filter.min && value <= filter.max;
 }
 
@@ -341,6 +372,11 @@ function adjustMobileAppHeight() {
     // 실제 사용 가능한 높이 계산 (브라우저 UI 제외)
     const availableHeight = Math.min(screenHeight, visualViewportHeight);
 
+    // 🔥 근본 해결 Phase 2: 미세한 높이 변화(5px 미만)는 레이아웃 피드백 루프 방지를 위해 무시
+    if (window.lastAdjustedHeight && Math.abs(window.lastAdjustedHeight - availableHeight) < 5) {
+      return;
+    }
+
     // body와 layout에 화면 높이 적용
     document.body.style.height = `${availableHeight}px`;
     document.body.style.maxHeight = `${availableHeight}px`;
@@ -408,7 +444,7 @@ function adjustMobileAppHeight() {
       secondaryPanel.style.margin = '0';
       secondaryPanel.style.padding = '0';
 
-      // 2차 사이드바 내부 컨테이너들도 높이 조정 - 정확한 버전
+    // 2차 사이드바 내부 컨테이너들도 높이 조정 - 정확한 버전
       const panelBody = secondaryPanel.querySelector('.panel-body');
       if (panelBody) {
         panelBody.style.height = `${availableHeight}px`;
@@ -480,6 +516,9 @@ function adjustMobileAppHeight() {
 
     // CSS 변수로 설정하여 CSS에서도 사용할 수 있도록 함
     document.documentElement.style.setProperty('--mobile-screen-height', `${availableHeight}px`);
+    
+    // 이전 높이 기록 업데이트
+    lastAdjustedHeight = availableHeight;
   }
 }
 
@@ -754,13 +793,13 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 
-// 윈도우 리사이즈 시 앱 높이 재조정
-window.addEventListener('resize', handleMobileAppResize);
+// 윈도우 리사이즈 시 앱 높이 재조정 (Debounced)
+window.addEventListener('resize', debounce(handleMobileAppResize, 150));
 
-// visualViewport 변경 시 앱 높이 재조정
+// visualViewport 변경 시 앱 높이 재조정 (Debounced)
 if (window.visualViewport) {
-  window.visualViewport.addEventListener('resize', handleVisualViewportChange);
-  window.visualViewport.addEventListener('scroll', handleVisualViewportChange);
+  window.visualViewport.addEventListener('resize', debounce(handleVisualViewportChange, 150));
+  window.visualViewport.addEventListener('scroll', debounce(handleVisualViewportChange, 150));
 }
 
 // 유틸리티 함수들을 전역으로 export

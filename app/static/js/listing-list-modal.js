@@ -38,6 +38,11 @@ class ListingListModalManager {
         this.renderedCount = 0;
         this.BATCH_SIZE = 20;
 
+        // 사진 편집 모드 상태
+        this.isPhotoEditMode = false;
+        this.isPhotoDeleteMode = false;
+        this.selectedPhotoFiles = new Set();
+
         this.init();
     }
 
@@ -48,6 +53,7 @@ class ListingListModalManager {
         this.container = document.getElementById('listingListContainer');
         this.createDetailContainer();
         this.bindEvents();
+        this.bindGlobalListeners(); // 🔥 추가: 전역 이벤트 위임
     }
 
     createDetailContainer() {
@@ -183,9 +189,94 @@ class ListingListModalManager {
         document.addEventListener('touchend', () => this.endDrag());
     }
 
-    async openModal() {
-        // 🔥 모바일 토글 기능: 이미 열려있으면 닫기
-        if (this.modal && !this.modal.classList.contains('hidden')) {
+    bindGlobalListeners() {
+        // 🔥 근본 해결: 이벤트 위임(Event Delegation) 단일화
+        // 모달 내의 모든 클릭/터치 이벤트를 이 한 곳에서만 관리합니다.
+
+        // 터치 상태 추적용 초기값 (클로저 변수가 아닌 클래스 속성으로 관리 가능하지만 여기서는 지역 변수로 유지)
+        let touchStartY = 0;
+        let touchStartTime = 0;
+        let isScrolling = false;
+
+        if (this.modalContent) {
+            // 터치 시작
+            this.modalContent.addEventListener('touchstart', (e) => {
+                touchStartY = e.touches[0].clientY;
+                touchStartTime = Date.now();
+                isScrolling = false;
+            }, { passive: true });
+
+            // 터치 이동
+            this.modalContent.addEventListener('touchmove', (e) => {
+                const touchY = e.touches[0].clientY;
+                const deltaY = Math.abs(touchY - touchStartY);
+                if (deltaY > 10) isScrolling = true;
+            }, { passive: true });
+
+            // 터치 종료 (리스트 아이템 클릭 처리)
+            this.modalContent.addEventListener('touchend', (e) => {
+                const touchDuration = Date.now() - touchStartTime;
+                if (!isScrolling && touchDuration < 300) {
+                    const li = e.target.closest('li[data-id]');
+                    if (li) {
+                        // 중복 방지를 위해 e.preventDefault()와 stopPropagation() 적용
+                        e.preventDefault();
+                        e.stopPropagation();
+
+                        const listingId = li.getAttribute('data-id');
+                        this.handleItemSelection(listingId);
+                    }
+                }
+                setTimeout(() => { isScrolling = false; }, 100);
+            }, { passive: false });
+
+            // 클릭 이벤트 (PC 마우스 및 Ghost Click 대응)
+            this.modalContent.addEventListener('click', (e) => {
+                // 이미 터치로 처리된 경우 무시
+                if (isScrolling) return;
+
+                const li = e.target.closest('li[data-id]');
+                if (li) {
+                    e.stopPropagation();
+                    const listingId = li.getAttribute('data-id');
+                    this.handleItemSelection(listingId);
+                }
+            });
+        }
+    }
+
+    handleItemSelection(listingId) {
+        if (!listingId) return;
+
+        let listing = window.FILTERED_LISTINGS.find(l => String(l.id) === String(listingId));
+        if (!listing && window.LISTINGS) {
+            listing = window.LISTINGS.find(l => String(l.id) === String(listingId));
+        }
+
+        if (listing) {
+            // 클러스터 목록에서 진입하는 경우 스택에 추가
+            if (this.currentState === 'cluster' && this.clusterData) {
+                // 이미 스택에 동일한 클러스터가 있는지 확인
+                const last = this.navigationStack[this.navigationStack.length - 1];
+                if (!last || last.state !== 'cluster') {
+                    this.navigationStack.push({
+                        state: 'cluster',
+                        data: this.clusterData
+                    });
+                }
+            }
+            this.showListingDetail(listing);
+        }
+    }
+
+    async openModal(mode = 'toggle') {
+        // 🔥 근본 해결: 모달 개폐 의도를 명확히 처리
+        const isHidden = !this.modal || this.modal.classList.contains('hidden');
+
+        // 'open' 모드이거나, 'toggle' 인데 닫혀있는 경우에만 엽니다.
+        if (mode === 'open' || (mode === 'toggle' && isHidden)) {
+            if (!isHidden) return Promise.resolve(); // 이미 열려있으면 무시
+        } else if (mode === 'close' || (mode === 'toggle' && !isHidden)) {
             this.closeModal();
             return Promise.resolve();
         }
@@ -265,11 +356,7 @@ class ListingListModalManager {
                 }
             }
 
-            // 🔥 모바일 토글 기능: 이미 열려있으면 닫기
-            if (this.modal && !this.modal.classList.contains('hidden')) {
-                this.closeModal();
-                return Promise.resolve();
-            }
+            // 이전 중복 체크 코드 제거 (함수 상단에서 처리됨)
 
             // 매물리스트 렌더링
             await this.renderListingList();
@@ -296,6 +383,7 @@ class ListingListModalManager {
         if (this.modal) {
             this.modal.classList.add('hidden');
         }
+        window.isMobileModalMode = false;
 
         // 🔥 파생 사이드바도 닫기 (상세정보 패널, 클러스터 목록 등)
         if (this.detailContainer && !this.detailContainer.classList.contains('hidden')) {
@@ -309,108 +397,9 @@ class ListingListModalManager {
         this.clusterData = null;
     }
 
-    bindListItemEvents() {
-        // 터치 이벤트 상태 추적
-        let touchStartY = 0;
-        let touchStartTime = 0;
-        let isScrolling = false;
-
-        // 이벤트 위임 방식으로 클릭 이벤트 처리
-        this.container.addEventListener('click', (e) => {
-            // 스크롤 중이면 클릭 이벤트 무시
-            if (isScrolling) {
-                e.preventDefault();
-                e.stopPropagation();
-                return;
-            }
-
-            const li = e.target.closest('li[data-id]');
-            if (li) {
-                const listingId = li.getAttribute('data-id');
-                if (listingId) {
-                    // 매물 상세 정보를 모달 내에서 표시
-                    let listing = window.FILTERED_LISTINGS.find(l => l.id === listingId);
-                    if (!listing) {
-                        // 타입 변환해서 다시 찾기
-                        const listingIdNum = parseInt(listingId);
-                        const listingIdStr = String(listingId);
-
-                        listing = window.FILTERED_LISTINGS.find(l =>
-                            l.id === listingIdNum || l.id === listingIdStr || String(l.id) === listingIdStr
-                        );
-
-                    }
-
-                    if (!listing && window.LISTINGS) {
-                        // FILTERED_LISTINGS에서 못 찾으면 LISTINGS에서 찾기
-                        listing = window.LISTINGS.find(l => l.id === listingId);
-                        if (!listing) {
-                            const listingIdNum = parseInt(listingId);
-                            listing = window.LISTINGS.find(l =>
-                                l.id === listingIdNum || String(l.id) === String(listingId)
-                            );
-                        }
-                    }
-
-                    if (listing) {
-                        this.showListingDetail(listing);
-                    } else {
-                        console.error('❌ 매물을 찾을 수 없습니다:', listingId);
-                    }
-                }
-            }
-        });
-
-        // 모바일 터치 이벤트 개선 - 스크롤과 클릭 구분
-        // 터치 시작 이벤트
-        this.container.addEventListener('touchstart', (e) => {
-            touchStartY = e.touches[0].clientY;
-            touchStartTime = Date.now();
-            isScrolling = false;
-        }, { passive: true });
-
-        // 터치 이동 이벤트 (스크롤 감지)
-        this.container.addEventListener('touchmove', (e) => {
-            const touchY = e.touches[0].clientY;
-            const deltaY = Math.abs(touchY - touchStartY);
-
-            // 10px 이상 움직이면 스크롤로 판단
-            if (deltaY > 10) {
-                isScrolling = true;
-            }
-        }, { passive: true });
-
-        // 터치 종료 이벤트
-        this.container.addEventListener('touchend', (e) => {
-            const touchDuration = Date.now() - touchStartTime;
-
-            // 스크롤이 아니고 짧은 터치(300ms 이하)인 경우에만 클릭으로 처리
-            if (!isScrolling && touchDuration < 300) {
-                const li = e.target.closest('li[data-id]');
-                if (li) {
-                    e.preventDefault();
-                    e.stopPropagation();
-
-                    const listingId = li.getAttribute('data-id');
-                    if (listingId) {
-                        let listing = window.FILTERED_LISTINGS.find(l => l.id === listingId);
-                        if (!listing && window.LISTINGS) {
-                            listing = window.LISTINGS.find(l => l.id === listingId);
-                        }
-
-                        if (listing) {
-                            this.showListingDetail(listing);
-                        }
-                    }
-                }
-            }
-
-            // 상태 초기화
-            setTimeout(() => {
-                isScrolling = false;
-            }, 100);
-        }, { passive: false });
-    }
+    // bindListItemEvents: 더 이상 사용하지 않으므로 빈 함수로 두거나 제거 가능
+    // 호환성을 위해 빈 함수로 둡니다.
+    bindListItemEvents() { }
 
     showListingDetail(listing, opts = {}) {
 
@@ -434,7 +423,10 @@ class ListingListModalManager {
             this.currentState = 'detail';
 
             // 모바일 모달 모드 플래그 설정 (2차 사이드바 열기 방지)
-            window.isMobileModalMode = true;
+            // 🔥 환경 격리: 모바일 앱일 때만 플래그 설정
+            if (window.MOBILE_APP) {
+                window.isMobileModalMode = true;
+            }
 
             const fields = listing.fields || {};
             const addr = listing.address_full || '';
@@ -463,12 +455,48 @@ class ListingListModalManager {
             const briefingText = typeof getBriefingStatusText === 'function' ? getBriefingStatusText(briefingStatus) : '';
             const briefingHtml = briefingText ? ` <span class="listing-detail-briefing-status briefing-${briefingStatus}" onclick="typeof cycleBriefingStatus==='function'&&cycleBriefingStatus(${JSON.stringify(String(listing.id))})" style="cursor:pointer;">${escapeHtml(briefingText)}</span>` : '';
             this.detailContent.innerHTML = `
-                <div style="background: #f8f9fa; padding: 12px; border-radius: 8px; margin-bottom: 15px;">
-                    <div style="font-size: 16px; font-weight: bold; color: #333; margin-bottom: 6px;">${escapeHtml(titleName)}</div>
-                    <div style="font-size: 14px; color: #666;">📍 ${escapeHtml(addr || '주소 정보 없음')}${briefingHtml}</div>
+                <div style="background: #f8f9fa; padding: 12px; border-radius: 8px; margin-bottom: 15px; position: relative;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px;">
+                        <div style="font-size: 16px; font-weight: bold; color: #333;">${escapeHtml(titleName)}</div>
+                        <button id="mobilePhotoEditBtn" style="background: #6c757d; color: white; border: none; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 3px;">
+                            <span>⚙️</span> 사진편집
+                        </button>
+                    </div>
+                    <div style="font-size: 14px; color: #666; margin-bottom: 10px;">📍 ${escapeHtml(addr || '주소 정보 없음')}${briefingHtml}</div>
+                    
+                    <!-- 사진 갤러리 영역 -->
+                    <div id="mobilePhotoGallery" class="detail-photo-gallery" style="margin-top: 10px; border-top: 1px dashed #ddd; padding-top: 10px;">
+                        <div style="grid-column: span 3; color: #999; font-size: 11px; text-align: center; padding: 10px;">사진을 불러오는 중...</div>
+                    </div>
+                    
+                    <!-- 숨김 파일 입력 -->
+                    <input type="file" id="mobilePhotoInput" style="display: none;" accept="image/*">
                 </div>
                 <div style="background: white; border: 1px solid #e0e0e0; border-radius: 8px; padding: 12px;">${rows}</div>
             `;
+
+            // 사진 로드 실행
+            this.loadMobilePhotos(listing.id);
+
+            // 업로드 버튼 이벤트 바인딩
+            const uploadBtn = document.getElementById('mobilePhotoUploadBtn');
+            const editBtn = document.getElementById('mobilePhotoEditBtn');
+            const fileInput = document.getElementById('mobilePhotoInput');
+
+            if (uploadBtn && fileInput) {
+                uploadBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    fileInput.click();
+                };
+                fileInput.onchange = (e) => this.handleMobilePhotoUpload(listing.id, e);
+            }
+
+            if (editBtn) {
+                editBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    this.enterPhotoEditMode(listing);
+                };
+            }
 
 
             // 상세정보 컨테이너 표시
@@ -478,9 +506,279 @@ class ListingListModalManager {
             // 현재 상태를 'detail'로 변경
             this.currentState = 'detail';
 
-
+            // 모바일 모달 모드 플래그 설정 (2차 사이드바 열기 방지)
+            if (window.MOBILE_APP) {
+                window.isMobileModalMode = true;
+            }
         } else {
             console.error('detailContainer 또는 detailContent를 찾을 수 없습니다');
+        }
+    }
+
+    // 사진 편집 모드 진입
+    enterPhotoEditMode(listing) {
+        this.isPhotoEditMode = true;
+        this.isPhotoDeleteMode = false;
+        this.selectedPhotoFiles.clear();
+        this.renderPhotoEditUI(listing);
+    }
+
+    // 사진 편집 모드 종료
+    exitPhotoEditMode(listing) {
+        this.isPhotoEditMode = false;
+        this.isPhotoDeleteMode = false;
+        this.selectedPhotoFiles.clear();
+        this.showListingDetail(listing); // 원래 상세정보로 복귀
+    }
+
+    // 사진 편집 UI 렌더링
+    renderPhotoEditUI(listing) {
+        if (!this.detailContent) return;
+
+        const fields = listing.fields || {};
+        const titleName = (fields['가게명'] || fields['건물명'] || '매물명 없음');
+
+        this.detailContent.innerHTML = `
+            <div style="background: #f8f9fa; padding: 12px; border-radius: 8px; margin-bottom: 15px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <div style="font-size: 16px; font-weight: bold; color: #333;">🖼️ 사진 관리 - ${escapeHtml(titleName)}</div>
+                    <button class="photo-edit-btn cancel" id="exitPhotoEditBtn" style="padding: 4px 10px; font-size: 11px;">닫기</button>
+                </div>
+                
+                <!-- 상단 안내 문구 -->
+                <div id="photoEditTip" style="font-size: 12px; color: #666; margin-bottom: 12px; padding: 8px; background: white; border-radius: 4px;">
+                    등록된 사진을 추가하거나 삭제할 수 있습니다.
+                </div>
+
+                <!-- 사진 그리드 -->
+                <div id="mobilePhotoGallery" class="detail-photo-gallery" style="margin-top: 10px; min-height: 200px;">
+                    <div style="grid-column: span 3; color: #999; font-size: 11px; text-align: center; padding: 20px;">사진을 불러오는 중...</div>
+                </div>
+
+                <!-- 숨김 파일 입력 -->
+                <input type="file" id="mobilePhotoInput" style="display: none;" accept="image/*">
+            </div>
+
+            <!-- 하단 액션 바 -->
+            <div class="photo-edit-actions" id="photoEditActions">
+                <button class="photo-edit-btn upload" id="photoEditUploadBtn">📷 사진 등록</button>
+                <button class="photo-edit-btn delete" id="photoEditDeleteStartBtn">🗑️ 사진 삭제</button>
+            </div>
+        `;
+
+        // 이벤트 바인딩
+        document.getElementById('exitPhotoEditBtn').onclick = () => this.exitPhotoEditMode(listing);
+
+        const uploadBtn = document.getElementById('photoEditUploadBtn');
+        const fileInput = document.getElementById('mobilePhotoInput');
+        if (uploadBtn && fileInput) {
+            uploadBtn.onclick = () => fileInput.click();
+            fileInput.onchange = (e) => this.handleMobilePhotoUpload(listing.id, e);
+        }
+
+        const deleteStartBtn = document.getElementById('photoEditDeleteStartBtn');
+        if (deleteStartBtn) {
+            deleteStartBtn.onclick = () => this.enterDeleteMode(listing);
+        }
+
+        // 사진 로드 (편집 모드로 로드)
+        this.loadMobilePhotos(listing.id);
+    }
+
+    // 삭제 모드 진입
+    enterDeleteMode(listing) {
+        this.isPhotoDeleteMode = true;
+        this.selectedPhotoFiles.clear();
+
+        // UI 업데이트
+        const tip = document.getElementById('photoEditTip');
+        if (tip) {
+            tip.innerHTML = '<b style="color: #f44336;">삭제할 사진들을 터치하여 선택하세요.</b>';
+            tip.style.background = '#ffebee';
+        }
+
+        const actions = document.getElementById('photoEditActions');
+        if (actions) {
+            actions.innerHTML = `
+                <button class="photo-edit-btn confirm" id="confirmDeleteBtn">✅ 삭제 확정 (0)</button>
+                <button class="photo-edit-btn cancel" id="cancelDeleteModeBtn">❌ 취소</button>
+            `;
+
+            document.getElementById('cancelDeleteModeBtn').onclick = () => {
+                this.isPhotoDeleteMode = false;
+                this.renderPhotoEditUI(listing);
+            };
+
+            document.getElementById('confirmDeleteBtn').onclick = () => this.deleteSelectedPhotos(listing);
+        }
+
+        // 갤러리 갱신 (선택 가능하게)
+        this.refreshGalleryUI();
+    }
+
+    // 갤러리 UI만 갱신 (상태에 따른 선택 표시)
+    refreshGalleryUI() {
+        const galleryItems = document.querySelectorAll('.gallery-item');
+        galleryItems.forEach(item => {
+            const fileName = item.getAttribute('data-filename');
+            if (this.isPhotoDeleteMode) {
+                item.classList.add('edit-mode');
+                if (this.selectedPhotoFiles.has(fileName)) {
+                    item.classList.add('selected');
+                } else {
+                    item.classList.remove('selected');
+                }
+            } else {
+                item.classList.remove('edit-mode', 'selected');
+            }
+        });
+
+        // 삭제 버튼 숫자 업데이트
+        const confirmBtn = document.getElementById('confirmDeleteBtn');
+        if (confirmBtn) {
+            confirmBtn.textContent = `✅ 삭제 확정 (${this.selectedPhotoFiles.size})`;
+            confirmBtn.disabled = this.selectedPhotoFiles.size === 0;
+            confirmBtn.style.opacity = this.selectedPhotoFiles.size === 0 ? '0.5' : '1';
+        }
+    }
+
+    // 사진 선택 토글
+    togglePhotoSelection(fileName) {
+        if (!this.isPhotoDeleteMode) return;
+
+        if (this.selectedPhotoFiles.has(fileName)) {
+            this.selectedPhotoFiles.delete(fileName);
+        } else {
+            this.selectedPhotoFiles.add(fileName);
+        }
+        this.refreshGalleryUI();
+    }
+
+    // 선택된 사진 일괄 삭제
+    async deleteSelectedPhotos(listing) {
+        if (this.selectedPhotoFiles.size === 0) return;
+
+        if (!confirm(`${this.selectedPhotoFiles.size}장의 사진을 삭제하시겠습니까?`)) return;
+
+        const listingId = listing.id;
+        const photosToDelete = Array.from(this.selectedPhotoFiles);
+        let successCount = 0;
+
+        // 버튼 비활성화
+        const confirmBtn = document.getElementById('confirmDeleteBtn');
+        if (confirmBtn) {
+            confirmBtn.disabled = true;
+            confirmBtn.textContent = '⏳ 삭제 중...';
+        }
+
+        try {
+            for (const fileName of photosToDelete) {
+                const response = await fetch(`/api/listings/${listingId}/photos/${fileName}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.content || ''
+                    }
+                });
+                const data = await response.json();
+                if (data.success) {
+                    successCount++;
+                }
+            }
+
+            if (typeof showToast === 'function') {
+                showToast(`${successCount}장의 사진이 삭제되었습니다.`, 'success');
+            }
+        } catch (error) {
+            console.error('사진 삭제 중 오류:', error);
+            alert('일부 사진 삭제 중 오류가 발생했습니다.');
+        } finally {
+            this.isPhotoDeleteMode = false;
+            this.renderPhotoEditUI(listing); // 리프레시
+        }
+    }
+
+    async loadMobilePhotos(listingId) {
+        const gallery = document.getElementById('mobilePhotoGallery');
+        if (!gallery) return;
+
+        // 🔥 가드(Guard): 로딩 중 매물이 바뀌는 경우 대비
+        gallery.setAttribute('data-loading-id', listingId);
+
+        try {
+            const response = await fetch(`/api/listings/${listingId}/photos`);
+            const data = await response.json();
+
+            // 다른 매물 사진이 도착했으면 무시
+            if (gallery.getAttribute('data-loading-id') !== String(listingId)) return;
+
+            if (data.success && data.photos && data.photos.length > 0) {
+                gallery.innerHTML = data.photos.map(photo => `
+                    <div class="gallery-item ${this.isPhotoDeleteMode ? 'edit-mode' : ''} ${this.selectedPhotoFiles.has(photo.file_name) ? 'selected' : ''}" 
+                         data-filename="${photo.file_name}"
+                         onclick="${this.isPhotoDeleteMode ? `listingListModalManager.togglePhotoSelection('${photo.file_name}')` : `window.openLightbox && window.openLightbox('${photo.full_url}', '${photo.file_name}')`}">
+                        <img src="${photo.full_url}" alt="매물사진" onerror="this.src='/static/img/no-image.png'">
+                    </div>
+                `).join('');
+            } else {
+                gallery.innerHTML = '<div style="grid-column: span 3; color: #999; font-size: 11px; text-align: center; padding: 5px;">등록된 사진이 없습니다.</div>';
+            }
+        } catch (error) {
+            console.error('사진 로드 중 오류:', error);
+            gallery.innerHTML = '<div style="grid-column: span 3; color: #f44336; font-size: 11px; text-align: center; padding: 5px;">사진 로딩 실패</div>';
+        }
+    }
+
+    async handleMobilePhotoUpload(listingId, event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        // 업로드 버튼 찾기 (상세보기 창 또는 편집 창)
+        const uploadBtn = document.getElementById('mobilePhotoUploadBtn') || document.getElementById('photoEditUploadBtn');
+        const originalText = uploadBtn ? uploadBtn.innerHTML : '';
+
+        try {
+            // 업로드 중 상태 표시
+            if (uploadBtn) {
+                uploadBtn.disabled = true;
+                uploadBtn.innerHTML = '<span>⏳</span> 업로드 중...';
+            }
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            const response = await fetch(`/api/listings/${listingId}/photos`, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.content || ''
+                }
+            });
+
+            const data = await response.json();
+            if (data.success) {
+                if (typeof showToast === 'function') showToast('사진이 등록되었습니다.', 'success');
+                // 갤러리 새로고침 (편집 모드 여부에 따라)
+                if (this.isPhotoEditMode) {
+                    const listing = (window.FILTERED_LISTINGS || []).find(l => String(l.id) === String(listingId)) ||
+                        (window.LISTINGS || []).find(l => String(l.id) === String(listingId));
+                    if (listing) {
+                        this.renderPhotoEditUI(listing);
+                    } else {
+                        await this.loadMobilePhotos(listingId);
+                    }
+                } else {
+                    await this.loadMobilePhotos(listingId);
+                }
+            } else {
+                alert('업로드 실패: ' + (data.error || '알 수 없는 오류'));
+            }
+        } catch (error) {
+            console.error('사진 업로드 중 오류:', error);
+            alert('사진 업로드 중 오류가 발생했습니다.');
+        } finally {
+            uploadBtn.disabled = false;
+            uploadBtn.innerHTML = originalText;
+            event.target.value = ''; // 초기화
         }
     }
 
@@ -704,8 +1002,8 @@ class ListingListModalManager {
         this.renderedCount += nextBatch.length;
         this.originalListingContent = this.container.innerHTML;
 
-        // 모달 내부의 리스트 아이템에 클릭 이벤트 추가
-        this.bindListItemEvents();
+        // 더 이상 수동 호출하지 않음 (전역 위임에서 처리)
+        // this.bindListItemEvents();
 
         // 추천 UI 동기화
         this.syncRecommendationUI();
@@ -969,6 +1267,9 @@ class ListingListModalManager {
 
                 const li = document.createElement('li');
                 li.setAttribute('data-id', item.id);
+                // 🔥 중복 제거: 이제 bindGlobalListeners가 modalContent 전체의 이벤트를 처리하므로,
+                // 개별 리스너 등록은 불필요합니다. 단, 필요한 경우 stopPropagation 등을 위해 남겨둘 수 있으나
+                // 현재 구조에서는 제거하는 것이 가장 깔끔합니다.
                 li.style.cssText = `
                     padding: 12px 16px;
                     border-bottom: 1px solid #f0f0f0;
@@ -1012,78 +1313,7 @@ class ListingListModalManager {
             let clusterTouchStartTime = 0;
             let clusterIsScrolling = false;
 
-            // 클릭 이벤트 처리
-            clusterListContainer.addEventListener('click', (e) => {
-                // 스크롤 중이면 클릭 이벤트 무시
-                if (clusterIsScrolling) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    return;
-                }
-
-                const li = e.target.closest('li[data-id]');
-                if (li) {
-                    const listingId = li.getAttribute('data-id');
-                    const listing = clusterItems.find(item => item.id === listingId);
-                    if (listing) {
-                        // 클러스터 목록 상태를 네비게이션 스택에 저장
-                        this.navigationStack.push({
-                            state: 'cluster',
-                            data: clusterItems
-                        });
-                        this.showListingDetail(listing);
-                    }
-                }
-            });
-
-            // 모바일 터치 이벤트 - 스크롤과 클릭 구분
-            // 터치 시작 이벤트
-            clusterListContainer.addEventListener('touchstart', (e) => {
-                clusterTouchStartY = e.touches[0].clientY;
-                clusterTouchStartTime = Date.now();
-                clusterIsScrolling = false;
-            }, { passive: true });
-
-            // 터치 이동 이벤트 (스크롤 감지)
-            clusterListContainer.addEventListener('touchmove', (e) => {
-                const touchY = e.touches[0].clientY;
-                const deltaY = Math.abs(touchY - clusterTouchStartY);
-
-                // 10px 이상 움직이면 스크롤로 판단
-                if (deltaY > 10) {
-                    clusterIsScrolling = true;
-                }
-            }, { passive: true });
-
-            // 터치 종료 이벤트
-            clusterListContainer.addEventListener('touchend', (e) => {
-                const touchDuration = Date.now() - clusterTouchStartTime;
-
-                // 스크롤이 아니고 짧은 터치(300ms 이하)인 경우에만 클릭으로 처리
-                if (!clusterIsScrolling && touchDuration < 300) {
-                    const li = e.target.closest('li[data-id]');
-                    if (li) {
-                        e.preventDefault();
-                        e.stopPropagation();
-
-                        const listingId = li.getAttribute('data-id');
-                        const listing = clusterItems.find(item => item.id === listingId);
-                        if (listing) {
-                            // 클러스터 목록 상태를 네비게이션 스택에 저장
-                            this.navigationStack.push({
-                                state: 'cluster',
-                                data: clusterItems
-                            });
-                            this.showListingDetail(listing);
-                        }
-                    }
-                }
-
-                // 상태 초기화
-                setTimeout(() => {
-                    clusterIsScrolling = false;
-                }, 100);
-            }, { passive: false });
+            // 🔥 중복 제거: 이제 bindGlobalListeners가 modalContent 전체의 이벤트를 처리함
 
             // 뒤로가기 버튼 이벤트 - 중복 등록 방지
             const backBtn = document.getElementById('clusterListBackBtn');
