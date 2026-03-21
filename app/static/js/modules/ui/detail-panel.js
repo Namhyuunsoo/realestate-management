@@ -79,7 +79,7 @@ async function renderDetailPanel(item) {
       dr('공급/전용', formatSupplyExcl(fields['공급'], fields['전용'])) +
       dr('보증금', fields['보증금']) + dr('월세', fields['월세']) + dr('관리비', fields['관리비']) + dr('매매가', fields['매매가']) +
       dr('방', fields['방']) + dr('화장실', fields['화장실']) + dr('거래유형', fields['거래유형']) +
-      dr('의뢰인', fields['의뢰인']) + dr('관계', fields['관계']) + dr('연락처', fields['연락처']) + dr('임차인 연락처', fields['임차인 연락처']) +
+      dr('소유자', fields['의뢰인']) + dr('소유자관계', fields['관계']) + dr('연락처', fields['연락처']) + dr('임차인 연락처', fields['임차인 연락처']) +
       dr('비고', fields['비고']) + dr('현황', getStatusDisplay(item.status_raw)) + dr('지역2', fields['지역2']);
   } else {
     // 상가 모드: 서브타입별 분기
@@ -109,8 +109,7 @@ async function renderDetailPanel(item) {
     // 소유자 정보 및 공통 마무리
     detailRows += dr('비고', fields['비고']) + dr('담당자', fields['담당자'] || fields['manager']) +
       dr('현황', getStatusDisplay(item.status_raw)) +
-      dr('소유자', fields['소유자']) + dr('소유자관계', fields['소유자관계']) + dr('연락처', fields['연락처']) +
-      (fields['비고3'] ? dr('비고3', fields['비고3']) : '');
+      dr('소유자', fields['의뢰인']) + dr('소유자관계', fields['비고3']) + dr('연락처', fields['연락처']);
   }
 
   const titleName = isHousing
