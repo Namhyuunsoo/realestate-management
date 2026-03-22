@@ -323,6 +323,7 @@ function openLightbox(urlOrPhotos, filenameOrIndex) {
 
   // 1. 탭 지연 방지를 위해 즉시 모달 구조 표시 (v1.2 최적화 클래스 적용)
   lightbox.classList.add('active');
+  window.isLightboxOpen = true; // 🔥 근본 해결: 리사이즈 루프 차단 플래그 활성화
   
   // 2. 백그라운드 레이어 고정 (V1.4: 깜박임 방지를 위해 블러/투명도 필터 제거)
   const appRoot = document.getElementById('appRoot');
@@ -346,6 +347,7 @@ function openLightbox(urlOrPhotos, filenameOrIndex) {
       setTimeout(() => {
         lightbox.classList.remove('active');
         lightbox.style.pointerEvents = '';
+        window.isLightboxOpen = false; // 🔥 근본 해결: 리사이즈 루프 차단 플래그 해제
       }, 50);
     };
     closeBtn.onclick = closeHandler;
