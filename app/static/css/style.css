@@ -5654,16 +5654,14 @@ body.hybrid-mode #topbar {
   top: 0 !important;
   left: 0 !important;
   width: 100% !important;
-  height: 100% !important;
-  height: 100dvh !important;
+  height: 100% !important; /* dvh 대신 100% 사용 (레이아웃 루프 방지) */
   background-color: rgba(0, 0, 0, 0.95) !important;
   z-index: 2100 !important;
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  -webkit-backface-visibility: hidden;
-  backface-visibility: hidden;
-  will-change: opacity, transform;
+  /* GPU 과부하 유발 요소 제거 (전력 보호 모드 대응) */
+  will-change: opacity; 
   transition: opacity 0.2s ease-in-out;
 }
 
