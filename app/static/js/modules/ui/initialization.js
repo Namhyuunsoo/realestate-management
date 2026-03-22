@@ -16,21 +16,9 @@ window.initializeApp = async function () {
   // CSS Grid 레이아웃을 사용하므로 setLayoutHeight 호출 제거
   // 대신 resize 이벤트 리스너만 등록 (실제 창 크기 변경만 감지)
   // 🔥 성능 최적화: 중복 등록 방지
+  // 🔥 성능 최적화: 모든 리사이즈 관리는 utils.js의 handleMobileAppResize에서 수행함
+  // 중복 등록 방지 로직만 유지하거나, 아예 제거
   if (!window._resizeListenerRegistered) {
-    window.addEventListener("resize", () => {
-      // 실제 창 크기 변경인지 확인 (스크롤바 등으로 인한 가짜 리사이즈 무시)
-      // isRealWindowResize 함수가 없으면 기본 동작 (하위 호환성)
-      if (typeof isRealWindowResize === 'function' && !isRealWindowResize()) {
-        return;
-      }
-
-      // 지도가 준비된 경우에만 리사이즈 트리거
-      if (MAP_READY && MAP) {
-        requestAnimationFrame(() => {
-          naver.maps.Event.trigger(MAP, 'resize');
-        });
-      }
-    });
     window._resizeListenerRegistered = true;
   }
 

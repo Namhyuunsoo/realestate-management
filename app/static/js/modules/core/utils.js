@@ -365,160 +365,31 @@ window.addEventListener('resize', () => {
  */
 function adjustMobileAppHeight() {
   if (window.innerWidth <= 768) {
+    // 🔥 근본 해결: 라이트박스가 열려있으면 리사이즈 로직을 중단하여 무한 루프 차단
+    if (window.isLightboxOpen) return;
+
     // 모바일 앱 전체 높이를 화면 높이에 맞춤
     const screenHeight = window.innerHeight;
     const visualViewportHeight = window.visualViewport ? window.visualViewport.height : screenHeight;
 
-    // 실제 사용 가능한 높이 계산 (브라우저 UI 제외)
-    const availableHeight = Math.min(screenHeight, visualViewportHeight);
+    // 실제 사용 가능한 높이 계산 (브라우저 주소창 등 제외)
+    const availableHeight = visualViewportHeight || screenHeight;
 
-    // 🔥 근본 해결 Phase 2: 미세한 높이 변화(5px 미만)는 레이아웃 피드백 루프 방지를 위해 무시
-    if (window.lastAdjustedHeight && Math.abs(window.lastAdjustedHeight - availableHeight) < 5) {
+    // 🔥 근본 해결: 주소창(Address Bar) 변화 수준(30px) 미만의 미세 변화는 무시
+    if (window.lastAdjustedHeight && Math.abs(window.lastAdjustedHeight - availableHeight) < 30) {
       return;
     }
 
-    // body와 layout에 화면 높이 적용
-    document.body.style.height = `${availableHeight}px`;
-    document.body.style.maxHeight = `${availableHeight}px`;
-    document.body.style.overflow = 'hidden';
-    document.body.style.position = 'fixed';
-    document.body.style.top = '0';
-    document.body.style.left = '0';
-    document.body.style.right = '0';
-    document.body.style.bottom = '0';
-    document.body.style.width = '100%';
-    document.body.style.margin = '0';
-    document.body.style.padding = '0';
+    window.lastAdjustedHeight = availableHeight;
 
-    const layout = document.getElementById('layout');
-    if (layout) {
-      layout.style.height = `${availableHeight}px`;
-      layout.style.maxHeight = `${availableHeight}px`;
-      layout.style.position = 'relative';
-      layout.style.overflow = 'hidden';
-      layout.style.width = '100%';
-      layout.style.margin = '0';
-      layout.style.padding = '0';
+    // 🔥 v1.0 근본 해결: body.style.position = 'fixed' 등 레이아웃을 흔드는 직접 조작을 제거
+    // 오직 CSS 변수만 갱신하여 CSS(dvh)가 스스로 맞추게 합니다.
+    document.documentElement.style.setProperty('--app-safe-height', `${availableHeight}px`);
+
+    // 지도 리사이즈 트리거 (부드러운 전환을 위해)
+    if (typeof MAP !== 'undefined' && MAP && MAP_READY) {
+      naver.maps.Event.trigger(MAP, 'resize');
     }
-
-    // 메인 콘텐츠에 화면 높이 적용
-    const mainContent = document.getElementById('mainContent');
-    if (mainContent) {
-      mainContent.style.height = `${availableHeight}px`;
-      mainContent.style.maxHeight = `${availableHeight}px`;
-      mainContent.style.position = 'relative';
-      mainContent.style.overflow = 'hidden';
-      mainContent.style.margin = '0';
-      mainContent.style.padding = '0';
-    }
-
-    // 지도에 화면 높이 적용
-    const map = document.getElementById('map');
-    if (map) {
-      map.style.height = `${availableHeight}px`;
-      map.style.maxHeight = `${availableHeight}px`;
-      map.style.position = 'relative';
-      map.style.margin = '0';
-      map.style.padding = '0';
-    }
-
-    // 사이드바는 CSS에서 이미 올바르게 설정되어 있으므로 JavaScript로 재설정하지 않음
-    // PC 환경에서는 사이드바 높이를 변경하면 안 됨
-
-    // 모바일 노치에 화면 높이 적용
-    const mobileNotch = document.querySelector('.mobile-notch');
-    if (mobileNotch) {
-      mobileNotch.style.bottom = '0';
-    }
-
-    // 2차 사이드바에 화면 높이 적용 - 정확한 버전
-    const secondaryPanel = document.getElementById('secondaryPanel');
-    if (secondaryPanel) {
-      secondaryPanel.style.height = `${availableHeight}px`;
-      secondaryPanel.style.maxHeight = `${availableHeight}px`;
-      secondaryPanel.style.minHeight = `${availableHeight}px`;
-      secondaryPanel.style.bottom = '0';
-      secondaryPanel.style.top = '0';
-      secondaryPanel.style.overflow = 'hidden';
-      secondaryPanel.style.position = 'fixed';
-      secondaryPanel.style.margin = '0';
-      secondaryPanel.style.padding = '0';
-
-    // 2차 사이드바 내부 컨테이너들도 높이 조정 - 정확한 버전
-      const panelBody = secondaryPanel.querySelector('.panel-body');
-      if (panelBody) {
-        panelBody.style.height = `${availableHeight}px`;
-        panelBody.style.maxHeight = `${availableHeight}px`;
-        panelBody.style.overflow = 'auto';
-        panelBody.style.padding = '15px';
-        panelBody.style.paddingBottom = '10px'; // 최소한의 하단 여백만
-        panelBody.style.margin = '0';
-        panelBody.style.position = 'relative';
-      }
-
-      const panelView = secondaryPanel.querySelector('.panel-view');
-      if (panelView) {
-        panelView.style.height = `${availableHeight}px`;
-        panelView.style.maxHeight = `${availableHeight}px`;
-        panelView.style.overflow = 'auto';
-        panelView.style.margin = '0';
-        panelView.style.padding = '0';
-      }
-
-      // 폼 액션 버튼들을 하단에 고정 - 정확한 버전
-      const formActions = secondaryPanel.querySelector('.form-actions');
-      if (formActions) {
-        formActions.style.position = 'sticky';
-        formActions.style.bottom = '0';
-        formActions.style.background = 'white';
-        formActions.style.padding = '10px 0';
-        formActions.style.borderTop = '1px solid #eee';
-        formActions.style.marginTop = '10px';
-        formActions.style.zIndex = '10';
-        formActions.style.width = '100%';
-        formActions.style.left = '0';
-        formActions.style.right = '0';
-      }
-
-      const detailActions = secondaryPanel.querySelector('.detail-actions');
-      if (detailActions) {
-        detailActions.style.position = 'sticky';
-        detailActions.style.bottom = '0';
-        detailActions.style.background = 'white';
-        detailActions.style.padding = '10px 0';
-        detailActions.style.borderTop = '1px solid #eee';
-        detailActions.style.zIndex = '10';
-        detailActions.style.marginTop = '10px';
-        detailActions.style.width = '100%';
-        detailActions.style.left = '0';
-        detailActions.style.right = '0';
-      }
-
-      // 클러스터 리스트 정확한 높이 조정
-      const clusterList = secondaryPanel.querySelector('.cluster-list');
-      if (clusterList) {
-        clusterList.style.height = `${availableHeight - 100}px`; // 헤더와 버튼 영역 제외
-        clusterList.style.maxHeight = `${availableHeight - 100}px`;
-        clusterList.style.overflow = 'auto';
-        clusterList.style.margin = '0';
-        clusterList.style.padding = '0';
-      }
-
-      const clusterItemList = secondaryPanel.querySelector('#clusterItemList');
-      if (clusterItemList) {
-        clusterItemList.style.height = `${availableHeight - 120}px`; // 헤더와 버튼 영역 제외
-        clusterItemList.style.maxHeight = `${availableHeight - 120}px`;
-        clusterItemList.style.overflow = 'auto';
-        clusterItemList.style.margin = '0';
-        clusterItemList.style.padding = '0';
-      }
-    }
-
-    // CSS 변수로 설정하여 CSS에서도 사용할 수 있도록 함
-    document.documentElement.style.setProperty('--mobile-screen-height', `${availableHeight}px`);
-    
-    // 이전 높이 기록 업데이트
-    lastAdjustedHeight = availableHeight;
   }
 }
 
@@ -829,7 +700,5 @@ window.handleMobileAppResize = handleMobileAppResize;
 window.handleVisualViewportChange = handleVisualViewportChange;
 window.isRealWindowResize = isRealWindowResize; // 실제 창 크기 변경 감지 함수 export
 window.setPCLayoutHeight = setPCLayoutHeight; // PC 환경 높이 설정 함수 export
+window.debounce = debounce;
 window.restorePCLayoutHeight = restorePCLayoutHeight;
-window.debounce = debounce;
-// PC 환경 높이 복원 함수 export (레거시) 
-window.debounce = debounce;

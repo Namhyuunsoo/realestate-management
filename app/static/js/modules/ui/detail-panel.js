@@ -245,26 +245,138 @@ async function loadAndRenderPhotos(listingId) {
 }
 
 // 라이트박스 제어
-function openLightbox(url, filename) {
-  const lightbox = document.getElementById('photoLightbox');
+// 라이트박스 제어 (다중 사진 스와이프 확장)
+// 전역 상태
+let _lbPhotos = [];   // [{full_url, file_name}, ...]
+let _lbIndex = 0;
+
+function _lbUpdateUI() {
   const img = document.getElementById('lightboxImage');
   const downloadBtn = document.getElementById('downloadPhotoBtn');
+  const counter = document.getElementById('lightboxCounter');
+  const prevBtn = document.getElementById('lightboxPrev');
+  const nextBtn = document.getElementById('lightboxNext');
+  if (!img) return;
 
-  if (lightbox && img && downloadBtn) {
-    img.src = url;
-    downloadBtn.href = url;
-    downloadBtn.setAttribute('download', filename || 'listing_photo.jpg');
-    lightbox.classList.remove('hidden');
+  const photo = _lbPhotos[_lbIndex];
+  if (!photo) return;
 
-    // 닫기 이벤트 (익명 함수 중복 방지를 위해 확인)
-    const closeBtn = document.getElementById('closeLightbox');
-    if (closeBtn && !closeBtn.dataset.bound) {
-      closeBtn.onclick = () => lightbox.classList.add('hidden');
-      lightbox.onclick = (e) => {
-        if (e.target === lightbox) lightbox.classList.add('hidden');
-      };
-      closeBtn.dataset.bound = "true";
-    }
+  // 1. 새 이미지 로딩 전 기존 이미지 숨김 (깜박임 방지 핵심)
+  img.style.transition = 'none';
+  img.style.opacity = '0';
+
+  // 2. 이미지 로드 완료 시 페이드인 처리
+  const tempImg = new Image();
+  tempImg.onload = () => {
+    img.src = photo.full_url;
+    // 브라우저 렌더링 동기를 위해 requestAnimationFrame 사용
+    requestAnimationFrame(() => {
+      img.style.transition = 'opacity 0.2s ease-in-out';
+      img.style.opacity = '1';
+    });
+  };
+  tempImg.src = photo.full_url;
+
+  if (downloadBtn) {
+    downloadBtn.href = photo.full_url;
+    downloadBtn.setAttribute('download', photo.file_name || 'listing_photo.jpg');
+  }
+
+  // 다중 사진일 때만 네비게이션 UI 표시
+  const isMulti = _lbPhotos.length > 1;
+  if (counter) {
+    counter.style.display = isMulti ? 'block' : 'none';
+    counter.textContent = `${_lbIndex + 1} / ${_lbPhotos.length}`;
+  }
+  if (prevBtn) prevBtn.style.display = (isMulti && _lbIndex > 0) ? 'block' : 'none';
+  if (nextBtn) nextBtn.style.display = (isMulti && _lbIndex < _lbPhotos.length - 1) ? 'block' : 'none';
+}
+
+function lightboxNavigate(direction) {
+  const newIdx = _lbIndex + direction;
+  if (newIdx >= 0 && newIdx < _lbPhotos.length) {
+    _lbIndex = newIdx;
+    _lbUpdateUI();
+  }
+}
+window.lightboxNavigate = lightboxNavigate;
+
+/**
+ * openLightbox - 단일/다중 사진 모두 지원
+ * 사용법 1 (기존 호환): openLightbox(url, filename)
+ * 사용법 2 (다중 사진): openLightbox(photosArray, startIndex)
+ *   photosArray: [{full_url, file_name}, ...]
+ */
+function openLightbox(urlOrPhotos, filenameOrIndex) {
+  const lightbox = document.getElementById('photoLightbox');
+  if (!lightbox) return;
+
+  // 사용법 판별: 배열이면 다중 모드, 문자열이면 단일 모드
+  if (Array.isArray(urlOrPhotos)) {
+    _lbPhotos = urlOrPhotos;
+    _lbIndex = (typeof filenameOrIndex === 'number') ? filenameOrIndex : 0;
+  } else {
+    // 단일 사진 (기존 호환)
+    _lbPhotos = [{ full_url: urlOrPhotos, file_name: filenameOrIndex || 'listing_photo.jpg' }];
+    _lbIndex = 0;
+  }
+
+  // 1. 탭 지연 방지를 위해 즉시 모달 구조 표시 (v1.2 최적화 클래스 적용)
+  lightbox.classList.add('active');
+  
+  // 2. 백그라운드 레이어 고정 (V1.4: 깜박임 방지를 위해 블러/투명도 필터 제거)
+  const appRoot = document.getElementById('appRoot');
+
+  // 3. 백그라운드 이미지 비동기 로딩 시작
+  _lbUpdateUI();
+
+  // 닫기 이벤트 (1회만 바인딩)
+  const closeBtn = document.getElementById('closeLightbox');
+  if (closeBtn && !closeBtn.dataset.bound) {
+    const closeHandler = (e) => {
+      if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+      
+      // V1.4: 레이어 격리 해제 (필터 제거됨)
+
+      // 0.05초 지연 후 닫기 (고스트 클릭 방지 유지)
+      lightbox.style.pointerEvents = 'none';
+      setTimeout(() => {
+        lightbox.classList.remove('active');
+        lightbox.style.pointerEvents = '';
+      }, 50);
+    };
+    closeBtn.onclick = closeHandler;
+    lightbox.onclick = (e) => {
+      if (e.target === lightbox || e.target.classList.contains('modal-content')) closeHandler(e);
+    };
+    closeBtn.dataset.bound = "true";
+  }
+
+  // 터치 스와이프 (1회만 바인딩)
+  const modalContent = lightbox.querySelector('.modal-content');
+  if (modalContent && !modalContent.dataset.swipeBound) {
+    let touchStartX = 0;
+    let touchStartY = 0;
+
+    modalContent.addEventListener('touchstart', (e) => {
+      touchStartX = e.changedTouches[0].screenX;
+      touchStartY = e.changedTouches[0].screenY;
+    }, { passive: true });
+
+    modalContent.addEventListener('touchend', (e) => {
+      const dx = e.changedTouches[0].screenX - touchStartX;
+      const dy = e.changedTouches[0].screenY - touchStartY;
+      // 수평 이동이 수직보다 크고, 최소 50px 이상 이동했을 때만 스와이프로 인식
+      if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 50) {
+        if (dx < 0) lightboxNavigate(1);   // 왼쪽 스와이프 → 다음
+        else lightboxNavigate(-1);          // 오른쪽 스와이프 → 이전
+      }
+    }, { passive: true });
+
+    modalContent.dataset.swipeBound = "true";
   }
 }
 

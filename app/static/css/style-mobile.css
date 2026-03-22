@@ -19,7 +19,7 @@
     right: 0 !important;
     width: 100% !important;
     height: 60px !important;
-    z-index: 1003 !important;
+    z-index: 200 !important;
     background: #e9f2ff !important;
     border-top: 1px solid #c9dfff !important;
     border-bottom: none !important;
@@ -56,7 +56,7 @@
     height: 100px;
     max-height: 100px !important;
     min-height: 100px;
-    z-index: 1002;
+    z-index: 201;
     display: flex;
     justify-content: flex-end;
     align-items: center;
@@ -69,12 +69,9 @@
     overflow: hidden;
   }
 
-  /* 상단필터바 위치 제어 코드 제거 - 이제 모달 내부에서 자연스럽게 렌더링됨 */
-
   /* 앱 루트 컨테이너 - 하단바 배경이 보이도록 */
   #appRoot {
     overflow: visible !important;
-    /* 하단바 배경이 보이도록 */
   }
 
   /* 모바일 로그아웃 버튼 스타일 */
@@ -96,64 +93,28 @@
     border-color: #bd2130;
   }
 
-  .mobile-logout-btn:active {
-    background: #bd2130;
-    border-color: #b21f2d;
-  }
-
-
-  #topbar .user-role-name {
-    font-size: 11px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 120px;
-  }
-
-  /* 모바일 환경에서 어드민 버튼들 숨김 */
-  #topbar .admin-only {
-    display: none !important;
-  }
-
-  /* 모바일 환경에서 PC 로그아웃 버튼 숨김 */
-  #topbar #logoutBtn {
-    display: none !important;
-  }
-
-  /* 모바일 환경에서 모바일 로그아웃 버튼 표시 */
-  #topbar .mobile-logout-btn {
-    display: inline-block !important;
-  }
-
   /* 레이아웃 영역 전체화면 - 모바일에서 강제 적용 */
   #layout {
     position: absolute !important;
     top: 0 !important;
-    /* 상단부터 시작 - PC CSS의 166px 완전 오버라이드 */
     left: 0 !important;
     right: 0 !important;
     bottom: 0 !important;
-    height: 100vh !important;
-    /* 전체 화면 높이 */
+    height: var(--app-safe-height, 100dvh) !important;
     width: 100% !important;
     overflow: hidden !important;
-    /* 지도 영역 제한 */
   }
 
   /* 메인 콘텐츠 영역 조정 (지도 전체화면) - 모바일에서 강제 적용 */
   #mainContent {
     position: absolute !important;
     top: 0 !important;
-    /* 상단부터 시작 */
     left: 0 !important;
-    /* 좌측부터 시작 */
     right: 0 !important;
     bottom: 300px !important;
-    /* 매물리스트 패널 높이만큼 여백 */
     z-index: 1 !important;
     transition: bottom 0.3s ease !important;
     width: 100% !important;
-    /* 전체 너비 차지 */
     margin: 0 !important;
     padding: 0 !important;
   }
@@ -162,7 +123,6 @@
   .property-list-panel.expanded~#mainContent,
   .property-list-panel.expanded+#mainContent {
     bottom: 500px;
-    /* 확장된 높이만큼 조정 */
   }
 
   /* 기존 사이드바와 관련 요소들 완전 제거 - 모바일에서 강제 적용 */
@@ -179,11 +139,6 @@
     visibility: hidden !important;
     opacity: 0 !important;
     pointer-events: none !important;
-  }
-
-  /* 사이드바를 flex 레이아웃에서 제거 */
-  #sidebar {
-    display: none;
   }
 
   /* 지도 영역 전체화면 설정 - 모바일에서 강제 적용 */
@@ -216,7 +171,8 @@
     left: 0;
     right: 0;
     bottom: 0;
-    z-index: 1005;
+    height: var(--app-safe-height, 100dvh);
+    z-index: 1200;
     background: white;
     transform: translateX(100%);
     transition: transform 0.3s ease-in-out;
@@ -226,26 +182,19 @@
     transform: translateX(0);
   }
 
-  /* ========================================
-   매물리스트 드래그 패널
-   ======================================== */
-
-  /* 매물리스트 패널 - 하단 고정 */
+  /* 매물리스트 드래그 패널 */
   .property-list-panel {
     position: fixed;
     bottom: 0;
     left: 0;
     right: 0;
     height: 300px;
-    /* 기본 높이 */
     min-height: 150px;
-    /* 최소 높이 */
-    max-height: 70vh;
-    /* 최대 높이 */
+    max-height: 70dvh;
     background: white;
     border-top: 2px solid #007AFF;
     box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
-    z-index: 1007;
+    z-index: 1100;
     display: flex;
     flex-direction: column;
     transition: height 0.3s ease;
@@ -313,65 +262,6 @@
     padding: 8px;
   }
 
-  .property-item {
-    padding: 12px;
-    border-bottom: 1px solid #f0f0f0;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-
-  .property-info {
-    flex: 1;
-  }
-
-  .property-title {
-    font-weight: bold;
-    font-size: 14px;
-    margin-bottom: 4px;
-  }
-
-  .property-details {
-    font-size: 12px;
-    color: #666;
-    display: flex;
-    gap: 8px;
-  }
-
-  .property-actions {
-    display: flex;
-    gap: 4px;
-  }
-
-  .property-btn {
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-size: 12px;
-    cursor: pointer;
-    border: none;
-  }
-
-  .property-btn.select {
-    background: #007AFF;
-    color: white;
-  }
-
-  .property-btn.modify {
-    background: #FF9500;
-    color: white;
-  }
-
-  .property-btn.delete {
-    background: #FF3B30;
-    color: white;
-  }
-
-  /* 모바일 노치 제거됨 */
-
-  /* ========================================
-   모바일에서 불필요한 요소들 숨기기
-   ======================================== */
-
   /* 상단바에서 숨길 요소들 */
   #topbar .user-role-name,
   #topbar .admin-only,
@@ -397,32 +287,19 @@
     gap: 0;
     align-items: stretch;
     padding: 8px 16px;
-    /* 내부 패딩 추가 */
     width: 100%;
     height: 100%;
     max-height: 100%;
-    /* 부모 높이를 넘지 않도록 */
     font-size: 0;
-    /* 텍스트 크기를 0으로 만들어 숨김 */
     box-sizing: border-box;
-    /* 패딩 포함한 크기 계산 */
     overflow: hidden;
-    /* 넘치는 내용 숨김 */
   }
 
-  /* 건수 관련 텍스트 모두 숨기기 */
   #statusCounts .count-info span {
     display: none;
   }
 
-  /* PC용 필터 칩 바 모바일에서 숨김 (자체 모바일 필터 요약 UI 사용) */
   #filterChipBar {
-    display: none !important;
-  }
-
-  /* PC용 모드 전환(상가/주택) 및 서브타입 버튼 모바일에서 숨김 */
-  #listingModeToggle,
-  .subtype-buttons {
     display: none !important;
   }
 
@@ -434,11 +311,6 @@
     align-items: stretch;
     margin-bottom: 4px;
     flex-shrink: 0;
-    /* 크기 고정 */
-    min-height: 0;
-    /* 최소 높이 제거 */
-    max-height: 50%;
-    /* 최대 높이 제한 (전체의 절반) */
   }
 
   /* 필터 버튼 스타일 */
@@ -481,11 +353,6 @@
     width: 100%;
     align-items: stretch;
     flex-shrink: 0;
-    /* 크기 고정 */
-    min-height: 0;
-    /* 최소 높이 제거 */
-    max-height: 50%;
-    /* 최대 높이 제한 (전체의 절반) */
   }
 
   /* 모든 버튼 공통 스타일 */
@@ -507,29 +374,10 @@
     min-width: 0;
   }
 
-  /* 매물등록 버튼 */
-  #statusCounts .btn-add-listing {
-    background: #007bff;
-    color: white;
-  }
-
-  /* 매물LIST 버튼 */
-  #statusCounts .mobile-buttons .btn-property-list {
-    background: #28a745;
-    color: white;
-  }
-
-  /* 고객LIST 버튼 */
-  #statusCounts .mobile-buttons .btn-customer-list {
-    background: #ffc107;
-    color: black;
-  }
-
-  /* 고객등록 버튼 */
-  #statusCounts .mobile-buttons .btn-customer-add {
-    background: #dc3545;
-    color: white;
-  }
+  #statusCounts .btn-add-listing { background: #007bff; color: white; }
+  #statusCounts .mobile-buttons .btn-property-list { background: #28a745; color: white; }
+  #statusCounts .mobile-buttons .btn-customer-list { background: #ffc107; color: black; }
+  #statusCounts .mobile-buttons .btn-customer-add { background: #dc3545; color: white; }
 
   #statusCounts .sheet-controls,
   #statusCounts .sheet-buttons,
@@ -540,11 +388,7 @@
     display: none;
   }
 
-  /* ========================================
-   필터 버튼 스타일
-   ======================================== */
-
-  /* 모바일에서 office-info 레이아웃 수정 */
+  /* 오피스 정보 모바일 레이아웃 */
   .office-info {
     display: flex !important;
     flex-direction: row !important;
@@ -553,20 +397,12 @@
     gap: 8px !important;
   }
 
-  /* 버튼 그룹 - 중개사 버튼과 필터 버튼을 같은 라인에 배치 */
   .button-group {
     display: flex;
     align-items: center;
     gap: 8px;
   }
 
-  /* 필터 버튼 컨테이너 - 모바일에서만 보이기 */
-  .filter-switch {
-    display: flex !important;
-    align-items: center;
-  }
-
-  /* 필터 버튼 */
   .filter-toggle-btn {
     display: flex;
     align-items: center;
@@ -578,45 +414,15 @@
     border-radius: 6px;
     font-size: 14px;
     cursor: pointer;
-    transition: background-color 0.2s ease;
   }
 
-  .filter-toggle-btn:hover {
-    background: #0056CC;
-  }
-
-  .filter-toggle-btn:active {
-    background: #004499;
-  }
-
-  .filter-icon {
-    font-size: 16px;
-  }
-
-  .filter-text {
-    font-weight: 500;
-  }
-
-  /* ========================================
-   필터 모달 스타일
-   ======================================== */
-
-  /* 필터 모달 전체화면 - 기본적으로 숨김 */
-  /* #filterModal.modal 전체 스크롤 차단 */
-  #filterModal.modal {
+  /* 필터 모달 */
+  #filterModal.modal:not(.hidden) {
     overflow: hidden !important;
-    /* 외부 스크롤 완전 차단 */
     display: flex !important;
-    /* flex 컨테이너로 설정 */
     flex-direction: column !important;
-    /* 세로 방향 */
   }
 
-  #filterModal.modal.hidden {
-    display: none !important;
-  }
-
-  /* .modal-content.filter-modal 스크롤 차단 */
   .filter-modal,
   .modal-content.filter-modal {
     position: fixed !important;
@@ -624,356 +430,32 @@
     left: 0 !important;
     right: 0 !important;
     bottom: 0 !important;
-    /* top과 bottom으로 높이 설정 - 키패드 대응 */
     width: 100vw !important;
-    /* height: 100vh 제거 - bottom: 0으로 대체 */
-    max-width: none !important;
-    max-height: none !important;
-    margin: 0 !important;
     border-radius: 0 !important;
     background: white !important;
-    z-index: 2000 !important;
-    overflow: hidden !important;
-    /* 외부 스크롤 완전 차단 */
+    z-index: 1100 !important;
     display: flex !important;
-    /* flex 컨테이너로 표시 */
     flex-direction: column !important;
-    /* 헤더 고정, 본문 스크롤 */
     box-shadow: none !important;
   }
 
-  .filter-modal:not(.hidden),
-  .modal-content.filter-modal:not(.hidden) {
-    display: flex !important;
-    /* flex 컨테이너로 표시 */
-  }
-
-  /* 필터 모달 헤더 - 고정 */
-  .filter-modal .modal-header {
-    position: relative;
-    /* sticky 제거, 상단에 고정 */
-    top: 0;
-    background: white;
-    border-bottom: 1px solid #e0e0e0;
-    padding: 12px 20px;
-    z-index: 10;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 8px;
-    flex-shrink: 0;
-    /* 헤더 크기 고정 */
-  }
-
-  .filter-modal .modal-header h2 {
-    margin: 0;
-    font-size: 20px;
-    color: #333;
-    flex-shrink: 0;
-  }
-
-  /* 필터 모달 헤더 버튼 컨테이너 */
-  .filter-modal .modal-header-buttons {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    flex-shrink: 0;
-  }
-
-  /* 필터 모달 헤더 버튼 (크기 30% 축소) */
-  .filter-modal .modal-header .header-btn {
-    padding: 8px 16px !important;
-    /* 기존 12px 24px에서 30% 축소: 8.4px 16.8px → 8px 16px */
-    border-radius: 6px;
-    font-size: 11px !important;
-    /* 기존 16px에서 30% 축소: 11.2px → 11px */
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    white-space: nowrap;
-    border: none;
-  }
-
-  .filter-modal .modal-header .header-btn.btn-primary {
-    background: #007AFF;
-    color: white;
-  }
-
-  .filter-modal .modal-header .header-btn.btn-primary:hover {
-    background: #0056CC;
-  }
-
-  .filter-modal .modal-header .header-btn.btn-secondary {
-    background: #f8f9fa;
-    color: #666;
-    border: 1px solid #ddd;
-  }
-
-  .filter-modal .modal-header .header-btn.btn-secondary:hover {
-    background: #e9ecef;
-  }
-
-  /* 필터 모달 닫기 버튼 */
-  .filter-modal .modal-close {
-    position: absolute;
-    top: 16px;
-    right: 20px;
-    background: none;
-    border: none;
-    font-size: 24px;
-    color: #666;
-    cursor: pointer;
-    padding: 0;
-    width: 30px;
-    height: 30px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  /* 필터 모달 바디 - 스크롤 가능 */
-  .filter-modal .modal-body {
-    padding: 20px;
-    padding-bottom: 40px;
-    /* 마지막 항목이 보이도록 하단 패딩 추가 */
-    overflow-y: auto;
-    /* 내부 스크롤만 활성화 */
-    overflow-x: hidden;
-    flex: 1;
-    /* 남은 공간 모두 차지 */
-    min-height: 0;
-    /* flex 아이템이 부모 높이를 초과하지 않도록 */
-    -webkit-overflow-scrolling: touch;
-    /* iOS 부드러운 스크롤 */
-    box-sizing: border-box;
-    /* padding 포함한 크기 계산 */
-    overscroll-behavior: none;
-    /* 스크롤 전파 차단 - 앱 전체 스크롤 방지 */
-    overscroll-behavior-y: none;
-    /* 세로 스크롤 전파 차단 - 추가 보안 */
-  }
-
-  /* 필터 그리드 레이아웃 */
-  .filter-grid {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-  }
-
-  /* Specificity 강화를 통해 !important 없이 레이아웃 속성을 덮어씀 */
-  .filter-grid.hidden {
-    display: none;
-  }
-
-  .filter-row {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-  }
-
-  .filter-group {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-  }
-
-  .filter-group label {
-    font-size: 14px;
-    font-weight: 500;
-    color: #333;
-    margin-bottom: 4px;
-  }
-
-  .filter-group input,
-  .filter-group select {
-    padding: 12px;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    font-size: 16px;
-    background: white;
-    transition: border-color 0.2s ease;
-    width: 100%;
-    box-sizing: border-box;
-  }
-
-  .filter-group input:focus,
-  .filter-group select:focus {
-    outline: none;
-    border-color: #007AFF;
-    box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.1);
-  }
-
-  /* 필터 모달 푸터 */
-  .filter-modal .modal-footer {
-    position: sticky;
-    bottom: 0;
-    background: white;
-    border-top: 1px solid #e0e0e0;
-    padding: 16px 20px;
-    display: flex;
-    gap: 12px;
-    justify-content: flex-end;
-  }
-
-  .filter-modal .modal-footer button {
-    padding: 12px 24px;
-    border-radius: 8px;
-    font-size: 16px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s ease;
-  }
-
-  .filter-modal .btn-primary {
-    background: #007AFF;
-    color: white;
-    border: none;
-  }
-
-  .filter-modal .btn-primary:hover {
-    background: #0056CC;
-  }
-
-  .filter-modal .btn-secondary {
-    background: #f8f9fa;
-    color: #666;
-    border: 1px solid #ddd;
-  }
-
-  .filter-modal .btn-secondary:hover {
-    background: #e9ecef;
-  }
-
-  /* 모바일에서 기존 필터바 숨기기 */
-  .mobile-hidden {
-    display: none !important;
-  }
-
-  /* 거리재기 버튼 숨기기 (모바일에서는 사용하지 않음) */
-  #distanceBtn {
-    display: none !important;
-  }
-
-  /* 새로운 필터 버튼 스타일 */
-  #filterBtn {
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-  }
-
-  /* 매물리스트 모달 스타일 */
+  /* 매물리스트 모달 */
   .listing-list-modal {
     position: fixed;
     bottom: 0;
     left: 0;
     right: 0;
     width: 100%;
-    height: 50vh;
-    /* 기본 높이: 화면의 50% */
-    max-height: 80vh;
-    /* 최대 높이: 화면의 80% */
-    min-height: 30vh;
-    /* 최소 높이: 화면의 30% */
-    margin: 0;
-    border-radius: 12px 12px 0 0;
-    transform: translateY(0);
-    transition: transform 0.3s ease-out;
+    height: 50dvh;
+    max-height: 80dvh;
+    min-height: 30dvh;
     background: white;
-    /* 배경을 흰색으로 설정 */
+    border-radius: 12px 12px 0 0;
+    z-index: 1100;
     box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
-    /* 위쪽 그림자 추가 */
   }
 
-  .listing-list-modal.hidden {
-    transform: translateY(100%);
-  }
-
-  /* 매물리스트 모달의 배경 완전 제거 */
-  #listingListModal {
-    background: none;
-    /* 배경 완전 제거 */
-    border: none;
-    /* 테두리 제거 */
-    box-shadow: none;
-    /* 그림자 제거 */
-  }
-
-  #listingListModal.hidden {
-    background: none;
-  }
-
-  /* 모달 배경에서만 터치 이벤트 차단 - 지도로 터치 전달 */
-  #listingListModal {
-    pointer-events: none;
-    /* 모달 배경 터치 이벤트 차단 */
-  }
-
-  /* 모달 내용은 터치 허용 */
-  #listingListModal .modal-content {
-    pointer-events: auto;
-    /* 모달 내용 터치 이벤트 허용 */
-    height: 100%;
-    overflow-y: auto;
-    /* 세로 스크롤 활성화 */
-    overflow-x: hidden;
-    /* 가로 스크롤 비활성화 */
-    -webkit-overflow-scrolling: touch;
-    /* iOS 부드러운 스크롤 */
-  }
-
-  /* 매물리스트 아이템 터치 개선 */
-  #listingListModal .listing-list li {
-    min-height: 60px;
-    /* 최소 터치 영역 확보 */
-    padding: 12px 16px;
-    /* 터치 영역 확대 */
-    border-bottom: 1px solid #eee;
-    cursor: pointer;
-    transition: background-color 0.2s ease;
-    user-select: none;
-    /* 텍스트 선택 방지 */
-    -webkit-tap-highlight-color: transparent;
-    /* 터치 하이라이트 제거 */
-  }
-
-  #listingListModal .listing-list li:active {
-    background-color: #f0f0f0;
-    /* 터치 피드백 */
-  }
-
-  /* 매물리스트 아이템 내용 */
-  #listingListModal .listing-item {
-    pointer-events: none;
-    /* 자식 요소의 터치 이벤트 차단 */
-  }
-
-  #listingListModal .listing-item * {
-    pointer-events: none;
-    /* 모든 자식 요소의 터치 이벤트 차단 */
-  }
-
-  /* 추천 별표 스타일 */
-  #listingListModal .recommendation-star {
-    pointer-events: auto !important;
-    /* 추천 별표만 터치 이벤트 허용 */
-    display: inline-block;
-    font-size: 18px;
-    margin-left: 8px;
-    cursor: pointer;
-    transition: transform 0.2s ease;
-    user-select: none;
-    -webkit-tap-highlight-color: transparent;
-  }
-
-  #listingListModal .recommendation-star:active {
-    transform: scale(1.2);
-  }
-
-  #listingListModal .recommendation-star.recommended {
-    color: #ff6b35;
-  }
-
-  /* 고객리스트 모달 스타일 */
+  /* 고객리스트 모달 */
   .customer-list-modal {
     position: fixed;
     top: 0;
@@ -981,642 +463,93 @@
     right: 0;
     bottom: 0;
     width: 100vw;
-    height: 100vh;
+    height: 100dvh;
     background: rgba(0, 0, 0, 0.5);
-    z-index: 2000;
-    display: none;
+    z-index: 1100;
   }
 
-  .customer-list-modal:not(.hidden) {
-    display: block;
-  }
-
-  .customer-list-modal .modal-content {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 90%;
-    max-width: 500px;
-    max-height: 80vh;
-    background: white;
-    border-radius: 8px;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-  }
-
-  .customer-list-modal .modal-header {
-    padding: 16px;
-    border-bottom: 1px solid #eee;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    background: #f8f9fa;
-  }
-
-  .customer-list-modal .modal-body {
-    flex: 1;
-    overflow-y: auto;
-    padding: 0;
-  }
-
-  .customer-list-modal .customer-list-container {
-    padding: 16px;
-  }
-
-  .customer-list-modal .customer-card {
-    border: 1px solid #e0e0e0;
-    border-radius: 6px;
-    padding: 12px;
-    margin-bottom: 8px;
-    background: white;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    position: relative;
-    user-select: none;
-    -webkit-tap-highlight-color: transparent;
-  }
-
-  .customer-list-modal .customer-card:active {
-    background-color: #f0f8ff;
-    transform: scale(0.98);
-  }
-
-  .customer-list-modal .status-badge {
-    pointer-events: none;
-    user-select: none;
-    -webkit-tap-highlight-color: transparent;
-  }
-
-  /* 고객 상세보기 모달 스타일 */
-  .customer-detail-modal {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    width: 100vw;
-    height: 100vh;
-    background: rgba(0, 0, 0, 0.5);
-    z-index: 3000;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .customer-detail-modal .detail-modal-content {
-    width: 90%;
-    max-width: 500px;
-    max-height: 80vh;
-    background: white;
-    border-radius: 8px;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-  }
-
-  .customer-detail-modal .detail-modal-header {
-    padding: 16px;
-    border-bottom: 1px solid #eee;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    background: #f8f9fa;
-  }
-
-  .customer-detail-modal .detail-modal-body {
-    flex: 1;
-    overflow-y: auto;
-    padding: 16px;
-  }
-
-  .customer-detail-modal .detail-modal-footer {
-    padding: 16px;
-    border-top: 1px solid #eee;
-    display: flex;
-    gap: 8px;
-    background: #f8f9fa;
-  }
-
-  .customer-detail-modal .apply-filter-btn {
-    flex: 1;
-    padding: 12px;
-    background: #007bff;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 14px;
-    font-weight: bold;
-    transition: background-color 0.2s ease;
-  }
-
-  .customer-detail-modal .apply-filter-btn:active {
-    background-color: #0056b3;
-  }
-
-  .customer-detail-modal .cancel-btn {
-    flex: 1;
-    padding: 12px;
-    background: #6c757d;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 14px;
-    transition: background-color 0.2s ease;
-  }
-
-  .customer-detail-modal .cancel-btn:active {
-    background-color: #545b62;
-  }
-
-  /* 고객 필터 해제 버튼 스타일 */
-  #clearCustomerFilterBtn {
-    background: #dc3545 !important;
-    color: white !important;
-  }
-
-  #clearCustomerFilterBtn:hover {
-    background: #c82333 !important;
-  }
-
-  #clearCustomerFilterBtn:active {
-    background: #bd2130 !important;
-  }
-
-  /* 매물리스트 컨트롤 영역 */
-  #listingListModal .listing-controls {
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    min-width: 40px;
-  }
-
-  /* 매물리스트 메타 상단 레이아웃 */
-  #listingListModal .meta-top {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 4px;
-  }
-
-  #listingListModal .listing-info {
-    flex: 1;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 4px;
-  }
-
-  #listingListModal .listing-info span {
-    font-size: 14px;
-    color: #333;
-  }
-
-  #listingListModal .region {
-    font-weight: bold;
-    color: #007AFF;
-  }
-
-  #listingListModal .briefing-icon {
-    font-size: 16px;
-    margin-left: 4px;
-  }
-
-  /* 모바일에서 지도 컨트롤박스 위치 조정 */
+  /* 지도 컨트롤 위치 조정 */
   .map-controls {
     top: 60px !important;
-    /* PC의 20px에서 60px로 조정 */
     right: 20px !important;
   }
 
-  /* ========================================
-   모바일 전용 매물 모드 선택 버튼
-   ======================================== */
-
-  .mobile-listing-mode-btn-wrap {
-    position: absolute;
-    top: 10px;
-    left: 10px;
-    z-index: 1001;
-    /* map-controls보다 위에 표시 */
+  /* 모바일 로드뷰 미니맵 조정 */
+  .roadview-minimap {
+    width: 105px !important;
+    height: 72px !important;
+    bottom: 60px !important;
+    left: 20px !important;
   }
 
-  .mobile-listing-mode-btn {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 8px 12px;
-    background: white;
-    border: 1px solid #ddd;
-    border-radius: 6px;
-    font-size: 13px;
-    font-weight: 500;
-    color: #333;
-    cursor: pointer;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    transition: all 0.2s ease;
-    white-space: nowrap;
+  .minimap-label {
+    font-size: 9px !important;
+    padding: 2px 6px !important;
+    top: -18px !important;
   }
 
-  .mobile-listing-mode-btn:hover {
-    background: #f8f9fa;
-    border-color: #007bff;
+  .minimap-header,
+  .minimap-controls {
+    transform: scale(0.6);
   }
 
-  .mobile-listing-mode-btn:active {
-    background: #e9ecef;
+  .minimap-content {
+    min-height: 50px !important;
   }
 
-  .mobile-listing-mode-btn .dropdown-arrow {
-    font-size: 10px;
-    color: #666;
-    transition: transform 0.2s ease;
+  .roadview-address-box {
+    display: none !important;
   }
 
-  .mobile-listing-mode-btn-wrap.open .dropdown-arrow {
-    transform: rotate(180deg);
-  }
-
-  .mobile-listing-mode-dropdown {
-    position: absolute;
-    top: calc(100% + 4px);
+  /* 사진 편집 모드 UI */
+  .photo-edit-actions {
+    position: sticky;
+    bottom: 0;
     left: 0;
-    min-width: 140px;
-    background: white;
-    border: 1px solid #ddd;
-    border-radius: 6px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-    overflow: hidden;
-    z-index: 1002;
-  }
-
-  .mobile-listing-mode-dropdown.hidden {
-    display: none;
-  }
-
-  .mobile-listing-mode-dropdown .dropdown-item {
-    padding: 10px 12px;
-    font-size: 13px;
-    color: #333;
-    cursor: pointer;
-    transition: background 0.15s ease;
-    border-bottom: 1px solid #f0f0f0;
-  }
-
-  .mobile-listing-mode-dropdown .dropdown-item:last-child {
-    border-bottom: none;
-  }
-
-  .mobile-listing-mode-dropdown .dropdown-item:hover {
+    right: 0;
     background: #f8f9fa;
-  }
-
-  .mobile-listing-mode-dropdown .dropdown-item:active {
-    background: #e9ecef;
-  }
-
-  .mobile-listing-mode-dropdown .dropdown-item.disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-    color: #999;
-  }
-
-  .mobile-listing-mode-dropdown .dropdown-item.disabled:hover {
-    background: white;
-  }
-
-  /* PC에서는 숨김 */
-  @media (min-width: 769px) {
-    .mobile-listing-mode-btn-wrap {
-      display: none !important;
-    }
-  }
-
-
-  /* 드래그 핸들 */
-  .drag-handle {
-    width: 100%;
-    height: 20px;
-    background: #f0f0f0;
-    border-radius: 12px 12px 0 0;
-    cursor: grab;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    user-select: none;
-  }
-
-  .drag-handle:active {
-    cursor: grabbing;
-  }
-
-  .drag-indicator {
-    width: 40px;
-    height: 4px;
-    background: #ccc;
-    border-radius: 2px;
-  }
-
-  /* 매물리스트 모달 헤더 */
-  .listing-list-modal .modal-header {
     padding: 12px 16px;
-    border-bottom: 1px solid #e0e0e0;
-    background: #f8f9fa;
-  }
-
-  .listing-list-modal .modal-body {
-    padding: 0;
-    height: calc(100% - 60px);
-    /* 헤더 높이 제외 */
-    overflow-y: auto;
-  }
-
-  /* 매물리스트 컨테이너 - PC버전과 동일한 스타일 */
-  #listingListContainer {
-    height: 100%;
-    overflow-y: auto;
-  }
-
-  /* PC버전의 매물리스트 스타일을 모달에서도 사용 */
-  #listingListContainer #listingList {
-    margin: 0;
-    padding: 0;
-    list-style: none;
-  }
-
-  #listingListContainer #listingList li {
-    padding: 12px 16px;
-    border-bottom: 1px solid #f0f0f0;
-    cursor: pointer;
-    transition: background-color 0.2s;
-    position: relative;
-  }
-
-  #listingListContainer #listingList li:hover {
-    background-color: #f8f9fa;
-  }
-
-  #listingListContainer #listingList li:active {
-    background-color: #e9ecef;
-  }
-
-  #listingListContainer #listingList li.active {
-    background-color: #e3f2fd;
-    border-left: 3px solid #2196f3;
-  }
-
-  /* 매물 아이템 스타일 */
-  #listingListContainer .listing-item {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-  }
-
-  #listingListContainer .meta-top {
+    border-top: 1px solid #ddd;
     display: flex;
     justify-content: space-between;
-    align-items: flex-start;
+    gap: 10px;
+    z-index: 1001;
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
   }
 
-  #listingListContainer .listing-info {
+  .photo-edit-btn {
     flex: 1;
-  }
-
-  #listingListContainer .region {
-    font-weight: bold;
-    color: #333;
-    font-size: 14px;
-  }
-
-  #listingListContainer .jibun {
-    color: #666;
-    font-size: 12px;
-  }
-
-  #listingListContainer .store-name {
-    color: #333;
+    padding: 10px;
+    border-radius: 8px;
     font-size: 13px;
-    margin-top: 2px;
-  }
-
-  #listingListContainer .meta-bottom {
+    font-weight: bold;
     display: flex;
-    justify-content: space-between;
     align-items: center;
-    margin-top: 4px;
+    justify-content: center;
+    gap: 5px;
   }
 
-  #listingListContainer .price-info {
+  #mobilePhotoEditBtn {
+    background: #6c757d;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: bold;
     display: flex;
-    gap: 8px;
-    font-size: 12px;
-    color: #666;
-  }
-
-  #listingListContainer .floor-area {
-    font-size: 12px;
-    color: #666;
-  }
-
-  /* 브리핑 상태 표시기 */
-  #listingListContainer .briefing-status-indicator {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    margin-left: 8px;
-  }
-
-  #listingListContainer .briefing-status-indicator.briefing-normal {
-    background-color: #4caf50;
-  }
-
-  #listingListContainer .briefing-status-indicator.briefing-pending {
-    background-color: #ff9800;
-  }
-
-  #listingListContainer .briefing-status-indicator.briefing-completed {
-    background-color: #2196f3;
-  }
-
-  #listingListContainer .briefing-status-indicator.briefing-onhold {
-    background-color: #f44336;
+    align-items: center;
+    gap: 3px;
   }
 
   /* ========================================
-   모바일에서 불필요한 요소들 숨기기
-   ======================================== */
-
-  /* ========================================
-   모바일 로드뷰 미니맵 크기 축소 및 위치 조정
-   ======================================== */
-  @media (max-width: 768px) {
-
-    /* 미니맵 크기 축소 (현재의 40% 수준), 하단바 상단에서 60px 위 */
-    .roadview-minimap {
-      width: 105px !important;
-      height: 72px !important;
-      bottom: 60px !important;
-      left: 20px !important;
-    }
-
-    /* 미니맵 라벨 크기 및 위치 조정 */
-    .minimap-label {
-      font-size: 9px !important;
-      padding: 2px 6px !important;
-      top: -18px !important;
-    }
-
-    /* 미니맵 내부 버튼 크기 축소 */
-    .minimap-header,
-    .minimap-controls {
-      transform: scale(0.6);
-    }
-
-    /* 미니맵 콘텐츠 최소 높이 조정 */
-    .minimap-content {
-      min-height: 50px !important;
-    }
-
-    /* 주소 정보 박스 모바일에서 숨김 */
-    .roadview-address-box {
-      display: none !important;
-    }
-  }
+     최적화된 사진 라이트박스 (v1.4 - style.css 통합)
+     ======================================== */
 }
 
 /* @media screen and (max-width: 768px) 전체 격리 종료 */
-/* 미니맵 라벨 크기 및 위치 조정 */
-.minimap-label {
-  font-size: 9px !important;
-  padding: 2px 6px !important;
-  top: -18px !important;
-}
 
-/* 미니맵 내부 버튼 크기 축소 */
-.minimap-header,
-.minimap-controls {
-  transform: scale(0.6);
-}
-
-/* 미니맵 콘텐츠 최소 높이 조정 */
-.minimap-content {
-  min-height: 50px !important;
-}
-
-/* 주소 정보 박스 모바일에서 숨김 */
-.roadview-address-box {
-  display: none !important;
-}
-
-/* ========================================
-   사진 편집 모드 UI (Photo Edit Mode)
-   ======================================== */
-
-/* 사진 편집 하단 액션 바 */
-.photo-edit-actions {
-  position: sticky;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  background: #f8f9fa;
-  padding: 12px 16px;
-  border-top: 1px solid #ddd;
-  display: flex;
-  justify-content: space-between;
-  gap: 10px;
-  z-index: 1001;
-  /* 모달보다 높게 */
-  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
-}
-
-.photo-edit-btn {
-  flex: 1;
-  padding: 10px;
-  border: none;
-  border-radius: 8px;
-  font-size: 13px;
-  font-weight: bold;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 5px;
-}
-
-.photo-edit-btn.upload {
-  background: #007bff;
-  color: white;
-}
-
-.photo-edit-btn.delete {
-  background: #f44336;
-  color: white;
-}
-
-.photo-edit-btn.confirm {
-  background: #28a745;
-  color: white;
-}
-
-.photo-edit-btn.cancel {
-  background: #6c757d;
-  color: white;
-}
-
-/* 사진 선택 상태 효과 */
-.gallery-item.edit-mode {
-  position: relative;
-  cursor: pointer;
-}
-
-.gallery-item.selected {
-  outline: 3px solid #f44336;
-  outline-offset: -3px;
-  border-radius: 4px;
-  overflow: hidden;
-}
-
-.gallery-item.selected::after {
-  content: '✅';
-  position: absolute;
-  top: 5px;
-  right: 5px;
-  background: white;
-  border-radius: 50%;
-  width: 20px;
-  height: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 12px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-}
-
-.gallery-item.edit-mode img {
-  opacity: 0.9;
-  transition: opacity 0.2s;
-}
-
-.gallery-item.edit-mode:active img {
-  opacity: 0.7;
-}
-
-/* 사진 편집 버튼 (상세창 내) */
-#mobilePhotoEditBtn {
-  background: #6c757d;
-  color: white;
-  border: none;
-  padding: 6px 12px;
-  border-radius: 4px;
-  font-size: 12px;
-  font-weight: bold;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 3px;
-}
-}
-
-/* @media screen and (max-width: 768px) 전체 격리 종료 */
+/* v1.6 ����� UI ���� �� ������¡ ���� ���� ���� */
+#listingListModal.modal, #clusterListModal.modal { background: transparent !important; pointer-events: none; }
+#listingListModal.modal .modal-content, #clusterListModal.modal .modal-content { pointer-events: auto; }
+.listing-list-modal .modal-body { position: relative !important; flex: 1 !important; min-height: 0 !important; }

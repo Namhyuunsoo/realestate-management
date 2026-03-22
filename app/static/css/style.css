@@ -1,45 +1,64 @@
-/* 2차 사이드바 기본 설정 - #layout 내부에서 시작 */
+:root {
+  /* v1.0 Flicker-Free 통합 레이아웃 시스템 */
+  --app-safe-height: 100dvh;
+  --h-topbar: 40px;
+  --h-statusCounts: 34px;
+  --h-topFilterBar: 92px;
+}
+
+/* -----------------------------------------
+   기초 레이아웃 (html/body/appRoot)
+   ----------------------------------------- */
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100dvh; /* dvh 적용으로 모바일 주소창 대응 */
+  overflow: hidden;
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+  -webkit-text-size-adjust: 100%;
+}
+
+#appRoot {
+  position: relative;
+  width: 100%;
+  height: var(--app-safe-height, 100dvh);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* -----------------------------------------
+   메인 레이아웃 (#layout)
+   ----------------------------------------- */
+#layout {
+  position: absolute;
+  top: 166px; /* topbar(40) + statusCounts(34) + topFilterBar(92) */
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: calc(var(--app-safe-height, 100dvh) - 166px);
+  max-height: calc(var(--app-safe-height, 100dvh) - 166px);
+  width: 100%;
+  overflow: hidden;
+  box-sizing: border-box !important;
+}
+
+/* -----------------------------------------
+   사이드바 및 패널 설정
+   ----------------------------------------- */
 #secondaryPanel {
   position: absolute;
   top: 0;
   height: 100%;
   left: 0;
-  /* 화면 왼쪽 끝에서 시작 */
   width: 350px;
   transform: translateX(-100%);
-  /* 기본적으로 왼쪽으로 숨김 */
   z-index: 1001;
-  /* 1차 사이드바(1000)보다 높게 설정 */
   visibility: hidden;
   opacity: 0;
 }
 
-/* 기본 리셋 & 바디 설정 */
-html,
-body {
-  margin: 0;
-  padding: 0;
-  height: 100vh;
-  overflow: hidden;
-}
-
-#appRoot {
-  position: relative;
-  height: 100vh;
-  margin: 0;
-  padding: 0;
-  overflow: hidden;
-  min-height: 100vh;
-  max-height: 100vh;
-  box-sizing: border-box !important;
-  min-width: 100vw !important;
-  max-width: 100vw !important;
-  width: 100vw !important;
-}
-
-/* ──────────────────────────────────────────────────
-   상단 요소들 고정 높이 설정
-────────────────────────────────────────────────── */
 #topbar {
   position: absolute;
   top: 0px;
@@ -55,7 +74,7 @@ body {
   min-height: 40px;
   max-height: 40px;
   box-sizing: border-box;
-  /* UI 변동 방지를 위한 추가 설정 */
+  /* UI 蹂??諛⑹?瑜??꾪븳 異붽? ?ㅼ젙 */
   min-width: 100%;
   max-width: 100%;
 }
@@ -74,15 +93,40 @@ body {
   color: #666;
   min-height: 34px;
   max-height: 34px;
-  /* 높이 고정 */
+  /* ?믪씠 怨좎젙 */
   flex-shrink: 0;
-  /* 크기 고정 */
-  /* UI 변동 방지를 위한 추가 설정 */
+  /* ?ш린 怨좎젙 */
+  /* UI 蹂??諛⑹?瑜??꾪븳 異붽? ?ㅼ젙 */
   box-sizing: border-box;
   z-index: 1000;
   width: 100%;
   min-width: 100%;
   max-width: 100%;
+}
+
+/* 주소 검색창 가변 너비 조정 (PC) */
+.address-search-area {
+  flex: 1;
+  display: flex !important;
+  gap: 4px;
+  min-width: 120px;
+  max-width: 450px;
+  margin: 0 10px;
+}
+
+#addressSearchInput {
+  flex: 1;
+  min-width: 0;
+  height: 26px;
+  padding: 0 8px;
+  font-size: 12px;
+}
+
+#addressSearchBtn {
+  flex-shrink: 0;
+  height: 26px;
+  padding: 0 10px;
+  font-size: 11px;
 }
 
 #topFilterBar {
@@ -94,31 +138,15 @@ body {
   min-height: 92px;
   max-height: 92px;
   flex-shrink: 0;
-  /* UI 변동 방지를 위한 추가 설정 */
+  /* UI 蹂??諛⑹?瑜??꾪븳 異붽? ?ㅼ젙 */
   box-sizing: border-box;
   width: 100%;
   min-width: 100%;
   max-width: 100%;
 }
 
-/* ──────────────────────────────────────────────────
-   메인 레이아웃 영역 - 모든 크기 고정
-────────────────────────────────────────────────── */
-#layout {
-  position: absolute;
-  top: 166px;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: calc(100vh - 166px);
-  max-height: calc(100vh - 166px);
-  /* 명시적 최대 높이 제한 - 초기부터 화면을 넘지 않도록 */
-  width: 100%;
-  overflow: hidden;
-  box-sizing: border-box !important;
-}
 
-/* 지도 컨트롤 */
+/* 吏??而⑦듃濡?*/
 .map-controls {
   position: absolute;
   top: 20px;
@@ -136,7 +164,7 @@ body {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
-/* 브리핑 필터 버튼을 다른 컨트롤 버튼과 비슷하게 스타일링 */
+/* 釉뚮━???꾪꽣 踰꾪듉???ㅻⅨ 而⑦듃濡?踰꾪듉怨?鍮꾩듂?섍쾶 ?ㅽ??쇰쭅 */
 .map-control-briefing-filter .briefing-filter-btn {
   width: 40px !important;
   height: 40px !important;
@@ -182,7 +210,7 @@ body {
   font-size: 18px;
 }
 
-/* 로드뷰 컨테이너 */
+/* 濡쒕뱶酉?而⑦뀒?대꼫 */
 .roadview-container {
   position: absolute;
   top: 0;
@@ -190,20 +218,20 @@ body {
   right: 0;
   bottom: 0;
   background: #000;
-  z-index: 9999;
+  z-index: 1300;
   display: flex;
   flex-direction: column;
   width: 100%;
-  /* 100vw에서 100%로 변경 - 지도 영역 내에서만 */
+  /* 100vw?먯꽌 100%濡?蹂寃?- 吏???곸뿭 ?댁뿉?쒕쭔 */
   height: 100%;
-  /* 100vh에서 100%로 변경 - 지도 영역 내에서만 */
+  /* 100vh?먯꽌 100%濡?蹂寃?- 吏???곸뿭 ?댁뿉?쒕쭔 */
 }
 
 .roadview-container.hidden {
   display: none;
 }
 
-/* 주소 정보 박스 (미니맵 위에 배치) */
+/* 二쇱냼 ?뺣낫 諛뺤뒪 (誘몃땲留??꾩뿉 諛곗튂) */
 .roadview-address-box {
   position: absolute;
   bottom: 220px;
@@ -273,10 +301,10 @@ body {
 
 .roadview-close-btn {
   position: absolute;
-  /* fixed에서 absolute로 변경 - 로드뷰 컨테이너 기준 */
+  /* fixed?먯꽌 absolute濡?蹂寃?- 濡쒕뱶酉?而⑦뀒?대꼫 湲곗? */
   top: 20px;
   right: 20px;
-  /* 좌상단에서 우상단으로 변경 */
+  /* 醫뚯긽?⑥뿉???곗긽?⑥쑝濡?蹂寃?*/
   background: rgba(255, 255, 255, 0.95);
   border: none;
   color: #333;
@@ -291,10 +319,10 @@ body {
   justify-content: center;
   border-radius: 50%;
   transition: all 0.2s ease;
-  z-index: 10000;
-  /* z-index를 높여서 로드뷰 위에 확실히 보이도록 수정 */
+  z-index: 500;
+  /* z-index瑜??믪뿬??濡쒕뱶酉??꾩뿉 ?뺤떎??蹂댁씠?꾨줉 ?섏젙 */
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-  /* flex 레이아웃의 영향을 받지 않도록 설정 */
+  /* flex ?덉씠?꾩썐???곹뼢??諛쏆? ?딅룄濡??ㅼ젙 */
   flex-shrink: 0;
   flex-grow: 0;
   flex-basis: auto;
@@ -312,16 +340,16 @@ body {
   height: 100%;
   min-height: 400px;
   background: #f8f9fa;
-  /* 검은색에서 밝은 회색으로 변경 */
+  /* 寃??됱뿉??諛앹? ?뚯깋?쇰줈 蹂寃?*/
 }
 
-/* 파노라마 컨테이너 내부 요소들 */
+/* ?뚮끂?쇰쭏 而⑦뀒?대꼫 ?대? ?붿냼??*/
 .roadview-content>div {
   width: 100% !important;
   height: 100% !important;
 }
 
-/* 네이버 파노라마 관련 스타일 */
+/* ?ㅼ씠踰??뚮끂?쇰쭏 愿???ㅽ???*/
 .roadview-content {
   width: 100% !important;
   height: 100% !important;
@@ -341,7 +369,7 @@ body {
   border: none !important;
 }
 
-/* 네이버 파노라마 내부 요소들 강제 너비 설정 */
+/* ?ㅼ씠踰??뚮끂?쇰쭏 ?대? ?붿냼??媛뺤젣 ?덈퉬 ?ㅼ젙 */
 .roadview-content>div {
   width: 100% !important;
   height: 100% !important;
@@ -398,7 +426,7 @@ body {
   box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.2) !important;
 }
 
-/* 지도 좌상단 브리핑현황 필터 */
+/* 吏??醫뚯긽??釉뚮━?묓쁽???꾪꽣 */
 .map-briefing-filter {
   position: absolute !important;
   top: 20px !important;
@@ -495,8 +523,8 @@ body {
   background: rgba(255, 255, 255, 1);
 }
 
-/* ----------------- 상단바 ----------------- */
-/* 중복된 #topbar 스타일 제거 - 위에서 이미 정의됨 */
+/* ----------------- ?곷떒諛?----------------- */
+/* 以묐났??#topbar ?ㅽ????쒓굅 - ?꾩뿉???대? ?뺤쓽??*/
 
 .panel-header {
   padding: 10px 12px;
@@ -529,7 +557,7 @@ body {
   margin-left: auto;
 }
 
-/* ----------------- 리스트 ----------------- */
+/* ----------------- 由ъ뒪??----------------- */
 #listingList {
   list-style: none;
   margin: 0;
@@ -541,9 +569,9 @@ body {
   border-bottom: 1px solid #ececec;
   cursor: pointer;
   font-size: 14px;
-  /* 글씨 크기 통일 */
+  /* 湲???ш린 ?듭씪 */
   line-height: 1.4;
-  /* 줄 간격 통일 */
+  /* 以?媛꾧꺽 ?듭씪 */
   position: relative;
   background: #fff;
   transition: background .18s, box-shadow .18s;
@@ -569,7 +597,7 @@ body {
   box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.25);
 }
 
-/* 상태 칩 */
+/* ?곹깭 移?*/
 .status-chip {
   display: inline-block;
   min-width: 26px;
@@ -584,26 +612,26 @@ body {
   vertical-align: middle;
 }
 
-/* 카드 라인 텍스트들 */
+/* 移대뱶 ?쇱씤 ?띿뒪?몃뱾 */
 .card-line1 {
   font-weight: 600;
   margin-bottom: 2px;
   font-size: 14px;
-  /* 글씨 크기 통일 */
+  /* 湲???ш린 ?듭씪 */
 }
 
 .card-line2 {
   color: #333;
   margin-bottom: 2px;
   font-size: 14px;
-  /* 글씨 크기 통일 */
+  /* 湲???ш린 ?듭씪 */
 }
 
 .card-line3 {
   color: #555;
   margin-bottom: 1px;
   font-size: 14px;
-  /* 글씨 크기 통일 */
+  /* 湲???ш린 ?듭씪 */
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
@@ -612,7 +640,7 @@ body {
 .card-line4 {
   color: #666;
   font-size: 14px;
-  /* 글씨 크기 통일 */
+  /* 湲???ш린 ?듭씪 */
   max-height: 34px;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -623,7 +651,7 @@ body {
   justify-content: space-between;
   margin-top: 4px;
   font-size: 13px;
-  /* 약간 작게 */
+  /* ?쎄컙 ?묎쾶 */
   color: #555;
 }
 
@@ -636,7 +664,7 @@ body {
   font-size: 11px;
 }
 
-/* ----------------- 필터 바 ----------------- */
+/* ----------------- ?꾪꽣 諛?----------------- */
 #filterBar {
   display: flex;
   flex-wrap: wrap;
@@ -739,7 +767,7 @@ body {
   filter: brightness(0.93);
 }
 
-/* 태그 점 */
+/* ?쒓렇 ??*/
 .tag-dot {
   display: inline-block;
   width: 14px;
@@ -770,11 +798,11 @@ body {
   font-size: 10px;
 }
 
-/* ----------------- 상태 카운트 바 ----------------- */
-/* 중복된 #statusCounts 스타일 제거 - 위에서 이미 정의됨 */
+/* ----------------- ?곹깭 移댁슫??諛?----------------- */
+/* 以묐났??#statusCounts ?ㅽ????쒓굅 - ?꾩뿉???대? ?뺤쓽??*/
 
-/* ----------------- 지도 영역 ----------------- */
-/* [MOD] #mapArea / #map 재정의 */
+/* ----------------- 吏???곸뿭 ----------------- */
+/* [MOD] #mapArea / #map ?ъ젙??*/
 #mapArea {
   position: relative;
   flex: 1 1 auto;
@@ -789,10 +817,10 @@ body {
   width: 100%;
   height: 100%;
   min-height: 400px;
-  /* 안전장치 */
+  /* ?덉쟾?μ튂 */
 }
 
-/* 지도 로딩 오버레이 */
+/* 吏??濡쒕뵫 ?ㅻ쾭?덉씠 */
 #mapLoading {
   position: absolute;
   left: 50%;
@@ -811,7 +839,7 @@ body {
   display: none;
 }
 
-/* ----------------- 태그 팔레트 ----------------- */
+/* ----------------- ?쒓렇 ?붾젅??----------------- */
 .tag-palette {
   position: absolute;
   top: 50%;
@@ -856,7 +884,7 @@ body {
   background: #ccc;
 }
 
-/* ----------------- 지도 중심 십자 ----------------- */
+/* ----------------- 吏??以묒떖 ??옄 ----------------- */
 #mapCenterCross {
   pointer-events: none;
   position: absolute;
@@ -901,7 +929,7 @@ body {
   }
 }
 
-/* ----------------- 스크롤바 커스텀 (선택) ----------------- */
+/* ----------------- ?ㅽ겕濡ㅻ컮 而ㅼ뒪? (?좏깮) ----------------- */
 #listingList {
   scrollbar-width: thin;
   scrollbar-color: #c2c8d0 #f0f2f5;
@@ -920,7 +948,7 @@ body {
   border-radius: 5px;
 }
 
-/* 패널/필터 섹션 */
+/* ?⑤꼸/?꾪꽣 ?뱀뀡 */
 .panel-section {
   padding: 8px 10px;
   border-bottom: 1px solid #ddd;
@@ -963,27 +991,27 @@ body {
 
 
 /* ================================
-   [PATCH] 2025-07-23 지도 영역 강제 크기 설정
-   - #mapWrap, #map에 최소 높이/가로 100% 적용
-   - flex 레이아웃에서 width:0 되는 문제 방지(min-width:0)
+   [PATCH] 2025-07-23 吏???곸뿭 媛뺤젣 ?ш린 ?ㅼ젙
+   - #mapWrap, #map??理쒖냼 ?믪씠/媛濡?100% ?곸슜
+   - flex ?덉씠?꾩썐?먯꽌 width:0 ?섎뒗 臾몄젣 諛⑹?(min-width:0)
    ================================ */
 
 #mainContent {
   position: absolute;
   top: 0;
-  /* #layout 내부에서 시작 */
+  /* #layout ?대??먯꽌 ?쒖옉 */
   left: 280px;
-  /* 사이드바 너비 고려 */
+  /* ?ъ씠?쒕컮 ?덈퉬 怨좊젮 */
   right: 0;
   bottom: 0;
   height: 100%;
   overflow: hidden;
   transition: none !important;
-  /* 애니메이션 제거 */
+  /* ?좊땲硫붿씠???쒓굅 */
 }
 
-/* 모든 UI 크기 고정 - 절대 변경 불가 */
-/* 2차 사이드바가 열릴 때 메인 콘텐츠 조정 - 제거됨 */
+/* 紐⑤뱺 UI ?ш린 怨좎젙 - ?덈? 蹂寃?遺덇? */
+/* 2李??ъ씠?쒕컮媛 ?대┫ ??硫붿씤 肄섑뀗痢?議곗젙 - ?쒓굅??*/
 /* #secondaryPanel.visible ~ #mainContent,
 #layout:has(#secondaryPanel.visible) #mainContent {
   width: calc(100% - 280px - 350px) !important;
@@ -1012,13 +1040,13 @@ body {
 }
 
 /* -----------------------------------------------
-   공통 유틸
+   怨듯넻 ?좏떥
 ------------------------------------------------- */
 .hidden {
   display: none;
 }
 
-/* 고객 목록 뷰는 강제로 표시 */
+/* 怨좉컼 紐⑸줉 酉곕뒗 媛뺤젣濡??쒖떆 */
 #viewCustomerList:not(.hidden) {
   display: block !important;
 }
@@ -1028,7 +1056,7 @@ body {
 }
 
 /* -----------------------------------------------
-   로그인 필요 화면
+   濡쒓렇???꾩슂 ?붾㈃
 ------------------------------------------------- */
 .login-required-screen {
   position: fixed;
@@ -1037,12 +1065,12 @@ body {
   right: 0;
   bottom: 0;
   width: 100vw;
-  height: 100vh;
+  height: 100dvh;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 9999;
+  z-index: 100;
   overflow: hidden;
   opacity: 1;
   visibility: visible;
@@ -1055,7 +1083,7 @@ body {
   pointer-events: none;
 }
 
-/* 인라인 로그인 폼 스타일 */
+/* ?몃씪??濡쒓렇?????ㅽ???*/
 .login-required-box .login-form {
   text-align: left;
   margin-top: 20px;
@@ -1151,7 +1179,7 @@ body {
   font-family: sans-serif;
 }
 
-/* 새로운 로그인 폼 스타일 */
+/* ?덈줈??濡쒓렇?????ㅽ???*/
 .login-form {
   text-align: left;
 }
@@ -1235,13 +1263,13 @@ body {
 }
 
 /* -----------------------------------------------
-    지도 사이즈 보정
+    吏???ъ씠利?蹂댁젙
 ------------------------------------------------- */
 
 
 
 /* =====================================================
-   상단 가로 필터바 스타일
+   ?곷떒 媛濡??꾪꽣諛??ㅽ???
    ===================================================== */
 .top-filter {
   border-bottom: 1px solid #ddd;
@@ -1249,11 +1277,11 @@ body {
   padding: 6px 8px 10px;
   font-size: 12px;
   overflow-x: auto;
-  /* 가로 스크롤 허용 */
+  /* 媛濡??ㅽ겕濡??덉슜 */
   display: flex;
   flex-direction: row;
   flex-wrap: nowrap;
-  /* 줄바꿈 금지 */
+  /* 以꾨컮轅?湲덉? */
   align-items: flex-end;
   gap: 8px;
   -webkit-overflow-scrolling: touch;
@@ -1262,11 +1290,11 @@ body {
 .top-filter .tf-row {
   display: grid;
   grid-template-columns: repeat(20, minmax(80px, 1fr)) 120px;
-  /* 20필드 확장 + 버튼영역 */
+  /* 20?꾨뱶 ?뺤옣 + 踰꾪듉?곸뿭 */
   gap: 4px;
   margin-bottom: 4px;
   min-width: max-content;
-  /* 내부 콘텐츠에 맞춰 너비 확장 (줄바꿈 방지) */
+  /* ?대? 肄섑뀗痢좎뿉 留욎떠 ?덈퉬 ?뺤옣 (以꾨컮轅?諛⑹?) */
 }
 
 .top-filter .tf-row.tf-labels div {
@@ -1287,7 +1315,7 @@ body {
   box-sizing: border-box;
 }
 
-/* 현황 필터(select) 너비 특별 관리 */
+/* ?꾪솴 ?꾪꽣(select) ?덈퉬 ?밸퀎 愿由?*/
 #tf_status,
 #tf_h_status {
   min-width: 60px !important;
@@ -1311,12 +1339,12 @@ body {
   min-width: 50px;
 }
 
-/* 주택 필터 섹션: 20열 그리드 */
+/* 二쇳깮 ?꾪꽣 ?뱀뀡: 20??洹몃━??*/
 #housingFilterSection .tf-row {
   grid-template-columns: repeat(20, 1fr) 120px;
 }
 
-/* 필터 섹션: flex로 남은 공간 차지, 버튼과 같은 줄에 배치 */
+/* ?꾪꽣 ?뱀뀡: flex濡??⑥? 怨듦컙 李⑥?, 踰꾪듉怨?媛숈? 以꾩뿉 諛곗튂 */
 .top-filter .filter-section {
   flex: 1;
   min-width: 0;
@@ -1328,27 +1356,27 @@ body {
   flex-shrink: 0;
 }
 
-/* ──────────────────────────────────────────────────
-   하이브리드 필터 모드 전용 스타일
-   (body.hybrid-mode 클래스가 있을 때만 활성화)
-   기존 !important 설정을 덮어쓰기 위해 상세 선택자 사용
-────────────────────────────────────────────────── */
+/* ??????????????????????????????????????????????????
+   ?섏씠釉뚮━???꾪꽣 紐⑤뱶 ?꾩슜 ?ㅽ???
+   (body.hybrid-mode ?대옒?ㅺ? ?덉쓣 ?뚮쭔 ?쒖꽦??
+   湲곗〈 !important ?ㅼ젙????뼱?곌린 ?꾪빐 ?곸꽭 ?좏깮???ъ슜
+?????????????????????????????????????????????????? */
 
 
-/* ──────────────────────────────────────────────────
-   (이전 위치의 하이브리드 필터 모드 전용 스타일 제거됨 - 파일 최하단으로 이동)
-   ────────────────────────────────────────────────── */
+/* ??????????????????????????????????????????????????
+   (?댁쟾 ?꾩튂???섏씠釉뚮━???꾪꽣 紐⑤뱶 ?꾩슜 ?ㅽ????쒓굅??- ?뚯씪 理쒗븯?⑥쑝濡??대룞)
+   ?????????????????????????????????????????????????? */
 body.hybrid-mode .count-info {
   position: absolute !important;
   top: 30px !important;
-  /* 칩 바 아래 */
+  /* 移?諛??꾨옒 */
   left: 15px !important;
   right: 15px !important;
   height: 40px !important;
   display: flex !important;
   align-items: center !important;
   justify-content: space-between !important;
-  /* 좌우 분산 */
+  /* 醫뚯슦 遺꾩궛 */
   font-size: 11px !important;
   z-index: 1001 !important;
 }
@@ -1363,7 +1391,7 @@ body.hybrid-mode .sheet-controls {
   border: none !important;
 }
 
-/* 개별 버튼 크기 및 폰트 최종 최적화 */
+/* 媛쒕퀎 踰꾪듉 ?ш린 諛??고듃 理쒖쥌 理쒖쟻??*/
 body.hybrid-mode .btn-add-listing,
 body.hybrid-mode .mode-btn,
 body.hybrid-mode .subtype-btn,
@@ -1435,13 +1463,13 @@ body.hybrid-mode .refresh-btn {
   color: #dc3545;
 }
 
-/* 3. 새로운 필터 모달 스타일 */
+/* 3. ?덈줈???꾪꽣 紐⑤떖 ?ㅽ???*/
 #hybridFilterModal {
   position: fixed;
   top: 0;
   right: 0;
   width: 400px;
-  height: 100vh;
+  height: 100dvh;
   background: white;
   z-index: 2000;
   box-shadow: -4px 0 20px rgba(0, 0, 0, 0.1);
@@ -1504,13 +1532,13 @@ body.hybrid-mode .refresh-btn {
   border: 1px solid #ccc;
 }
 
-/* 모달 오버레이 */
+/* 紐⑤떖 ?ㅻ쾭?덉씠 */
 #hybridFilterOverlay {
   position: fixed;
   top: 0;
   left: 0;
   width: 100vw;
-  height: 100vh;
+  height: 100dvh;
   background: rgba(0, 0, 0, 0.3);
   z-index: 1999;
   display: none;
@@ -1520,15 +1548,15 @@ body.hybrid-mode .refresh-btn {
   display: block;
 }
 
-/* 모달 내부 필터 항목 레이아웃 최적화 */
+/* 紐⑤떖 ?대? ?꾪꽣 ??ぉ ?덉씠?꾩썐 理쒖쟻??*/
 .hybrid-modal-content .filter-section {
   display: block !important;
-  /* 모달 내부에서는 항상 노출 */
+  /* 紐⑤떖 ?대??먯꽌????긽 ?몄텧 */
 }
 
 .hybrid-modal-content .tf-row.tf-labels {
   display: none;
-  /* 모달에서는 라벨을 내부 placeholder나 설명으로 대체 가능성 고려, 일단 숨김 */
+  /* 紐⑤떖?먯꽌???쇰꺼???대? placeholder???ㅻ챸?쇰줈 ?泥?媛?μ꽦 怨좊젮, ?쇰떒 ?④? */
 }
 
 .hybrid-modal-content .tf-row.tf-inputs {
@@ -1545,7 +1573,7 @@ body.hybrid-mode .refresh-btn {
   margin-bottom: 4px;
 }
 
-/* 필터 항목 앞에 설명을 위한 데이터 속성 활용 (CSS로 라벨 복구) */
+/* ?꾪꽣 ??ぉ ?욎뿉 ?ㅻ챸???꾪븳 ?곗씠???띿꽦 ?쒖슜 (CSS濡??쇰꺼 蹂듦뎄) */
 .hybrid-modal-content .tf-row.tf-inputs input::before {
   content: attr(placeholder);
   display: block;
@@ -1566,7 +1594,7 @@ body.hybrid-mode .refresh-btn {
   }
 }
 
-/* 기존 상단바(사무소명/직책/이름) 보강 */
+/* 湲곗〈 ?곷떒諛??щТ?뚮챸/吏곸콉/?대쫫) 蹂닿컯 */
 #topbar {
   display: flex;
   justify-content: space-between;
@@ -1580,10 +1608,10 @@ body.hybrid-mode .refresh-btn {
   width: 100%;
   min-height: 40px;
   max-height: 40px;
-  /* 높이 고정 */
+  /* ?믪씠 怨좎젙 */
   box-sizing: border-box;
   flex-shrink: 0;
-  /* 크기 고정 */
+  /* ?ш린 怨좎젙 */
 }
 
 .office-info {
@@ -1593,12 +1621,12 @@ body.hybrid-mode .refresh-btn {
   position: relative;
 }
 
-/* 모드 전환 버튼 스타일 */
+/* 紐⑤뱶 ?꾪솚 踰꾪듉 ?ㅽ???*/
 .mode-switch {
   position: absolute;
   top: 0;
   right: -80px;
-  /* 상호 텍스트와 겹치지 않도록 오른쪽으로 이동 */
+  /* ?곹샇 ?띿뒪?몄? 寃뱀튂吏 ?딅룄濡??ㅻⅨ履쎌쑝濡??대룞 */
 }
 
 .mode-toggle-btn {
@@ -1638,14 +1666,14 @@ body.hybrid-mode .refresh-btn {
   font-weight: 700;
 }
 
-/* auth-links 영역 스타일 */
+/* auth-links ?곸뿭 ?ㅽ???*/
 .auth-links {
   display: flex;
   align-items: center;
   gap: 12px;
 }
 
-/* 사용자 역할명 스타일 */
+/* ?ъ슜????븷紐??ㅽ???*/
 .user-role-name {
   font-size: 12px;
   font-weight: 600;
@@ -1661,7 +1689,7 @@ body.hybrid-mode .refresh-btn {
 
 .auth-links a {
   margin-left: 0;
-  /* 기존 margin 제거 */
+  /* 湲곗〈 margin ?쒓굅 */
   font-size: 12px;
   text-decoration: none;
   color: #007bff;
@@ -1679,7 +1707,7 @@ body.hybrid-mode .refresh-btn {
   transform: translateY(-1px);
 }
 
-/* 로그아웃 버튼 특별 스타일 */
+/* 濡쒓렇?꾩썐 踰꾪듉 ?밸퀎 ?ㅽ???*/
 #logoutBtn {
   background: #dc3545;
   color: white !important;
@@ -1692,7 +1720,7 @@ body.hybrid-mode .refresh-btn {
   color: white !important;
 }
 
-/* === 사이드바에 매물리스트 붙이기 위한 레이아웃 보강 ================== */
+/* === ?ъ씠?쒕컮??留ㅻЪ由ъ뒪??遺숈씠湲??꾪븳 ?덉씠?꾩썐 蹂닿컯 ================== */
 #listingList {
   list-style: none;
   padding: 0;
@@ -1702,7 +1730,7 @@ body.hybrid-mode .refresh-btn {
 /* =============================================================== */
 
 /* ============================================
-   마커/클러스터 커스텀 스타일 + 애니메이션
+   留덉빱/?대윭?ㅽ꽣 而ㅼ뒪? ?ㅽ???+ ?좊땲硫붿씠??
    ============================================ */
 .marker-dot {
   width: 12px;
@@ -1717,7 +1745,7 @@ body.hybrid-mode .refresh-btn {
   transform: scale(1.9);
   border-color: #ffeb3b;
   box-shadow: 0 0 6px rgba(255, 235, 59, .9);
-  z-index: 9999;
+  z-index: 1;
 }
 
 .cluster-small {
@@ -1741,7 +1769,7 @@ body.hybrid-mode .refresh-btn {
   font-size: 14px;
 }
 
-/* 사이드바 재정렬 이후 매물 리스트가 꽉 차도록 */
+/* ?ъ씠?쒕컮 ?ъ젙???댄썑 留ㅻЪ 由ъ뒪?멸? 苑?李⑤룄濡?*/
 #listingList {
   list-style: none;
   margin: 0;
@@ -1758,14 +1786,14 @@ body.hybrid-mode .refresh-btn {
   background: #f5f5f5;
 }
 
-/* 각 섹션 기본 */
+/* 媛??뱀뀡 湲곕낯 */
 
 #map {
   position: absolute;
   inset: 0;
 }
 
-/* 리스트 기본 스타일 유지 */
+/* 由ъ뒪??湲곕낯 ?ㅽ????좎? */
 #listingList {
   list-style: none;
   padding: 0;
@@ -1782,10 +1810,10 @@ body.hybrid-mode .refresh-btn {
   background: #f5f5f5;
 }
 
-/* 메인 영역 - 중복 제거됨 */
-/* 중복 정의 제거됨 */
+/* 硫붿씤 ?곸뿭 - 以묐났 ?쒓굅??*/
+/* 以묐났 ?뺤쓽 ?쒓굅??*/
 
-/* 리스트 아이템 기본 */
+/* 由ъ뒪???꾩씠??湲곕낯 */
 #listingList {
   list-style: none;
   margin: 0;
@@ -1802,7 +1830,7 @@ body.hybrid-mode .refresh-btn {
   background: #f5f5f5;
 }
 
-/* 현황 표시 스타일 */
+/* ?꾪솴 ?쒖떆 ?ㅽ???*/
 .listing-item .status {
   color: #666;
   font-size: 12px;
@@ -1815,7 +1843,7 @@ body.hybrid-mode .refresh-btn {
 
 
 /* ================================================================ */
-/* === 클릭/스크롤 대상 리스트 항목 깜빡임 효과 ===================== */
+/* === ?대┃/?ㅽ겕濡????由ъ뒪????ぉ 源쒕묀???④낵 ===================== */
 @keyframes blinkFade {
   0% {
     background: #fff176;
@@ -1868,10 +1896,10 @@ body.hybrid-mode .refresh-btn {
   animation: blinkFade 0.8s ease-out 1;
 }
 
-/* ===== 리스트 선택/강조 =========================================== */
+/* ===== 由ъ뒪???좏깮/媛뺤“ =========================================== */
 .listing-item.selected {
   background: #fff3cd;
-  /* 연한 노랑 */
+  /* ?고븳 ?몃옉 */
   transition: background .25s;
 }
 
@@ -1894,17 +1922,17 @@ body.hybrid-mode .refresh-btn {
   }
 }
 
-/* 이건 남겨두라고 함 */
+/* ?닿굔 ?④꺼?먮씪怨???*/
 #listingSidebarWrap>label {
   margin: 0 12px 4px !important;
   padding: 0 !important;
 }
 
 /* =================================================
-   [Cluster] 클러스터 버블 원형 & 중앙 정렬
+   [Cluster] ?대윭?ㅽ꽣 踰꾨툝 ?먰삎 & 以묒븰 ?뺣젹
    ================================================= */
 
-/* 버블 컨테이너를 flex로, 숫자 중앙에 정렬 */
+/* 踰꾨툝 而⑦뀒?대꼫瑜?flex濡? ?レ옄 以묒븰???뺣젹 */
 .cluster-bubble {
   display: flex !important;
   align-items: center !important;
@@ -1918,7 +1946,7 @@ body.hybrid-mode .refresh-btn {
   user-select: none !important;
 }
 
-/* 크기별 지름 및 배경색 */
+/* ?ш린蹂?吏由?諛?諛곌꼍??*/
 .cluster-small {
   width: 26px;
   height: 26px;
@@ -1940,7 +1968,7 @@ body.hybrid-mode .refresh-btn {
   font-size: 14px;
 }
 
-/* 🔥 추천매물이 있는 클러스터 버블 스타일 - 최고 우선순위 */
+/* ?뵦 異붿쿇留ㅻЪ???덈뒗 ?대윭?ㅽ꽣 踰꾨툝 ?ㅽ???- 理쒓퀬 ?곗꽑?쒖쐞 */
 .cluster-bubble[data-recommended="true"],
 .cluster-bubble.recommended {
   background-color: #FF3B30 !important;
@@ -1948,37 +1976,37 @@ body.hybrid-mode .refresh-btn {
   box-shadow: 0 2px 8px rgba(255, 59, 48, 0.3) !important;
 }
 
-/* 🔥 클러스터 버블 기본 스타일 재정의 (추천 상태 우선) */
+/* ?뵦 ?대윭?ㅽ꽣 踰꾨툝 湲곕낯 ?ㅽ????ъ젙??(異붿쿇 ?곹깭 ?곗꽑) */
 .cluster-bubble.recommended.cluster-small,
 .cluster-bubble.recommended.cluster-mid,
 .cluster-bubble.recommended.cluster-big {
   background-color: #FF3B30 !important;
 }
 
-/* 브리핑 상태가 있는 클러스터 버블 스타일 - 제거됨 (색상으로만 구분) */
+/* 釉뚮━???곹깭媛 ?덈뒗 ?대윭?ㅽ꽣 踰꾨툝 ?ㅽ???- ?쒓굅??(?됱긽?쇰줈留?援щ텇) */
 
-/* 버블 뒤 기본 마커 숨김 */
+/* 踰꾨툝 ??湲곕낯 留덉빱 ?④? */
 .cluster-bubble+img {
   display: none !important;
 }
 
-/* 부모 div overflow 풀어서 버블 잘리지 않도록 */
+/* 遺紐?div overflow ??댁꽌 踰꾨툝 ?섎━吏 ?딅룄濡?*/
 div:has(> .cluster-bubble) {
   overflow: visible !important;
 }
 
 /* =================================================
-   [Briefing] 브리핑 상태 관리 시스템
+   [Briefing] 釉뚮━???곹깭 愿由??쒖뒪??
    ================================================= */
 
-/* 브리핑현황 필터 */
+/* 釉뚮━?묓쁽???꾪꽣 */
 .briefing-filter {
   position: relative !important;
   z-index: 999 !important;
-  /* 2차 사이드바보다 낮게 설정 */
+  /* 2李??ъ씠?쒕컮蹂대떎 ??쾶 ?ㅼ젙 */
 }
 
-/* 지도 컨트롤 내부의 브리핑 필터 */
+/* 吏??而⑦듃濡??대???釉뚮━???꾪꽣 */
 .map-control-briefing-filter {
   position: relative !important;
   margin-right: 8px !important;
@@ -2066,7 +2094,7 @@ div:has(> .cluster-bubble) {
   background: #9e9e9e;
 }
 
-/* 브리핑 옵션 텍스트 강제 표시 */
+/* 釉뚮━???듭뀡 ?띿뒪??媛뺤젣 ?쒖떆 */
 .briefing-text {
   display: inline-block !important;
   visibility: visible !important;
@@ -2082,9 +2110,9 @@ div:has(> .cluster-bubble) {
   line-height: 1.2 !important;
 }
 
-/* 브리핑 상태 마커 스타일 - 제거됨 (색상으로만 구분) */
+/* 釉뚮━???곹깭 留덉빱 ?ㅽ???- ?쒓굅??(?됱긽?쇰줈留?援щ텇) */
 
-/* 매물리스트 브리핑 상태 표시 */
+/* 留ㅻЪ由ъ뒪??釉뚮━???곹깭 ?쒖떆 */
 #listingList li .briefing-status-indicator,
 #clusterItemList li .briefing-status-indicator {
   position: absolute;
@@ -2125,7 +2153,7 @@ div:has(> .cluster-bubble) {
   background: #9e9e9e;
 }
 
-/* 매물 상세 정보 브리핑 상태 */
+/* 留ㅻЪ ?곸꽭 ?뺣낫 釉뚮━???곹깭 */
 .listing-detail-briefing-status {
   display: inline-block;
   padding: 4px 8px;
@@ -2162,7 +2190,7 @@ div:has(> .cluster-bubble) {
 
 
 
-/* 모달 스타일 */
+/* 紐⑤떖 ?ㅽ???*/
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -2173,12 +2201,12 @@ div:has(> .cluster-bubble) {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 10000;
+  z-index: 2400;
   opacity: 0;
   transition: opacity 0.3s ease;
 }
 
-/* 앱 종료 확인 다이얼로그 스타일 */
+/* ??醫낅즺 ?뺤씤 ?ㅼ씠?쇰줈洹??ㅽ???*/
 .exit-confirm-overlay {
   position: fixed;
   top: 0;
@@ -2189,7 +2217,7 @@ div:has(> .cluster-bubble) {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 20000;
+  z-index: 2500;
   opacity: 0;
   transition: opacity 0.3s ease;
 }
@@ -2386,7 +2414,7 @@ div:has(> .cluster-bubble) {
   margin-right: 8px;
 }
 
-/* 개인 API 필드 스타일 */
+/* 媛쒖씤 API ?꾨뱶 ?ㅽ???*/
 .personal-api-fields {
   background: #f8f9fa;
   border: 1px solid #e9ecef;
@@ -2449,7 +2477,7 @@ div:has(> .cluster-bubble) {
   margin-top: 8px;
 }
 
-/* 주소 검색 영역 스타일 (PC) */
+/* 二쇱냼 寃???곸뿭 ?ㅽ???(PC) */
 .address-search-area {
   position: absolute !important;
   left: 50% !important;
@@ -2465,9 +2493,9 @@ div:has(> .cluster-bubble) {
   border: 1px solid #ddd !important;
   height: 34px !important;
   top: 33px !important;
-  z-index: 1005 !important; /* 상위 레이어로 올려 상호작용 보장 */
-  pointer-events: auto !important; /* 클릭 이벤트 허용 */
-  user-select: auto !important; /* 텍스트 선택/입력 허용 */
+  z-index: 1005 !important; /* ?곸쐞 ?덉씠?대줈 ?щ젮 ?곹샇?묒슜 蹂댁옣 */
+  pointer-events: auto !important; /* ?대┃ ?대깽???덉슜 */
+  user-select: auto !important; /* ?띿뒪???좏깮/?낅젰 ?덉슜 */
   box-sizing: border-box !important;
 }
 
@@ -2497,7 +2525,7 @@ div:has(> .cluster-bubble) {
   background: #0056b3 !important;
 }
 
-/* 상태카운트바 매물장 컨트롤 스타일 */
+/* 상태카운트바 매물수 컨트롤 스타일 */
 #statusCounts {
   display: flex;
   justify-content: space-between;
@@ -2518,7 +2546,7 @@ div:has(> .cluster-bubble) {
   align-items: center;
   gap: 12px;
   margin-left: auto;
-  /* 우측 정렬 */
+  /* ?곗륫 ?뺣젹 */
 }
 
 
@@ -2564,7 +2592,7 @@ div:has(> .cluster-bubble) {
 }
 
 .sheet-button.selected::before {
-  content: "✓";
+  content: "✅ ";
   font-weight: bold;
   margin-right: 6px;
   font-size: 14px;
@@ -2592,9 +2620,9 @@ div:has(> .cluster-bubble) {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   padding: 8px 0;
   min-width: 140px;
-  z-index: 9999;
+  z-index: 2400;
   display: none;
-  /* 테스트용: 항상 보이게 */
+  /* ?뚯뒪?몄슜: ??긽 蹂댁씠寃?*/
   /* display: block !important; */
   /* background: red !important; */
 }
@@ -2643,7 +2671,7 @@ div:has(> .cluster-bubble) {
   transition: background-color 0.2s ease;
   white-space: nowrap;
   min-width: 120px;
-  /* 텍스트 길이에 맞게 너비 조정 */
+  /* ?띿뒪??湲몄씠??留욊쾶 ?덈퉬 議곗젙 */
 }
 
 .btn-sheet-open:hover {
@@ -2746,10 +2774,10 @@ div:has(> .cluster-bubble) {
   background: #545b62;
 }
 
-/* ──────────────────────────────────────────────────
-   상단 필터바 버튼 스타일링
-────────────────────────────────────────────────── */
-/* 버튼 높이도 필터바 높이에 맞춰 조정 */
+/* ??????????????????????????????????????????????????
+   ?곷떒 ?꾪꽣諛?踰꾪듉 ?ㅽ??쇰쭅
+?????????????????????????????????????????????????? */
+/* 踰꾪듉 ?믪씠???꾪꽣諛??믪씠??留욎떠 議곗젙 */
 #topFilterApplyBtn,
 #topFilterResetBtn {
   height: 30px;
@@ -2757,33 +2785,33 @@ div:has(> .cluster-bubble) {
   font-size: 13px;
 }
 
-/* ──────────────────────────────────────────────────
-   1차 사이드바 매물 리스트 아래 빈 공간 제거
-────────────────────────────────────────────────── */
+/* ??????????????????????????????????????????????????
+   1李??ъ씠?쒕컮 留ㅻЪ 由ъ뒪???꾨옒 鍮?怨듦컙 ?쒓굅
+?????????????????????????????????????????????????? */
 
 
 
-/* ──────────────────────────────────────────────────
-   사이드바: 매물 리스트 빈 공간 제거
-────────────────────────────────────────────────── */
+/* ??????????????????????????????????????????????????
+   ?ъ씠?쒕컮: 留ㅻЪ 由ъ뒪??鍮?怨듦컙 ?쒓굅
+?????????????????????????????????????????????????? */
 
-/* ──────────────────────────────────────────────────
+/* ??????????????????????????????????????????????????
 
-/* ──────────────────────────────────────────────────
-   사이드바 시작 위치를 상단바 높이만큼 아래로 내리기
-─────────────────────────────────────────────────── */
-/* 상단바 높이를 실제 값(px)로 바꿔주세요 */
+/* ??????????????????????????????????????????????????
+   ?ъ씠?쒕컮 ?쒖옉 ?꾩튂瑜??곷떒諛??믪씠留뚰겮 ?꾨옒濡??대━湲?
+??????????????????????????????????????????????????? */
+/* ?곷떒諛??믪씠瑜??ㅼ젣 媛?px)濡?諛붽퓭二쇱꽭??*/
 :root {
   --h-topbar: 56px;
   --h-statusCounts: 34px;
   --h-topFilterBar: 92px;
 }
 
-/* ──────────────────────────────────────────────────
-   상단바(헤더/카운트/필터) 밑에 layout을 절대 위치로 꽉 채우기
-─────────────────────────────────────────────────── */
+/* ??????????????????????????????????????????????????
+   ?곷떒諛??ㅻ뜑/移댁슫???꾪꽣) 諛묒뿉 layout???덈? ?꾩튂濡?苑?梨꾩슦湲?
+??????????????????????????????????????????????????? */
 
-/* layout: 상단바 높이만큼 top부터 바닥까지 꽉 채우기 */
+/* layout: ?곷떒諛??믪씠留뚰겮 top遺??諛붾떏源뚯? 苑?梨꾩슦湲?*/
 /*#layout {
   position: absolute;
   top: calc(
@@ -2799,18 +2827,18 @@ div:has(> .cluster-bubble) {
   display: flex;       
   overflow: hidden;
 } */
-/* 중복 정의 제거됨 - 위의 정의 사용 */
+/* 以묐났 ?뺤쓽 ?쒓굅??- ?꾩쓽 ?뺤쓽 ?ъ슜 */
 
-/* 중복 정의 제거됨 - 위의 정의 사용 */
+/* 以묐났 ?뺤쓽 ?쒓굅??- ?꾩쓽 ?뺤쓽 ?ъ슜 */
 
-/* 사이드바 접힌 상태 */
+/* ?ъ씠?쒕컮 ?묓엺 ?곹깭 */
 #sidebar.collapsed {
   width: 20px !important;
   min-width: 20px !important;
   max-width: 20px !important;
 }
 
-/* 사이드바 토글 버튼 */
+/* ?ъ씠?쒕컮 ?좉? 踰꾪듉 */
 .sidebar-toggle {
   position: absolute;
   top: 10px;
@@ -2827,7 +2855,7 @@ div:has(> .cluster-bubble) {
   cursor: pointer;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   transition: all 0.3s ease;
-  /* 강제 표시 */
+  /* 媛뺤젣 ?쒖떆 */
   visibility: visible !important;
   opacity: 1 !important;
   pointer-events: auto !important;
@@ -2857,12 +2885,12 @@ div:has(> .cluster-bubble) {
   color: #333;
 }
 
-/* 사이드바 접힌 상태에서 토글 버튼 회전 */
+/* ?ъ씠?쒕컮 ?묓엺 ?곹깭?먯꽌 ?좉? 踰꾪듉 ?뚯쟾 */
 #sidebar.collapsed .toggle-btn {
   transform: rotate(180deg);
 }
 
-/* 사이드바 접힌 상태에서 내부 요소 숨기기 */
+/* ?ъ씠?쒕컮 ?묓엺 ?곹깭?먯꽌 ?대? ?붿냼 ?④린湲?*/
 #sidebar.collapsed #customerControls,
 #sidebar.collapsed #listingControls,
 #sidebar.collapsed #listingSidebarWrap {
@@ -2871,52 +2899,52 @@ div:has(> .cluster-bubble) {
   transition: opacity 0.3s ease, visibility 0.3s ease;
 }
 
-/* 중복 정의 제거됨 - 위의 정의 사용 */
+/* 以묐났 ?뺤쓽 ?쒓굅??- ?꾩쓽 ?뺤쓽 ?ъ슜 */
 
-/* 1차 사이드바 위치 조정 - #layout 내부에서 시작 */
+/* 1李??ъ씠?쒕컮 ?꾩튂 議곗젙 - #layout ?대??먯꽌 ?쒖옉 */
 #sidebar {
   position: absolute;
   top: 0;
-  /* #layout 내부에서 시작 */
+  /* #layout ?대??먯꽌 ?쒖옉 */
   height: calc(100vh - 166px);
-  /* 화면 전체 높이에서 상단바 높이(166px) 제외 */
+  /* ?붾㈃ ?꾩껜 ?믪씠?먯꽌 ?곷떒諛??믪씠(166px) ?쒖쇅 */
   bottom: auto;
-  /* bottom 제거하여 height가 적용되도록 */
+  /* bottom ?쒓굅?섏뿬 height媛 ?곸슜?섎룄濡?*/
   left: 0;
   width: 280px;
   z-index: 1000;
   transition: left 0.3s ease;
   overflow: hidden;
-  /* 스크롤 방지 */
+  /* ?ㅽ겕濡?諛⑹? */
   box-sizing: border-box;
-  /* 패딩/보더 포함한 높이 계산 */
+  /* ?⑤뵫/蹂대뜑 ?ы븿???믪씠 怨꾩궛 */
   display: flex;
-  /* flex 컨테이너로 설정 */
+  /* flex 而⑦뀒?대꼫濡??ㅼ젙 */
   flex-direction: column;
-  /* 세로 방향 */
+  /* ?몃줈 諛⑺뼢 */
 }
 
-/* 사이드바 접힌 상태 */
+/* ?ъ씠?쒕컮 ?묓엺 ?곹깭 */
 #sidebar.collapsed {
   width: 20px !important;
   min-width: 20px !important;
   max-width: 20px !important;
 }
 
-/* 메인 콘텐츠 중복 정의 제거됨 */
+/* 硫붿씤 肄섑뀗痢?以묐났 ?뺤쓽 ?쒓굅??*/
 
-/* 사이드바 접힘 시 메인콘텐츠 조정 */
+/* ?ъ씠?쒕컮 ?묓옒 ??硫붿씤肄섑뀗痢?議곗젙 */
 #sidebar.collapsed~#mainContent {
   left: 20px;
 }
 
-/* 사이드바 펼침 시 메인콘텐츠 조정 */
+/* ?ъ씠?쒕컮 ?쇱묠 ??硫붿씤肄섑뀗痢?議곗젙 */
 #sidebar:not(.collapsed)~#mainContent {
   left: 280px;
 }
 
 
-/* 사이드바 접힌 상태에서 내부 요소 숨기기 */
+/* ?ъ씠?쒕컮 ?묓엺 ?곹깭?먯꽌 ?대? ?붿냼 ?④린湲?*/
 #sidebar.collapsed #customerControls,
 #sidebar.collapsed #listingControls,
 #sidebar.collapsed #listingSidebarWrap {
@@ -2928,57 +2956,57 @@ div:has(> .cluster-bubble) {
 
 
 
-/* ──────────────────────────────────────────────────
-   4) 매물 리스트만 스크롤 처리
-────────────────────────────────────────────────── */
+/* ??????????????????????????????????????????????????
+   4) 留ㅻЪ 由ъ뒪?몃쭔 ?ㅽ겕濡?泥섎━
+?????????????????????????????????????????????????? */
 #listingSidebarWrap {
   flex: 1;
-  /* 남은 공간 모두 차지 */
+  /* ?⑥? 怨듦컙 紐⑤몢 李⑥? */
   display: flex;
   flex-direction: column;
   min-height: 0;
-  /* flex 아이템이 부모 높이를 초과하지 않도록 */
+  /* flex ?꾩씠?쒖씠 遺紐??믪씠瑜?珥덇낵?섏? ?딅룄濡?*/
   position: relative;
-  /* 클러스터 리스트의 절대 위치 기준점 */
-  /* UI 변동 방지를 위한 추가 설정 */
+  /* ?대윭?ㅽ꽣 由ъ뒪?몄쓽 ?덈? ?꾩튂 湲곗???*/
+  /* UI 蹂??諛⑹?瑜??꾪븳 異붽? ?ㅼ젙 */
   box-sizing: border-box !important;
   overflow: hidden !important;
-  /* 클러스터 리스트와 겹치지 않도록 설정 */
+  /* ?대윭?ㅽ꽣 由ъ뒪?몄? 寃뱀튂吏 ?딅룄濡??ㅼ젙 */
   isolation: isolate !important;
-  /* height: 100% 제거 - flex: 1이 자동으로 높이 조정 */
+  /* height: 100% ?쒓굅 - flex: 1???먮룞?쇰줈 ?믪씠 議곗젙 */
 }
 
 #listingSidebarWrap>ul#listingList {
   flex: 1;
-  /* 남은 공간 모두 차지 */
+  /* ?⑥? 怨듦컙 紐⑤몢 李⑥? */
   margin: 0;
   padding: 0;
   list-style: none;
   overflow-y: auto;
   min-height: 0;
-  /* flex 아이템이 부모 높이를 초과하지 않도록 */
+  /* flex ?꾩씠?쒖씠 遺紐??믪씠瑜?珥덇낵?섏? ?딅룄濡?*/
   height: 100%;
-  /* 강제로 전체 높이 차지 */
+  /* 媛뺤젣濡??꾩껜 ?믪씠 李⑥? */
   max-height: none;
-  /* 최대 높이 제한 해제 */
-  /* UI 변동 방지를 위한 추가 설정 */
+  /* 理쒕? ?믪씠 ?쒗븳 ?댁젣 */
+  /* UI 蹂??諛⑹?瑜??꾪븳 異붽? ?ㅼ젙 */
   box-sizing: border-box;
-  /* 클러스터 리스트와 겹치지 않도록 설정 */
+  /* ?대윭?ㅽ꽣 由ъ뒪?몄? 寃뱀튂吏 ?딅룄濡??ㅼ젙 */
   position: relative;
   z-index: 1;
 }
 
-/* ──────────────────────────────────────────────────
-   전체보기 패널: 절대 위치 + 투명 백드롭
-────────────────────────────────────────────────── */
+/* ??????????????????????????????????????????????????
+   ?꾩껜蹂닿린 ?⑤꼸: ?덈? ?꾩튂 + ?щ챸 諛깅뱶濡?
+?????????????????????????????????????????????????? */
 .full-list-panel {
   position: fixed;
   top: 0;
   left: 0;
   width: 100vw;
-  height: 100vh;
+  height: 100dvh;
   background: white;
-  z-index: 99999 !important;
+  z-index: 1100 !important;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -2991,12 +3019,12 @@ div:has(> .cluster-bubble) {
 #fullListPanel {
   position: absolute;
   top: 0;
-  /* #layout 내부에서 시작 */
+  /* #layout ?대??먯꽌 ?쒖옉 */
   left: 0;
   width: 100%;
   height: 100%;
-  /* #layout 높이 전체 사용 */
-  z-index: 99999;
+  /* #layout ?믪씠 ?꾩껜 ?ъ슜 */
+  z-index: 1100;
   background: white;
   display: flex;
   flex-direction: column;
@@ -3006,12 +3034,12 @@ div:has(> .cluster-bubble) {
 #fullBriefingListPanel {
   position: absolute;
   top: 0;
-  /* #layout 내부에서 시작 */
+  /* #layout ?대??먯꽌 ?쒖옉 */
   left: 0;
   width: 100%;
   height: 100%;
-  /* #layout 높이 전체 사용 */
-  z-index: 99999;
+  /* #layout ?믪씠 ?꾩껜 ?ъ슜 */
+  z-index: 1100;
   background: white;
   display: flex;
   flex-direction: column;
@@ -3046,29 +3074,29 @@ div:has(> .cluster-bubble) {
   flex-direction: column;
 }
 
-/* 클러스터 목록 */
+/* ?대윭?ㅽ꽣 紐⑸줉 */
 .cluster-list {
   position: absolute;
-  /* 절대 위치로 변경 */
+  /* ?덈? ?꾩튂濡?蹂寃?*/
   top: 0;
-  /* 상단부터 시작 */
+  /* ?곷떒遺???쒖옉 */
   left: 0;
-  /* 좌측부터 시작 */
+  /* 醫뚯륫遺???쒖옉 */
   right: 0;
-  /* 우측까지 */
+  /* ?곗륫源뚯? */
   bottom: 0;
-  /* 하단까지 */
+  /* ?섎떒源뚯? */
   display: flex;
   flex-direction: column;
   overflow: hidden;
   background: #fff;
   z-index: 5;
-  /* 매물리스트 위에 표시 (낮은 z-index 사용) */
+  /* 留ㅻЪ由ъ뒪???꾩뿉 ?쒖떆 (??? z-index ?ъ슜) */
   height: 100% !important;
-  /* 전체 높이 차지 */
+  /* ?꾩껜 ?믪씠 李⑥? */
   width: 100% !important;
-  /* 전체 너비 차지 */
-  /* UI 변동 방지를 위한 추가 설정 */
+  /* ?꾩껜 ?덈퉬 李⑥? */
+  /* UI 蹂??諛⑹?瑜??꾪븳 異붽? ?ㅼ젙 */
   box-sizing: border-box !important;
   flex-shrink: 0 !important;
   flex-grow: 0 !important;
@@ -3076,12 +3104,12 @@ div:has(> .cluster-bubble) {
   max-height: 100% !important;
   min-width: 100% !important;
   max-width: 100% !important;
-  /* 기존 UI 요소들과 겹치지 않도록 설정 */
+  /* 湲곗〈 UI ?붿냼?ㅺ낵 寃뱀튂吏 ?딅룄濡??ㅼ젙 */
   pointer-events: auto !important;
   isolation: isolate !important;
-  /* z-index 조정으로 매물 리스트와의 겹침 문제 해결 */
+  /* z-index 議곗젙?쇰줈 留ㅻЪ 由ъ뒪?몄???寃뱀묠 臾몄젣 ?닿껐 */
   z-index: 5 !important;
-  /* UI 변동 방지를 위한 추가 설정 */
+  /* UI 蹂??諛⑹?瑜??꾪븳 異붽? ?ㅼ젙 */
   transform: translateZ(0) !important;
   will-change: transform !important;
 }
@@ -3093,16 +3121,16 @@ div:has(> .cluster-bubble) {
   list-style: none !important;
   overflow-y: auto !important;
   min-height: 0 !important;
-  /* 중요: flex 아이템이 부모 높이를 초과하지 않도록 */
+  /* 以묒슂: flex ?꾩씠?쒖씠 遺紐??믪씠瑜?珥덇낵?섏? ?딅룄濡?*/
   height: 100% !important;
-  /* 전체 높이 차지 */
+  /* ?꾩껜 ?믪씠 李⑥? */
   max-height: none !important;
-  /* 최대 높이 제한 해제 */
-  /* UI 변동 방지를 위한 추가 설정 */
+  /* 理쒕? ?믪씠 ?쒗븳 ?댁젣 */
+  /* UI 蹂??諛⑹?瑜??꾪븳 異붽? ?ㅼ젙 */
   box-sizing: border-box !important;
   flex-shrink: 1 !important;
   flex-grow: 1 !important;
-  /* 기존 UI 요소들과 겹치지 않도록 설정 */
+  /* 湲곗〈 UI ?붿냼?ㅺ낵 寃뱀튂吏 ?딅룄濡??ㅼ젙 */
   pointer-events: auto !important;
 }
 
@@ -3130,7 +3158,7 @@ div:has(> .cluster-bubble) {
   transition: transform 0.35s ease-in-out;
 }
 
-/* 매물 리스트 두 줄 레이아웃 */
+/* 留ㅻЪ 由ъ뒪????以??덉씠?꾩썐 */
 .listing-item .meta-top,
 .listing-item .meta-bottom {
   display: flex;
@@ -3138,7 +3166,7 @@ div:has(> .cluster-bubble) {
   align-items: center;
 }
 
-/* 1행과 2행 간 간격 */
+/* 1?됯낵 2??媛?媛꾧꺽 */
 .listing-item .meta-top {
   margin-bottom: 4px;
   display: flex;
@@ -3202,7 +3230,7 @@ div:has(> .cluster-bubble) {
   color: #555;
 }
 
-/* 필요 시 폰트 크기·색상 조정 */
+/* ?꾩슂 ???고듃 ?ш린쨌?됱긽 議곗젙 */
 .listing-item .meta-top .addr {
   font-weight: 500;
 }
@@ -3214,7 +3242,7 @@ div:has(> .cluster-bubble) {
 
 .cluster-bubble {
   pointer-events: auto !important;
-  z-index: 9000 !important;
+  z-index: 100 !important;
 }
 
 .cluster-list-header {
@@ -3231,7 +3259,7 @@ div:has(> .cluster-bubble) {
   display: block;
   margin: 0;
   font-size: 1em;
-  /* 매물 리스트 제목(.title) 폰트 크기와 동일하게 */
+  /* 留ㅻЪ 由ъ뒪???쒕ぉ(.title) ?고듃 ?ш린? ?숈씪?섍쾶 */
   font-weight: 500;
   color: #333;
 }
@@ -3252,7 +3280,7 @@ div:has(> .cluster-bubble) {
   color: #333;
 }
 
-/* 클러스터 목록 전용 폰트 크기 조절 */
+/* ?대윭?ㅽ꽣 紐⑸줉 ?꾩슜 ?고듃 ?ш린 議곗젅 */
 #clusterList .listing-item .title {
   font-weight: normal;
   margin-bottom: 4px;
@@ -3274,7 +3302,7 @@ div:has(> .cluster-bubble) {
   line-height: 1.4;
 }
 
-/* 클러스터 리스트 아이템을 일반 매물 리스트와 동일한 스타일로 맞춤 */
+/* ?대윭?ㅽ꽣 由ъ뒪???꾩씠?쒖쓣 ?쇰컲 留ㅻЪ 由ъ뒪?몄? ?숈씪???ㅽ??쇰줈 留욎땄 */
 #clusterItemList li {
   padding: 12px 12px 14px;
   border-bottom: 1px solid #ececec;
@@ -3295,12 +3323,12 @@ div:has(> .cluster-bubble) {
   box-shadow: inset 0 0 0 2px #1565c0;
 }
 
-/* 선택된 매물 사이드바 리스트 */
+/* ?좏깮??留ㅻЪ ?ъ씠?쒕컮 由ъ뒪??*/
 .listing-item.selected .title {
   background-color: #ffeeba;
 }
 
-/* 선택된 매물 클러스터리스트 */
+/* ?좏깮??留ㅻЪ ?대윭?ㅽ꽣由ъ뒪??*/
 .cluster-item.selected {
   background-color: #ffeeba;
 }
@@ -3309,16 +3337,16 @@ div:has(> .cluster-bubble) {
   background-color: #ffeeba;
 }
 
-/* ─── 사이드바 컨트롤 스타일 ─────────────────── */
+/* ??? ?ъ씠?쒕컮 而⑦듃濡??ㅽ?????????????????????? */
 #customerControls {
   display: flex;
   flex-direction: column;
   gap: 8px;
   padding: 8px;
   flex: 0 0 auto;
-  /* 높이 고정 */
+  /* ?믪씠 怨좎젙 */
   min-height: 60px;
-  /* 최소 높이 설정 */
+  /* 理쒖냼 ?믪씠 ?ㅼ젙 */
 }
 
 #customerControls .button-row {
@@ -3338,7 +3366,7 @@ div:has(> .cluster-bubble) {
   background: #eee;
 }
 
-/* 고객 상세 영역 */
+/* 怨좉컼 ?곸꽭 ?곸뿭 */
 #customerDetail {
   padding: 8px;
   border-bottom: 1px solid #ddd;
@@ -3348,12 +3376,12 @@ div:has(> .cluster-bubble) {
   display: none;
 }
 
-/* 매물 리스트 컨트롤 */
+/* 留ㅻЪ 由ъ뒪??而⑦듃濡?*/
 #listingControls {
   flex: 0 0 auto;
-  /* 높이 고정 */
+  /* ?믪씠 怨좎젙 */
   min-height: 40px;
-  /* 최소 높이 설정 */
+  /* 理쒖냼 ?믪씠 ?ㅼ젙 */
 }
 
 #listingControls .listing-header .listing-mode-buttons {
@@ -3396,11 +3424,11 @@ div:has(> .cluster-bubble) {
   border-color: #28a745;
 }
 
-/* 버튼군 간격 절반으로 좁히기 */
+/* 踰꾪듉援?媛꾧꺽 ?덈컲?쇰줈 醫곹엳湲?*/
 #listingControls .listing-actions {
   display: flex;
   gap: 4px;
-  /* 기존 8px → 4px */
+  /* 湲곗〈 8px ??4px */
   margin-bottom: 8px;
 }
 
@@ -3419,37 +3447,37 @@ div:has(> .cluster-bubble) {
   margin-top: 4px;
 }
 
-/* 중복 정의 제거됨 - 위의 정의 사용 */
+/* 以묐났 ?뺤쓽 ?쒓굅??- ?꾩쓽 ?뺤쓽 ?ъ슜 */
 
 #secondaryPanel.visible {
   left: 0 !important;
-  /* 화면 왼쪽 끝에서 시작 */
+  /* ?붾㈃ ?쇱そ ?앹뿉???쒖옉 */
   transform: translateX(280px) !important;
-  /* 1차 사이드바 오른편으로 이동 */
+  /* 1李??ъ씠?쒕컮 ?ㅻⅨ?몄쑝濡??대룞 */
   visibility: visible !important;
-  /* visible 상태일 때는 보이도록 */
+  /* visible ?곹깭???뚮뒗 蹂댁씠?꾨줉 */
   opacity: 1 !important;
-  /* visible 상태일 때는 완전히 보이도록 */
+  /* visible ?곹깭???뚮뒗 ?꾩쟾??蹂댁씠?꾨줉 */
 }
 
 #secondaryPanel.hidden {
   left: 0 !important;
-  /* 화면 왼쪽 끝에서 시작 */
+  /* ?붾㈃ ?쇱そ ?앹뿉???쒖옉 */
   transform: translateX(-100%) !important;
-  /* 왼쪽으로 숨김 */
+  /* ?쇱そ?쇰줈 ?④? */
   visibility: visible !important;
-  /* hidden 상태일 때는 완전히 숨김 */
+  /* hidden ?곹깭???뚮뒗 ?꾩쟾???④? */
   opacity: 1 !important;
-  /* hidden 상태일 때는 완전히 투명하게 */
+  /* hidden ?곹깭???뚮뒗 ?꾩쟾???щ챸?섍쾶 */
 }
 
-/* 2차 사이드바가 열릴 때 1차 사이드바는 그대로 유지 */
-/* 기존의 1차 사이드바 숨기기 코드 제거 */
+/* 2李??ъ씠?쒕컮媛 ?대┫ ??1李??ъ씠?쒕컮??洹몃?濡??좎? */
+/* 湲곗〈??1李??ъ씠?쒕컮 ?④린湲?肄붾뱶 ?쒓굅 */
 /* #secondaryPanel.visible ~ #sidebar {
   display: none !important;
 } */
 
-/* 2차 사이드바가 열릴 때 1차 사이드바 숨기기 (더 강력한 선택자) - 제거 */
+/* 2李??ъ씠?쒕컮媛 ?대┫ ??1李??ъ씠?쒕컮 ?④린湲?(??媛뺣젰???좏깮?? - ?쒓굅 */
 /* #layout:has(#secondaryPanel.visible) #sidebar {
   display: none !important;
 } */
@@ -3487,7 +3515,7 @@ div:has(> .cluster-bubble) {
   color: #333;
 }
 
-/* 2차 사이드바 접힌 상태 - 제거됨 (visible/hidden 클래스만 사용) */
+/* 2李??ъ씠?쒕컮 ?묓엺 ?곹깭 - ?쒓굅??(visible/hidden ?대옒?ㅻ쭔 ?ъ슜) */
 
 #secondaryPanel .panel-close {
   background: none !important;
@@ -3502,7 +3530,7 @@ div:has(> .cluster-bubble) {
   align-items: center !important;
   justify-content: center !important;
   position: relative !important;
-  z-index: 10000 !important;
+  z-index: 1200 !important;
   pointer-events: auto !important;
   user-select: none !important;
   opacity: 1 !important;
@@ -3528,13 +3556,13 @@ div:has(> .cluster-bubble) {
   display: block !important;
   padding: 12px;
   overflow-y: auto;
-  /* 2차 사이드바의 유일한 스크롤 */
+  /* 2李??ъ씠?쒕컮???좎씪???ㅽ겕濡?*/
   height: calc(100% - 50px);
-  /* 패널 바디 높이에 맞춤 */
+  /* ?⑤꼸 諛붾뵒 ?믪씠??留욎땄 */
   box-sizing: border-box;
 }
 
-/* 고객 목록 뷰에서만 스크롤 활성화 */
+/* 怨좉컼 紐⑸줉 酉곗뿉?쒕쭔 ?ㅽ겕濡??쒖꽦??*/
 #viewCustomerList:not(.hidden) {
   overflow-y: auto !important;
 }
@@ -3543,11 +3571,11 @@ div:has(> .cluster-bubble) {
   display: block !important;
   background: white;
   height: 100%;
-  /* 패널 뷰 높이에 맞춤 */
+  /* ?⑤꼸 酉??믪씠??留욎땄 */
   position: relative;
   z-index: 1000;
   overflow-y: auto;
-  /* 스크롤 활성화 */
+  /* ?ㅽ겕濡??쒖꽦??*/
 }
 
 #viewCustomerList:not(.hidden) {
@@ -3558,25 +3586,25 @@ div:has(> .cluster-bubble) {
   display: none !important;
 }
 
-/* 고객 목록 컨테이너 - 스크롤 제거 */
+/* 怨좉컼 紐⑸줉 而⑦뀒?대꼫 - ?ㅽ겕濡??쒓굅 */
 #viewCustomerList .customer-list-container {
   height: 100%;
-  /* 부모 높이에 맞춤 */
+  /* 遺紐??믪씠??留욎땄 */
   overflow: visible;
-  /* 내부 스크롤 제거 */
+  /* ?대? ?ㅽ겕濡??쒓굅 */
   margin: 0;
   border: none;
   background: white;
   border-radius: 0;
-  /* 모서리 둥글기 제거 */
+  /* 紐⑥꽌由??κ?湲??쒓굅 */
 }
 
-/* 고객 목록 콘텐츠 - 스크롤 제거 */
+/* 怨좉컼 紐⑸줉 肄섑뀗痢?- ?ㅽ겕濡??쒓굅 */
 #customerListContent2 {
   height: auto;
-  /* 높이 자동 조정 */
+  /* ?믪씠 ?먮룞 議곗젙 */
   overflow: visible;
-  /* 내부 스크롤 제거 */
+  /* ?대? ?ㅽ겕濡??쒓굅 */
   background: white;
   color: black;
   font-size: 14px;
@@ -3597,13 +3625,13 @@ div:has(> .cluster-bubble) {
   visibility: visible;
   opacity: 1;
   height: auto;
-  /* 높이 자동 조정 */
+  /* ?믪씠 ?먮룞 議곗젙 */
   width: 100%;
   background: white;
   position: relative;
   z-index: 1002;
   overflow: visible;
-  /* 스크롤 제거 */
+  /* ?ㅽ겕濡??쒓굅 */
 }
 
 #customerListContent2 li {
@@ -3625,20 +3653,20 @@ div:has(> .cluster-bubble) {
 
 #customerListContent2 li:hover {
   background: #f0f8ff;
-  /* 연한 파란색 배경 */
+  /* ?고븳 ?뚮???諛곌꼍 */
 }
 
-/* 고객 목록 아이템 컨테이너 */
+/* 怨좉컼 紐⑸줉 ?꾩씠??而⑦뀒?대꼫 */
 .customer-list-items {
   height: auto;
-  /* 높이 자동 조정 */
+  /* ?믪씠 ?먮룞 議곗젙 */
   overflow: visible;
-  /* 스크롤 제거 */
+  /* ?ㅽ겕濡??쒓굅 */
   padding: 0;
   margin: 0;
 }
 
-/* 고객 카드 스타일 */
+/* 怨좉컼 移대뱶 ?ㅽ???*/
 .customer-card {
   border: 1px solid #e0e0e0;
   border-radius: 6px;
@@ -3655,9 +3683,9 @@ div:has(> .cluster-bubble) {
   box-shadow: 0 2px 4px rgba(25, 118, 210, 0.1);
 }
 
-/* ─────────────────────────────────── */
-/* 매물상세정보 뷰(#viewListingDetail) 내부 row 스타일 */
-/* ─────────────────────────────────── */
+/* ??????????????????????????????????? */
+/* 留ㅻЪ?곸꽭?뺣낫 酉?#viewListingDetail) ?대? row ?ㅽ???*/
+/* ??????????????????????????????????? */
 #viewListingDetail .detail-row {
   display: flex;
   justify-content: space-between;
@@ -3678,19 +3706,19 @@ div:has(> .cluster-bubble) {
   word-break: break-word;
 }
 
-/* ─────────────────────────────────── */
-/* 매물상세정보: 그리드 레이아웃으로 변경 */
-/* ─────────────────────────────────── */
+/* ??????????????????????????????????? */
+/* 留ㅻЪ?곸꽭?뺣낫: 洹몃━???덉씠?꾩썐?쇰줈 蹂寃?*/
+/* ??????????????????????????????????? */
 #secondaryPanel .detail-row {
   display: grid;
   grid-template-columns: 80px 1fr;
-  /* 라벨 80px / 값 나머지 */
+  /* ?쇰꺼 80px / 媛??섎㉧吏 */
   column-gap: 12px;
-  /* 라벨↔값 간격 */
+  /* ?쇰꺼?붽컪 媛꾧꺽 */
   padding: 6px 0;
   border-bottom: 1px solid #f0f0f0;
   align-items: start;
-  /* 멀티라인 시에도 위쪽 기준 */
+  /* 硫?곕씪???쒖뿉???꾩そ 湲곗? */
 }
 
 #secondaryPanel .label {
@@ -3699,7 +3727,7 @@ div:has(> .cluster-bubble) {
 
 #secondaryPanel .value {
   text-align: left;
-  /* 왼쪽 정렬 */
+  /* ?쇱そ ?뺣젹 */
   word-break: break-word;
 }
 
@@ -3721,7 +3749,7 @@ div:has(> .cluster-bubble) {
   background: #f5f5f5;
 }
 
-/* 고객 필터 드롭다운 스타일 */
+/* 怨좉컼 ?꾪꽣 ?쒕∼?ㅼ슫 ?ㅽ???*/
 .customer-filter-dropdown {
   margin-bottom: 12px;
   padding: 8px 0;
@@ -3762,7 +3790,7 @@ div:has(> .cluster-bubble) {
 }
 
 .detail-row {
-  /* viewCustomerDetail/Form 공용 스타일 */
+  /* viewCustomerDetail/Form 怨듭슜 ?ㅽ???*/
   display: grid;
   grid-template-columns: 100px 1fr;
   padding: 6px 0;
@@ -3784,7 +3812,7 @@ div:has(> .cluster-bubble) {
   width: 100%;
 }
 
-/* 고객 목록 컨테이너 */
+/* 怨좉컼 紐⑸줉 而⑦뀒?대꼫 */
 .customer-list-container {
   margin-top: 10px;
   border: 1px solid #ddd;
@@ -3792,14 +3820,14 @@ div:has(> .cluster-bubble) {
   background: #fff;
   height: 100%;
   overflow: hidden;
-  /* 스크롤 제거 - 2차 사이드바에서만 */
+  /* ?ㅽ겕濡??쒓굅 - 2李??ъ씠?쒕컮?먯꽌留?*/
 }
 
 .customer-list-container.hidden {
   display: none;
 }
 
-/* 선택된 고객 정보 */
+/* ?좏깮??怨좉컼 ?뺣낫 */
 .selected-customer-info {
   margin-top: 8px;
   padding: 10px;
@@ -3828,14 +3856,14 @@ div:has(> .cluster-bubble) {
   color: #666;
 }
 
-/* 고객 컨텍스트 메뉴 스타일 */
+/* 怨좉컼 而⑦뀓?ㅽ듃 硫붾돱 ?ㅽ???*/
 #customerContextMenu {
   position: fixed;
   background: white;
   border: 1px solid #ddd;
   border-radius: 4px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-  z-index: 10000;
+  z-index: 600;
   min-width: 120px;
 }
 
@@ -3859,7 +3887,7 @@ div:has(> .cluster-bubble) {
   color: #dc3545;
 }
 
-/* 전체 브리핑 리스트 편집 관련 스타일 */
+/* ?꾩껜 釉뚮━??由ъ뒪???몄쭛 愿???ㅽ???*/
 .full-briefing-list-editable td.editing {
   background-color: #fff3cd !important;
   border: 2px solid #ffc107 !important;
@@ -3870,7 +3898,7 @@ div:has(> .cluster-bubble) {
   border-left: 3px solid #28a745 !important;
 }
 
-/* 원본/수정본 버튼 스타일 */
+/* ?먮낯/?섏젙蹂?踰꾪듉 ?ㅽ???*/
 .full-briefing-view-mode-btn {
   padding: 6px 12px;
   border: none;
@@ -3894,7 +3922,7 @@ div:has(> .cluster-bubble) {
   background-color: #28a745;
 }
 
-/* 토스트 메시지 스타일 */
+/* ?좎뒪??硫붿떆吏 ?ㅽ???*/
 .toast {
   position: fixed;
   top: 20px;
@@ -3903,7 +3931,7 @@ div:has(> .cluster-bubble) {
   border-radius: 4px;
   color: white;
   font-size: 14px;
-  z-index: 10000;
+  z-index: 601;
   animation: toastSlideIn 0.3s ease-out;
   max-width: 300px;
   word-wrap: break-word;
@@ -3938,7 +3966,7 @@ div:has(> .cluster-bubble) {
   }
 }
 
-/* 상태 카운트 영역 고정 높이 */
+/* ?곹깭 移댁슫???곸뿭 怨좎젙 ?믪씠 */
 #statusCounts {
   display: flex;
   justify-content: flex-start;
@@ -3950,32 +3978,32 @@ div:has(> .cluster-bubble) {
   color: #666;
   min-height: 34px;
   max-height: 34px;
-  /* 높이 고정 */
+  /* ?믪씠 怨좎젙 */
   flex-shrink: 0;
-  /* 크기 고정 */
+  /* ?ш린 怨좎젙 */
 }
 
 
 
-/* 모든 UI 크기 고정 - 절대 변경 불가 */
-/* 2차 사이드바가 열릴 때 메인 콘텐츠 조정 - 제거됨 */
+/* 紐⑤뱺 UI ?ш린 怨좎젙 - ?덈? 蹂寃?遺덇? */
+/* 2李??ъ씠?쒕컮媛 ?대┫ ??硫붿씤 肄섑뀗痢?議곗젙 - ?쒓굅??*/
 /* #secondaryPanel.visible ~ #mainContent,
 #layout:has(#secondaryPanel.visible) #mainContent {
   width: calc(100% - 280px - 350px) !important;
 } */
 
-/* 클러스터 매물 목록에서 리스트 클릭 시에도 크기 유지 - 제거됨 */
+/* ?대윭?ㅽ꽣 留ㅻЪ 紐⑸줉?먯꽌 由ъ뒪???대┃ ?쒖뿉???ш린 ?좎? - ?쒓굅??*/
 /* #clusterList:not(.hidden) ~ #mainContent,
 #layout:has(#clusterList:not(.hidden)) #mainContent {
   width: calc(100% - 280px) !important;
 } */
 
-/* 클러스터 매물 목록과 2차 사이드바가 동시에 열릴 때 - 제거됨 */
+/* ?대윭?ㅽ꽣 留ㅻЪ 紐⑸줉怨?2李??ъ씠?쒕컮媛 ?숈떆???대┫ ??- ?쒓굅??*/
 /* #layout:has(#clusterList:not(.hidden)):has(#secondaryPanel.visible) #mainContent {
   width: calc(100% - 280px - 350px) !important;
 } */
 
-/* 클러스터 리스트가 표시될 때 매물 리스트는 그대로 유지 */
+/* ?대윭?ㅽ꽣 由ъ뒪?멸? ?쒖떆????留ㅻЪ 由ъ뒪?몃뒗 洹몃?濡??좎? */
 .cluster-list:not(.hidden)~#listingList,
 .cluster-list:not(.hidden)+#listingList {
   display: block !important;
@@ -3985,7 +4013,7 @@ div:has(> .cluster-bubble) {
   width: 100% !important;
 }
 
-/* 사용자 관리 관련 스타일 */
+/* ?ъ슜??愿由?愿???ㅽ???*/
 .status-counts-left {
   flex: 1;
 }
@@ -4014,7 +4042,7 @@ div:has(> .cluster-bubble) {
   cursor: pointer;
   transition: all 0.2s ease;
   min-width: 80px;
-  /* 최소 너비 설정 */
+  /* 理쒖냼 ?덈퉬 ?ㅼ젙 */
   text-align: center;
 }
 
@@ -4024,15 +4052,27 @@ div:has(> .cluster-bubble) {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-/* 어드민 전용 메뉴 컨테이너 */
+/* ?대뱶誘??꾩슜 硫붾돱 而⑦뀒?대꼫 */
 .admin-only {
   display: flex;
   align-items: center;
   gap: 10px;
-  /* 어드민 버튼 간격 */
+  /* ?대뱶誘?踰꾪듉 媛꾧꺽 */
 }
 
-/* 모달 스타일 */
+
+/* 모달 배경 투명화 처리 (모바일 바형 모달 전용) */
+#listingListModal.modal,
+#clusterListModal.modal {
+  background: transparent !important;
+  pointer-events: none; /* 배경 클릭 시 지도 터치 허용 */
+}
+
+#listingListModal.modal .modal-content,
+#clusterListModal.modal .modal-content {
+  pointer-events: auto; /* 컨텐츠는 터치 허용 */
+}
+
 .modal {
   position: fixed;
   top: 0;
@@ -4043,7 +4083,7 @@ div:has(> .cluster-bubble) {
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 10000;
+  z-index: 1000;
 }
 
 .modal.hidden {
@@ -4056,7 +4096,7 @@ div:has(> .cluster-bubble) {
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
   max-width: 90%;
   max-height: 90%;
-  /* 드롭다운(네이티브 select) 옵션이 잘리는 문제 방지 */
+  /* ?쒕∼?ㅼ슫(?ㅼ씠?곕툕 select) ?듭뀡???섎━??臾몄젣 諛⑹? */
   overflow: visible;
   display: flex;
   flex-direction: column;
@@ -4098,13 +4138,13 @@ div:has(> .cluster-bubble) {
 
 .modal-body {
   padding: 20px;
-  /* 스크롤은 유지하되 네이티브 드롭다운이 잘리지 않도록 */
+  /* ?ㅽ겕濡ㅼ? ?좎??섎릺 ?ㅼ씠?곕툕 ?쒕∼?ㅼ슫???섎━吏 ?딅룄濡?*/
   overflow-y: auto;
   overflow-x: visible;
   flex: 1;
 }
 
-/* 사용자 관리 컨트롤 */
+/* ?ъ슜??愿由?而⑦듃濡?*/
 .user-management-controls {
   margin-bottom: 20px;
   display: flex;
@@ -4141,7 +4181,7 @@ div:has(> .cluster-bubble) {
   background: #545b62;
 }
 
-/* 사용자 테이블 */
+/* ?ъ슜???뚯씠釉?*/
 .user-table {
   width: 100%;
   border-collapse: collapse;
@@ -4241,7 +4281,7 @@ div:has(> .cluster-bubble) {
   font-weight: 600;
 }
 
-/* 사용자 폼 */
+/* ?ъ슜????*/
 .form-group {
   margin-bottom: 16px;
 }
@@ -4288,7 +4328,7 @@ div:has(> .cluster-bubble) {
   border-top: 1px solid #e9ecef;
 }
 
-/* 새로고침 컨트롤 스타일 */
+/* ?덈줈怨좎묠 而⑦듃濡??ㅽ???*/
 .refresh-controls {
   display: flex;
   align-items: center;
@@ -4301,7 +4341,7 @@ div:has(> .cluster-bubble) {
 }
 
 
-/* 새로고침 버튼 */
+/* ?덈줈怨좎묠 踰꾪듉 */
 .refresh-btn {
   display: flex;
   align-items: center;
@@ -4338,7 +4378,7 @@ div:has(> .cluster-bubble) {
   opacity: 0.6;
 }
 
-/* 로딩 애니메이션 */
+/* 濡쒕뵫 ?좊땲硫붿씠??*/
 @keyframes spin {
   from {
     transform: rotate(0deg);
@@ -4349,7 +4389,7 @@ div:has(> .cluster-bubble) {
   }
 }
 
-/* 마지막 업데이트 시간 */
+/* 留덉?留??낅뜲?댄듃 ?쒓컙 */
 .last-update {
   font-size: 10px;
   color: #6c757d;
@@ -4358,7 +4398,7 @@ div:has(> .cluster-bubble) {
 
 
 
-/* 사용자 관리 모달 스타일 */
+/* ?ъ슜??愿由?紐⑤떖 ?ㅽ???*/
 .user-management-modal {
   width: 95vw !important;
   max-width: 2000px !important;
@@ -4413,7 +4453,7 @@ div:has(> .cluster-bubble) {
   background-color: #f8f9fa;
 }
 
-/* 컬럼 너비 명시적 설정 */
+/* 而щ읆 ?덈퉬 紐낆떆???ㅼ젙 */
 .user-table th:nth-child(1),
 .user-table td:nth-child(1) {
   width: 120px;
@@ -4425,45 +4465,45 @@ div:has(> .cluster-bubble) {
   width: 200px;
 }
 
-/* 이메일 */
+/* ?대찓??*/
 .user-table th:nth-child(3),
 .user-table td:nth-child(3) {
   width: 100px;
 }
 
-/* 이름 */
+/* ?대쫫 */
 .user-table th:nth-child(4),
 .user-table td:nth-child(4) {
   width: 150px;
 }
 
-/* 직책 */
+/* 吏곸콉 */
 .user-table th:nth-child(5),
 .user-table td:nth-child(5) {
   width: 80px;
 }
 
-/* 역할 */
+/* ??븷 */
 .user-table th:nth-child(6),
 .user-table td:nth-child(6) {
   width: 80px;
 }
 
-/* 상태 */
+/* ?곹깭 */
 .user-table th:nth-child(7),
 .user-table td:nth-child(7) {
   width: 120px;
 }
 
-/* 가입일 */
+/* 媛?낆씪 */
 .user-table th:nth-child(8),
 .user-table td:nth-child(8) {
   width: 200px;
 }
 
-/* 작업 */
+/* ?묒뾽 */
 
-/* 직책 수정 관련 스타일 */
+/* 吏곸콉 ?섏젙 愿???ㅽ???*/
 .job-title-edit {
   display: flex;
   align-items: center;
@@ -4523,7 +4563,7 @@ div:has(> .cluster-bubble) {
   display: inline-block;
 }
 
-/* 사용자 작업 버튼 스타일 */
+/* ?ъ슜???묒뾽 踰꾪듉 ?ㅽ???*/
 .user-actions {
   display: flex;
   gap: 4px;
@@ -4573,7 +4613,7 @@ div:has(> .cluster-bubble) {
   cursor: not-allowed;
 }
 
-/* 사용자 관리 모달 스타일 - 최고 우선순위로 적용 */
+/* ?ъ슜??愿由?紐⑤떖 ?ㅽ???- 理쒓퀬 ?곗꽑?쒖쐞濡??곸슜 */
 #userManagementModal.user-management-modal,
 #userManagementModal.user-management-modal .modal-content,
 #userManagementModal .user-management-modal,
@@ -4602,7 +4642,7 @@ div:has(> .cluster-bubble) {
   width: 100% !important;
 }
 
-/* 민감한 정보 필드 접기/펼치기 스타일 */
+/* 誘쇨컧???뺣낫 ?꾨뱶 ?묎린/?쇱튂湲??ㅽ???*/
 .sensitive-field {
   transition: all 0.3s ease;
 }
@@ -4628,7 +4668,7 @@ div:has(> .cluster-bubble) {
   margin-right: 4px;
 }
 
-/* Supabase 동기화 토글 스위치 */
+/* Supabase ?숆린???좉? ?ㅼ쐞移?*/
 .toggle-switch {
   position: relative;
   display: inline-block;
@@ -4678,7 +4718,7 @@ div:has(> .cluster-bubble) {
   box-shadow: 0 0 1px #007bff;
 }
 
-/* 매물등록 버튼 스타일 */
+/* 留ㅻЪ?깅줉 踰꾪듉 ?ㅽ???*/
 .btn-add-listing {
   margin-left: 15px;
   padding: 4px 12px;
@@ -4695,7 +4735,7 @@ div:has(> .cluster-bubble) {
   background: #0056b3;
 }
 
-/* 상가/주택 모드 토글 버튼 */
+/* ?곴?/二쇳깮 紐⑤뱶 ?좉? 踰꾪듉 */
 .listing-mode-toggle {
   display: inline-flex;
   margin-left: 15px;
@@ -4729,7 +4769,7 @@ div:has(> .cluster-bubble) {
   cursor: not-allowed;
 }
 
-/* subtype 버튼 */
+/* subtype 踰꾪듉 */
 .subtype-buttons {
   display: inline-flex;
   margin-left: 8px;
@@ -4767,7 +4807,7 @@ div:has(> .cluster-bubble) {
   cursor: not-allowed;
 }
 
-/* 매물등록 모달 스타일 */
+/* 留ㅻЪ?깅줉 紐⑤떖 ?ㅽ???*/
 .modal {
   position: fixed;
   top: 0;
@@ -4775,7 +4815,7 @@ div:has(> .cluster-bubble) {
   width: 100%;
   height: 100%;
   background: rgba(0, 0, 0, 0.5);
-  z-index: 10000;
+  z-index: 1000;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -4834,7 +4874,7 @@ div:has(> .cluster-bubble) {
   border-top: 1px solid #e9ecef;
 }
 
-/* 폼 스타일 */
+/* ???ㅽ???*/
 .form-row {
   display: flex;
   gap: 15px;
@@ -4878,7 +4918,7 @@ div:has(> .cluster-bubble) {
   min-height: 70px;
 }
 
-/* 버튼 스타일 */
+/* 踰꾪듉 ?ㅽ???*/
 .btn-primary {
   background: #007bff;
   color: white;
@@ -4907,7 +4947,7 @@ div:has(> .cluster-bubble) {
   background: #545b62;
 }
 
-/* 시트지정 버튼 스타일 */
+/* ?쒗듃吏??踰꾪듉 ?ㅽ???*/
 .btn-sheet-url {
   background: #28a745;
   color: white;
@@ -4923,7 +4963,7 @@ div:has(> .cluster-bubble) {
   background: #218838;
 }
 
-/* 시트지정 모달 스타일 */
+/* ?쒗듃吏??紐⑤떖 ?ㅽ???*/
 #sheetUrlModal .modal-content {
   width: 95%;
   max-width: 600px;
@@ -4965,7 +5005,7 @@ div:has(> .cluster-bubble) {
   background: #0056b3;
 }
 
-/* 금액 입력 필드 화살표 제거 */
+/* 湲덉븸 ?낅젰 ?꾨뱶 ?붿궡???쒓굅 */
 input[type="text"]::-webkit-outer-spin-button,
 input[type="text"]::-webkit-inner-spin-button {
   -webkit-appearance: none;
@@ -4976,14 +5016,14 @@ input[type="text"] {
   -moz-appearance: textfield;
 }
 
-/* 폼 스타일 */
+/* ???ㅽ???*/
 .form-row {
   display: flex;
   gap: 15px;
   margin-bottom: 15px;
 }
 
-/* 추천 별표 스타일 */
+/* 異붿쿇 蹂꾪몴 ?ㅽ???*/
 .recommendation-star-container {
   display: flex;
   align-items: center;
@@ -5027,7 +5067,7 @@ input[type="text"] {
   }
 }
 
-/* 추천 모달 ?��???*/
+/* 異붿쿇 紐⑤떖 ?占쏙옙???*/
 .recommendation-modal,
 .recommendation-detail-modal,
 .recommendation-cancel-modal {
@@ -5040,7 +5080,7 @@ input[type="text"] {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 10000;
+  z-index: 1000;
 }
 
 .recommendation-modal .modal-content,
@@ -5152,7 +5192,7 @@ input[type="text"] {
   background: #0056CC;
 }
 
-/* 추천 취소 모달 특별 스타일 */
+/* 異붿쿇 痍⑥냼 紐⑤떖 ?밸퀎 ?ㅽ???*/
 .recommendation-cancel-modal .modal-content {
   max-width: 400px;
 }
@@ -5180,7 +5220,7 @@ input[type="text"] {
   background: #c82333;
 }
 
-/* 추천 상세 모달의 취소 버튼 스타일 */
+/* 異붿쿇 ?곸꽭 紐⑤떖??痍⑥냼 踰꾪듉 ?ㅽ???*/
 .recommendation-detail-modal .recommendation-actions {
   margin-top: 20px;
   padding-top: 15px;
@@ -5201,7 +5241,7 @@ input[type="text"] {
   background: #c82333;
 }
 
-/* 추천 ?�세 모달 추�? ?��???*/
+/* 異붿쿇 ?占쎌꽭 紐⑤떖 異뷂옙? ?占쏙옙???*/
 .recommendations-section,
 .comments-section {
   margin-bottom: 20px;
@@ -5272,7 +5312,7 @@ input[type="text"] {
   margin-top: 8px;
 }
 
-/* 추천 마커 스타일 */
+/* 異붿쿇 留덉빱 ?ㅽ???*/
 .marker-dot.recommended {
   transform: scale(1.3);
   box-shadow:
@@ -5298,7 +5338,7 @@ input[type="text"] {
   }
 }
 
-/* ----------------- 현재 위치 마커 (프리미엄 스타일) ----------------- */
+/* ----------------- ?꾩옱 ?꾩튂 留덉빱 (?꾨━誘몄뾼 ?ㅽ??? ----------------- */
 .current-location-marker-container {
   display: flex;
   align-items: center;
@@ -5355,15 +5395,15 @@ input[type="text"] {
   border-bottom: 11px solid #fff;
   margin-left: -7px;
   margin-top: -24px;
-  /* 위치 점 위쪽에 배치 */
+  /* ?꾩튂 ???꾩そ??諛곗튂 */
   filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.4));
   transform-origin: 50% 215%;
-  /* 점의 중심을 기준으로 회전 */
+  /* ?먯쓽 以묒떖??湲곗??쇰줈 ?뚯쟾 */
   z-index: 3;
   transition: transform 0.15s ease-out;
 }
 
-/* 슬롯 관리 모달 레이아웃 및 테이블 스타일 */
+/* ?щ’ 愿由?紐⑤떖 ?덉씠?꾩썐 諛??뚯씠釉??ㅽ???*/
 .slot-management-modal {
   max-width: 1000px !important;
 }
@@ -5435,18 +5475,18 @@ input[type="text"] {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-/* ──────────────────────────────────────────────────
-   하이브리드 필터 모드 전용 스타일 (FINAL OVERRIDE)
-   (body.hybrid-mode 클래스가 있을 때만 활성화)
-   파일 최하단에 위치하여 모든 앞선 규칙을 덮어씁니다.
-────────────────────────────────────────────────── */
+/* ??????????????????????????????????????????????????
+   ?섏씠釉뚮━???꾪꽣 紐⑤뱶 ?꾩슜 ?ㅽ???(FINAL OVERRIDE)
+   (body.hybrid-mode ?대옒?ㅺ? ?덉쓣 ?뚮쭔 ?쒖꽦??
+   ?뚯씪 理쒗븯?⑥뿉 ?꾩튂?섏뿬 紐⑤뱺 ?욎꽑 洹쒖튃????뼱?곷땲??
+?????????????????????????????????????????????????? */
 
-/* 1. 상단 레이아웃 높이 재설정 및 필터바 숨김 */
+/* 1. ?곷떒 ?덉씠?꾩썐 ?믪씠 ?ъ꽕??諛??꾪꽣諛??④? */
 body.hybrid-mode #topFilterBar:not(#hybridFilterModal #topFilterBar) {
   display: none !important;
 }
 
-/* 모달 내부의 필터바는 표시 */
+/* 紐⑤떖 ?대????꾪꽣諛붾뒗 ?쒖떆 */
 body.hybrid-mode #hybridFilterModal #topFilterBar {
   display: block !important;
   position: static !important;
@@ -5513,7 +5553,7 @@ body.hybrid-mode #topbar {
     overflow: hidden !important;
   }
 
-  /* #layout 내부 모든 자식의 상단 여백 및 변위 강제 초기화 (유격 제거 핵심) */
+  /* #layout ?대? 紐⑤뱺 ?먯떇???곷떒 ?щ갚 諛?蹂??媛뺤젣 珥덇린??(?좉꺽 ?쒓굅 ?듭떖) */
   body.hybrid-mode #layout>#sidebar,
   body.hybrid-mode #layout>#mainContent,
   body.hybrid-mode #layout>#mapWrap,
@@ -5538,7 +5578,7 @@ body.hybrid-mode #topbar {
     box-sizing: border-box !important;
   }
 
-  /* 2단: 통합 바 구성 */
+  /* 2?? ?듯빀 諛?援ъ꽦 */
   body.hybrid-mode .count-info {
     display: flex !important;
     position: absolute !important;
@@ -5570,12 +5610,12 @@ body.hybrid-mode #topbar {
     display: none !important;
   }
 
-  /* 10. 필터 모달 섹션 개별 제어 강제 적용 */
+  /* 10. ?꾪꽣 紐⑤떖 ?뱀뀡 媛쒕퀎 ?쒖뼱 媛뺤젣 ?곸슜 */
   #hybridFilterModal .filter-section.hidden {
     display: none !important;
   }
 
-  /* 11. 현황 필터 드롭다운 너비 확장 (다른 필드와 동일하게) */
+  /* 11. ?꾪솴 ?꾪꽣 ?쒕∼?ㅼ슫 ?덈퉬 ?뺤옣 (?ㅻⅨ ?꾨뱶? ?숈씪?섍쾶) */
   body.hybrid-mode #tf_status,
   body.hybrid-mode #tf_h_status {
     min-width: 100% !important;
@@ -5583,7 +5623,7 @@ body.hybrid-mode #topbar {
     width: 100% !important;
   }
 }
-/* �Ź� ���� ���ε� ���� */
+/* 매물 사진 업로드 영역 */
 .photo-upload-area { margin-top: 15px; padding: 15px; background: #f8f9fa; border: 1px dashed #ced4da; border-radius: 8px; }
 .photo-upload-label { display: block; font-weight: 600; margin-bottom: 10px; color: #495057; }
 .photo-controls { display: flex; gap: 10px; margin-bottom: 10px; }
@@ -5595,9 +5635,58 @@ body.hybrid-mode #topbar {
 .photo-remove-btn { position: absolute; top: 2px; right: 2px; width: 20px; height: 20px; background: rgba(255, 0, 0, 0.8); color: white; border: none; border-radius: 50%; font-size: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; line-height: 1; }
 .photo-remove-btn:hover { background: rgba(255, 0, 0, 1); }
 
-/* �Ź� ���� ������ ��Ÿ�� */
+/* 매물 사진 갤러리 스타일 */
 .detail-photo-gallery { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 10px; }
 .gallery-item { width: 100%; aspect-ratio: 1/1; border-radius: 4px; overflow: hidden; cursor: pointer; border: 1px solid #eee; background: #f0f0f0; position: relative; }
 .gallery-item img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.2s; }
 .gallery-item:hover img { transform: scale(1.05); }
 .photo-count-badge { position: absolute; bottom: 5px; right: 5px; background: rgba(0,0,0,0.6); color: white; padding: 2px 6px; border-radius: 10px; font-size: 10px; }
+
+/* ========================================
+   최적화된 사진 라이트박스 (v1.4)
+   - PC/모바일 공통 적용
+   - 배경 블러 제거 (GPU 부하 최적화)
+   ======================================== */
+#photoLightbox.photo-lightbox-v2 {
+  display: none;
+  opacity: 0;
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  height: 100dvh !important;
+  background-color: rgba(0, 0, 0, 0.95) !important;
+  z-index: 2100 !important;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  will-change: opacity, transform;
+  transition: opacity 0.2s ease-in-out;
+}
+
+#photoLightbox.photo-lightbox-v2.active {
+  display: flex !important;
+  opacity: 1 !important;
+}
+
+#photoLightbox.photo-lightbox-v2 .modal-content {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+#photoLightbox.photo-lightbox-v2 img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  transform: translateZ(0);
+}

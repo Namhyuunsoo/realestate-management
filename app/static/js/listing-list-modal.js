@@ -217,9 +217,13 @@ class ListingListModalManager {
             this.modalContent.addEventListener('touchend', (e) => {
                 const touchDuration = Date.now() - touchStartTime;
                 if (!isScrolling && touchDuration < 300) {
+                    // 🔥 근본 해결: 클릭된 대상이 버튼이나 대화형 요소인지 확인
+                    if (e.target.closest('button, select, input, a, .recommendation-star, .listing-detail-briefing-status')) {
+                        return; // 대화형 요소면 리스트 선택 로직 실행 안 함
+                    }
+
                     const li = e.target.closest('li[data-id]');
                     if (li) {
-                        // 중복 방지를 위해 e.preventDefault()와 stopPropagation() 적용
                         e.preventDefault();
                         e.stopPropagation();
 
@@ -232,8 +236,12 @@ class ListingListModalManager {
 
             // 클릭 이벤트 (PC 마우스 및 Ghost Click 대응)
             this.modalContent.addEventListener('click', (e) => {
-                // 이미 터치로 처리된 경우 무시
                 if (isScrolling) return;
+
+                // 🔥 근본 해결: 클릭된 대상이 버튼이나 대화형 요소인지 확인
+                if (e.target.closest('button, select, input, a, .recommendation-star, .listing-detail-briefing-status')) {
+                    return; // 대화형 요소는 각각의 고유 리스너가 처리하게 둠
+                }
 
                 const li = e.target.closest('li[data-id]');
                 if (li) {
@@ -395,6 +403,10 @@ class ListingListModalManager {
         this.navigationStack = [];
         this.currentState = 'listing';
         this.clusterData = null;
+
+        // 🔥 근본 해결: 모달 전체가 닫힐 때도 이전에 열었던 매물ID를 반드시 초기화
+        // 이를 누락하면, 다시 목록이나 클러스터를 열었을 때 해당 매물이 먹통이 됨
+        this.currentListingId = null;
     }
 
     // bindListItemEvents: 더 이상 사용하지 않으므로 빈 함수로 두거나 제거 가능
@@ -402,6 +414,14 @@ class ListingListModalManager {
     bindListItemEvents() { }
 
     showListingDetail(listing, opts = {}) {
+        if (!listing) return;
+
+        // 🔥 근본 해결: 이미 같은 매물이 열려있으면 중복 렌더링(Wipeout) 방지
+        if (this.currentListingId === String(listing.id)) {
+            // console.log('이미 동일한 매물이 열려있어 렌더링을 생략합니다:', listing.id);
+            return;
+        }
+        this.currentListingId = String(listing.id);
 
         // 현재 상태를 네비게이션 스택에 저장
         // detail 상태가 아닐 때만 스택에 추가 (중복 푸시 방지)
@@ -457,17 +477,17 @@ class ListingListModalManager {
             this.detailContent.innerHTML = `
                 <div style="background: #f8f9fa; padding: 12px; border-radius: 8px; margin-bottom: 15px; position: relative;">
                     <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px;">
-                        <div style="font-size: 16px; font-weight: bold; color: #333;">${escapeHtml(titleName)}</div>
-                        <button id="mobilePhotoEditBtn" style="background: #6c757d; color: white; border: none; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 3px;">
-                            <span>⚙️</span> 사진편집
-                        </button>
+                        <div style="font-size: 16px; font-weight: bold; color: #333; flex: 1; margin-right: 8px;">${escapeHtml(titleName)}</div>
+                        <div style="display: flex; gap: 6px; flex-shrink: 0;">
+                            <button id="mobilePhotoCountBtn" style="background: #0d6efd; color: white; border: none; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; cursor: pointer; white-space: nowrap;">
+                                📷 사진(-)
+                            </button>
+                            <button id="mobilePhotoEditBtn" style="background: #6c757d; color: white; border: none; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 3px;">
+                                <span>⚙️</span> 사진편집
+                            </button>
+                        </div>
                     </div>
                     <div style="font-size: 14px; color: #666; margin-bottom: 10px;">📍 ${escapeHtml(addr || '주소 정보 없음')}${briefingHtml}</div>
-                    
-                    <!-- 사진 갤러리 영역 -->
-                    <div id="mobilePhotoGallery" class="detail-photo-gallery" style="margin-top: 10px; border-top: 1px dashed #ddd; padding-top: 10px;">
-                        <div style="grid-column: span 3; color: #999; font-size: 11px; text-align: center; padding: 10px;">사진을 불러오는 중...</div>
-                    </div>
                     
                     <!-- 숨김 파일 입력 -->
                     <input type="file" id="mobilePhotoInput" style="display: none;" accept="image/*">
@@ -475,8 +495,24 @@ class ListingListModalManager {
                 <div style="background: white; border: 1px solid #e0e0e0; border-radius: 8px; padding: 12px;">${rows}</div>
             `;
 
-            // 사진 로드 실행
+            // 백그라운드에서 사진 API 호출 → 버튼 숫자 업데이트 + 캐싱
             this.loadMobilePhotos(listing.id);
+
+            // 사진 보기 버튼 이벤트 바인딩
+            const countBtn = document.getElementById('mobilePhotoCountBtn');
+            if (countBtn) {
+                countBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    e.preventDefault(); // 모바일 터치 시 의도치 않은 스크롤/포커스 점프 차단
+                    // 캐싱된 사진이 있으면 즉시 Lightbox 열기
+                    if (window._currentMobilePhotos && window._currentMobilePhotos.length > 0) {
+                        window.openLightbox && window.openLightbox(window._currentMobilePhotos, 0);
+                    } else {
+                        // 아직 로딩 안됐거나 사진 없음 → 재시도
+                        this.loadMobilePhotos(listing.id);
+                    }
+                };
+            }
 
             // 업로드 버튼 이벤트 바인딩
             const uploadBtn = document.getElementById('mobilePhotoUploadBtn');
@@ -581,8 +617,38 @@ class ListingListModalManager {
             deleteStartBtn.onclick = () => this.enterDeleteMode(listing);
         }
 
-        // 사진 로드 (편집 모드로 로드)
-        this.loadMobilePhotos(listing.id);
+        // 사진 로드 (편집 모드 전용 - Gallery Grid에 렌더링)
+        this.loadEditModePhotos(listing.id);
+    }
+
+    // 편집 모드 전용 사진 로더 (Gallery Grid에 이미지 삽입)
+    async loadEditModePhotos(listingId) {
+        const gallery = document.getElementById('mobilePhotoGallery');
+        if (!gallery) return;
+
+        try {
+            const response = await fetch(`/api/listings/${listingId}/photos`);
+            const data = await response.json();
+
+            if (data.success && data.photos && data.photos.length > 0) {
+                window._currentMobilePhotos = data.photos;
+
+                gallery.innerHTML = data.photos.map((photo, idx) => `
+                    <div class="gallery-item ${this.isPhotoDeleteMode ? 'edit-mode' : ''} ${this.selectedPhotoFiles.has(photo.file_name) ? 'selected' : ''}" 
+                         data-filename="${photo.file_name}"
+                         onclick="${this.isPhotoDeleteMode 
+                            ? `listingListModalManager.togglePhotoSelection('${photo.file_name}')` 
+                            : `window.openLightbox && window.openLightbox(window._currentMobilePhotos, ${idx})`}">
+                        <img src="${photo.full_url}" alt="매물사진" onerror="this.src='/static/img/no-image.png'">
+                    </div>
+                `).join('');
+            } else {
+                gallery.innerHTML = '<div style="grid-column: span 3; color: #999; font-size: 11px; text-align: center; padding: 5px;">등록된 사진이 없습니다.</div>';
+            }
+        } catch (error) {
+            console.error('사진 로드 중 오류:', error);
+            gallery.innerHTML = '<div style="grid-column: span 3; color: #f44336; font-size: 11px; text-align: center; padding: 5px;">사진 로딩 실패</div>';
+        }
     }
 
     // 삭제 모드 진입
@@ -698,33 +764,24 @@ class ListingListModalManager {
     }
 
     async loadMobilePhotos(listingId) {
-        const gallery = document.getElementById('mobilePhotoGallery');
-        if (!gallery) return;
-
-        // 🔥 가드(Guard): 로딩 중 매물이 바뀌는 경우 대비
-        gallery.setAttribute('data-loading-id', listingId);
+        const countBtn = document.getElementById('mobilePhotoCountBtn');
+        if (!countBtn) return;
 
         try {
             const response = await fetch(`/api/listings/${listingId}/photos`);
             const data = await response.json();
 
-            // 다른 매물 사진이 도착했으면 무시
-            if (gallery.getAttribute('data-loading-id') !== String(listingId)) return;
-
+            // 사진 데이터 캐싱 (Lightbox 스와이프용)
             if (data.success && data.photos && data.photos.length > 0) {
-                gallery.innerHTML = data.photos.map(photo => `
-                    <div class="gallery-item ${this.isPhotoDeleteMode ? 'edit-mode' : ''} ${this.selectedPhotoFiles.has(photo.file_name) ? 'selected' : ''}" 
-                         data-filename="${photo.file_name}"
-                         onclick="${this.isPhotoDeleteMode ? `listingListModalManager.togglePhotoSelection('${photo.file_name}')` : `window.openLightbox && window.openLightbox('${photo.full_url}', '${photo.file_name}')`}">
-                        <img src="${photo.full_url}" alt="매물사진" onerror="this.src='/static/img/no-image.png'">
-                    </div>
-                `).join('');
+                window._currentMobilePhotos = data.photos;
+                countBtn.textContent = `📷 사진(${data.photos.length})`;
             } else {
-                gallery.innerHTML = '<div style="grid-column: span 3; color: #999; font-size: 11px; text-align: center; padding: 5px;">등록된 사진이 없습니다.</div>';
+                window._currentMobilePhotos = [];
+                countBtn.textContent = `📷 사진(0)`;
             }
         } catch (error) {
             console.error('사진 로드 중 오류:', error);
-            gallery.innerHTML = '<div style="grid-column: span 3; color: #f44336; font-size: 11px; text-align: center; padding: 5px;">사진 로딩 실패</div>';
+            // 네트워크 실패 시 버튼 상태 유지 (사진(-))
         }
     }
 
@@ -764,7 +821,7 @@ class ListingListModalManager {
                     if (listing) {
                         this.renderPhotoEditUI(listing);
                     } else {
-                        await this.loadMobilePhotos(listingId);
+                        await this.loadEditModePhotos(listingId);
                     }
                 } else {
                     await this.loadMobilePhotos(listingId);
@@ -1133,6 +1190,10 @@ class ListingListModalManager {
 
             // 현재 상태를 'listing'으로 변경
             this.currentState = 'listing';
+
+            // 🔥 근본 해결: 상세창을 닫을 때 이전에 열었던 매물ID 초기화
+            // 이를 누락하면 동일 매물을 다시 클릭했을 때 열리지 않음
+            this.currentListingId = null;
 
             // 원래 매물리스트 복원
             if (this.originalListingContent) {
