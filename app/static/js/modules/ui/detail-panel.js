@@ -326,7 +326,11 @@ function openLightbox(urlOrPhotos, filenameOrIndex) {
   window.isLightboxOpen = true; // 🔥 근본 해결: 리사이즈 루프 차단 플래그 활성화
   
   // 2. 백그라운드 레이어 고정 (V1.4: 깜박임 방지를 위해 블러/투명도 필터 제거)
-  const appRoot = document.getElementById('appRoot');
+  // 🔥 모바일 깜박임 근절 (v5.15): 라이트박스 오픈 시 '지도'만 숨김 (부모 appRoot 유지)
+  const mapEl = document.getElementById('map');
+  if (mapEl && (window.MOBILE_APP || (typeof isMobileDevice === 'function' && isMobileDevice()))) {
+    mapEl.style.visibility = 'hidden';
+  }
 
   // 3. 백그라운드 이미지 비동기 로딩 시작
   _lbUpdateUI();
@@ -348,6 +352,12 @@ function openLightbox(urlOrPhotos, filenameOrIndex) {
         lightbox.classList.remove('active');
         lightbox.style.pointerEvents = '';
         window.isLightboxOpen = false; // 🔥 근본 해결: 리사이즈 루프 차단 플래그 해제
+
+        // 🔥 모바일 깜박임 방지: 배경 지도(map) 복구 (v5.15)
+        const mapEl = document.getElementById('map');
+        if (mapEl) {
+          mapEl.style.visibility = 'visible';
+        }
       }, 50);
     };
     closeBtn.onclick = closeHandler;

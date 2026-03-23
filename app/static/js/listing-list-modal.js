@@ -312,6 +312,8 @@ class ListingListModalManager {
                 } else {
                     this.container.innerHTML = '<p style="padding: 20px; text-align: center; color: #666;">로그인이 필요합니다.<br><small>페이지를 새로고침해주세요.</small></p>';
                     this.modal.classList.remove('hidden');
+
+                    // 🔥 모바일 깜박임 방지: 리스트 모달 수준에서는 지도를 숨기지 않습니다. (v5.15 화이트아웃 해결)
                     return Promise.resolve(); // 모달은 열었지만 에러 상태
                 }
             }
@@ -377,6 +379,9 @@ class ListingListModalManager {
             // 모달 표시
             this.modal.classList.remove('hidden');
 
+            // 🔥 모바일 깜박임 방지: 리스트 모달 수준에서는 지도를 숨기지 않습니다. (v5.15 화이트아웃 해결)
+            // (상세페이지나 편집모드와 같이 전체 화면을 덮을 때만 개별적으로 숨깁니다)
+
             // 모달이 열린 상태를 보장하기 위해 Promise 반환
             return Promise.resolve();
 
@@ -397,6 +402,12 @@ class ListingListModalManager {
             this.modal.classList.add('hidden');
         }
         window.isMobileModalMode = false;
+
+        // 🔥 모바일 깜박임 방지: 배경 지도(map) 복구 (v5.15)
+        const mapEl = document.getElementById('map');
+        if (mapEl) {
+            mapEl.style.visibility = 'visible';
+        }
 
         // 🔥 파생 사이드바도 닫기 (상세정보 패널, 클러스터 목록 등)
         if (this.detailContainer && !this.detailContainer.classList.contains('hidden')) {
@@ -547,6 +558,13 @@ class ListingListModalManager {
             this.detailContainer.style.display = 'block';
             this.container.style.display = 'none';
 
+            // 🔥 모바일 깜박임 방지 전략 수정 (v5.17): 상세창 진입 시에는 지도를 숨기지 않고 유지합니다.
+            // (사용자가 사진을 보거나 편집 버튼을 누를 때만 선택적으로 숨겨 개방감을 확보합니다)
+            const mapEl = document.getElementById('map');
+            if (mapEl) {
+                mapEl.style.visibility = 'visible'; // 명시적으로 노출 유지
+            }
+
             // 현재 상태를 'detail'로 변경
             this.currentState = 'detail';
 
@@ -564,6 +582,18 @@ class ListingListModalManager {
         this.isPhotoEditMode = true;
         this.isPhotoDeleteMode = false;
         this.selectedPhotoFiles.clear();
+
+        // 🔥 모바일 깜박임 방지 (v5.17): 사진 관리 모드 진입 시에만 '지도'를 숨깁니다.
+        const mapEl = document.getElementById('map');
+        if (mapEl) mapEl.style.visibility = 'hidden';
+
+        // 🔥 사진 관리 모드 전체 화면화: 모달 높이를 확충하여 환경 격리
+        if (this.modalContent) {
+            this._originalModalHeight = this.modalContent.style.height;
+            this.modalContent.style.height = '100dvh';
+            this.modalContent.style.top = '0';
+        }
+
         this.renderPhotoEditUI(listing);
     }
 
@@ -572,6 +602,17 @@ class ListingListModalManager {
         this.isPhotoEditMode = false;
         this.isPhotoDeleteMode = false;
         this.selectedPhotoFiles.clear();
+
+        // 🔥 가시성 복구: 사진 관리를 마칠 때 지도를 다시 보이게 함
+        const mapEl = document.getElementById('map');
+        if (mapEl) mapEl.style.visibility = 'visible';
+
+        // 🔥 모달 높이 원복
+        if (this.modalContent && this._originalModalHeight) {
+            this.modalContent.style.height = this._originalModalHeight;
+            this.modalContent.style.top = '';
+        }
+
         this.showListingDetail(listing); // 원래 상세정보로 복귀
     }
 
@@ -645,7 +686,7 @@ class ListingListModalManager {
                     <div class="gallery-item ${this.isPhotoDeleteMode ? 'edit-mode' : ''} ${this.selectedPhotoFiles.has(photo.file_name) ? 'selected' : ''}" 
                          data-filename="${photo.file_name}"
                          onclick="${this.isPhotoDeleteMode 
-                            ? `listingListModalManager.togglePhotoSelection('${photo.file_name}')` 
+                            ? `(window.listingListModalManager || this).togglePhotoSelection('${photo.file_name}')` 
                             : `window.openLightbox && window.openLightbox(window._currentMobilePhotos, ${idx})`}">
                         <img src="${photo.full_url}" alt="매물사진" onerror="this.src='/static/img/no-image.png'">
                     </div>
@@ -730,44 +771,71 @@ class ListingListModalManager {
 
     // 선택된 사진 일괄 삭제
     async deleteSelectedPhotos(listing) {
-        if (this.selectedPhotoFiles.size === 0) return;
+        if (!this.selectedPhotoFiles || this.selectedPhotoFiles.size === 0) return;
 
         if (!confirm(`${this.selectedPhotoFiles.size}장의 사진을 삭제하시겠습니까?`)) return;
 
         const listingId = listing.id;
         const photosToDelete = Array.from(this.selectedPhotoFiles);
         let successCount = 0;
+        let failCount = 0;
 
-        // 버튼 비활성화
+        // 버튼 비활성화 및 로딩 상태 표시
         const confirmBtn = document.getElementById('confirmDeleteBtn');
+        const originalText = confirmBtn ? confirmBtn.textContent : '';
         if (confirmBtn) {
             confirmBtn.disabled = true;
             confirmBtn.textContent = '⏳ 삭제 중...';
         }
 
         try {
+            // 순차적 삭제 (병렬로 하면 서버 과부화 우려가 있으므로 순차 처리 유지하되 에러 핸들링 보강)
             for (const fileName of photosToDelete) {
-                const response = await fetch(`/api/listings/${listingId}/photos/${fileName}`, {
-                    method: 'DELETE',
-                    headers: {
-                        'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.content || ''
+                try {
+                    const response = await fetch(`/api/listings/${listingId}/photos/${fileName}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.content || ''
+                        }
+                    });
+                    const data = await response.json();
+                    if (data.success) {
+                        successCount++;
+                    } else {
+                        console.warn(`사진 삭제 실패 (${fileName}):`, data.error);
+                        failCount++;
                     }
-                });
-                const data = await response.json();
-                if (data.success) {
-                    successCount++;
+                } catch (e) {
+                    console.error(`사진 삭제 통신 오류 (${fileName}):`, e);
+                    failCount++;
                 }
             }
 
-            if (typeof showToast === 'function') {
-                showToast(`${successCount}장의 사진이 삭제되었습니다.`, 'success');
+            // 결과 안내
+            if (successCount > 0) {
+                if (typeof showToast === 'function') {
+                    showToast(`${successCount}장의 사진이 삭제되었습니다.`, 'success');
+                }
             }
-        } catch (error) {
-            console.error('사진 삭제 중 오류:', error);
-            alert('일부 사진 삭제 중 오류가 발생했습니다.');
+            if (failCount > 0) {
+                alert(`${failCount}장의 사진 삭제에 실패했습니다. 네트워크 상태를 확인해주세요.`);
+            }
+
+        } catch (globalError) {
+            console.error('사진 일괄 삭제 프로세스 오류:', globalError);
+            alert('삭제 작업 중 예상치 못한 오류가 발생했습니다.');
         } finally {
+            // 삭제 모드 해제 및 UI 강제 리프레시 (안전성 확보)
             this.isPhotoDeleteMode = false;
-            this.renderPhotoEditUI(listing); // 리프레시
+            this.selectedPhotoFiles.clear();
+            
+            // UI 복구
+            if (confirmBtn) {
+                confirmBtn.disabled = false;
+                confirmBtn.textContent = originalText;
+            }
+            
+            this.renderPhotoEditUI(listing); 
         }
     }
 
@@ -1192,6 +1260,12 @@ class ListingListModalManager {
         if (this.detailContainer && this.container) {
             this.detailContainer.style.display = 'none';
             this.container.style.display = 'block';
+
+            // 🔥 모바일 깜박임 방지 해제: 리스트로 돌아올 때 지도 복구
+            const mapEl = document.getElementById('map');
+            if (mapEl) {
+                mapEl.style.visibility = 'visible';
+            }
 
             // 모바일 모달 모드 플래그 제거 (리스트로 돌아갈 때)
             window.isMobileModalMode = false;

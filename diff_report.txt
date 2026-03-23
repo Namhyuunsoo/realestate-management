@@ -1,0 +1,173 @@
+﻿diff --git a/UNIFIED_AGENT_RULES.md b/UNIFIED_AGENT_RULES.md
+index c3e2683..e5197d3 100644
+--- a/UNIFIED_AGENT_RULES.md
++++ b/UNIFIED_AGENT_RULES.md
+@@ -10,7 +10,10 @@
+    - ?대뼚??'?ㅻ쭏??以묐났 ?쒓굅'??'留ㅻЪ ?⑹튂湲? 濡쒖쭅???ъ슜???덈씫 ?놁씠 ?쒖븞/援ы쁽?섏? 留덈씪.
+ 2. **Upsert 湲곕컲 ?숆린??*: 紐⑤뱺 留ㅻЪ ?곗씠?곕뒗 `Slot ID + Row Index`瑜?議고빀??怨좎쑀 ID瑜??ъ슜??Upsert(??뼱?곌린)?섎씪. ?덈? ?꾩껜 ??젣 ???쎌엯?섏? 留덈씪.
+ 3. **?ъ슜??愿李??곗꽑**: ?ъ슜?먭? "?쒗듃??源⑤걮?섎떎"嫄곕굹 "?곗씠?곗뿉 臾몄젣?녿떎"怨??섎㈃, ?쒗듃 ?ㅼ뿼???섏떖?섏? 留먭퀬 肄붾뱶 ?댁쓽 '?숈떆??Race Condition)'?대굹 '?숆린??濡쒖쭅'??踰꾧렇瑜?癒쇱? 李얠븘??
+-4. **湲곕뒫 ?꾩쓽 異붽? 湲덉?**: '諛고룷', '怨듭쑀', '?먮룞 蹂듭젣' ???ъ슜?먭? 紐낆떆?곸쑝濡??붿껌?섏? ?딆? ?곗씠???먮쫫 肄붾뱶???덈? 留뚮뱾吏 留덈씪. 留뚯빟 湲곕뒫??異붽?媛 沅뚯옣?섍굅???꾩슂??寃쎌슦, ?ъ슜?먭? 肄붾뵫 珥덈낫?꾩쓣 紐낆떖?섏뿬 湲곕뒫???꾩슂?깆뿉 ???異⑸텇???ㅻ챸?섍퀬 諛섎뱶???덈씫??援ы븯??
++4. **湲곕뒫 ?꾩쓽 異붽? 湲덉?**: '諛고룷', '怨듭쑀', '?먮룞 蹂듭젣' ???ъ슜?먭? 紐낆떆?곸쑝濡??붿껌?섏? ?딆? ?곗씠???먮쫫 肄붾뱶???덈? 留뚮뱾吏 留덈씪. ?먰븳 ?붿옄?몄쟻?쇰줈 '?댁걽 寃?媛숇떎'嫄곕굹 '??醫뗭쓣 寃?媛숇떎'??二쇨????먮떒?쇰줈 湲곕뒫??異붽??섍굅??蹂듭옟?섍쾶 留뚮뱾吏 留덈씪. 留뚯빟 湲곕뒫??異붽?媛 沅뚯옣?섍굅???꾩슂??寃쎌슦, ?ъ슜?먭? 肄붾뵫 珥덈낫?꾩쓣 紐낆떖?섏뿬 湲곕뒫???꾩슂?깆뿉 ???異⑸텇???ㅻ챸?섍퀬 諛섎뱶???덈씫??援ы븯??
++5. **Simple is Best (?덈? ?먯튃)**: 紐⑤뱺 ?섏젙? 媛???⑥닚?섍퀬 吏곴??곸씤 諛⑸쾿??理쒖슦?좎쑝濡??쒕떎. 
++   - 蹂듭옟??CSS 湲곌탳(?곸냽, 怨꾩궛 ??蹂대떎??**遺덊븘?뷀븳 湲곕뒫 ?먯껜瑜???젣**?섎뒗 寃껋쓣 ?좏샇?섎씪.
++   - ?ъ옣?섏쓽 吏??踰붿쐞瑜?????諛쒖옄援?룄 踰쀬뼱?섏? 留덈씪. "戮먮궡湲??앹쓽 異붽? 肄붾뱶???꾧툑?쒕떎.
+ 
+ ---
+ 
+@@ -61,3 +64,10 @@
+   - ?꾨줎?몄뿏?쒕뒗 紐⑤뱢??JS 援ъ“(`main-new.js`)瑜??곕Ⅴ硫?湲곕뒫蹂꾨줈 遺꾨━??
+   - 諛깆뿏?쒕뒗 ?쒕퉬??Services) 怨꾩링?먯꽌 紐⑤뱺 鍮꾩쫰?덉뒪 濡쒖쭅(?숆린?? 寃??????泥섎━??
+ - **?寃??ъ슜??*: 愿由ъ옄(Admin), 留ㅻ땲?(Manager), ?쇰컲 ?ъ슜??User) ????븷(Role) 湲곕컲??沅뚰븳 ?쒖뒪???댁쁺.
++
++---
++
++## ?? [제6장: 도구의 미학 - 클로드보다 나은 비서가 되는 법]
++1. **지시 엄수**: 시킨 것만 한다. 시키지 않은 것에 대해 " 이게 더 낫다\는 식의 판단은 오만임을 명심하라.
++2. **즉각 보고**: 구현 중 막히거나 지시 내용이 불명확할 경우, 멋대로 판단하지 말고 즉시 보고하고 지침을 기다려라.
++3. **자랑 금지**: 본인의 능력을 보여주기 위한 과잉 코딩은 프로젝트를 망치는 지름길이다. 오직 사장님의 요구사항 만족에만 집중하라.
+diff --git a/app/static/css/style-mobile.css b/app/static/css/style-mobile.css
+index 7daeeee..216befc 100644
+--- a/app/static/css/style-mobile.css
++++ b/app/static/css/style-mobile.css
+@@ -553,3 +553,8 @@
+ #listingListModal.modal, #clusterListModal.modal { background: transparent !important; pointer-events: none; }
+ #listingListModal.modal .modal-content, #clusterListModal.modal .modal-content { pointer-events: auto; }
+ .listing-list-modal .modal-body { position: relative !important; flex: 1 !important; min-height: 0 !important; }
++
++
++/* v1.9 모바일 UI 불필요 기능 삭제 (Simple is Best) */
++.listing-list-modal, .modal-content { box-shadow: none !important; border: none !important; }
++#listingListModal.modal, #clusterListModal.modal { background: none !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
+diff --git a/app/static/css/style.css b/app/static/css/style.css
+index 26b5096..e83115b 100644
+--- a/app/static/css/style.css
++++ b/app/static/css/style.css
+@@ -5654,16 +5654,14 @@ body.hybrid-mode #topbar {
+   top: 0 !important;
+   left: 0 !important;
+   width: 100% !important;
+-  height: 100% !important;
+-  height: 100dvh !important;
+-  background-color: rgba(0, 0, 0, 0.95) !important;
++  height: 100% !important; /* dvh ???100% ?ъ슜 (?덉씠?꾩썐 猷⑦봽 諛⑹?) */
++  background-color: rgb(0, 0, 0) !important; /* v2.0: 100% 遺덊닾紐낆쑝濡?GPU ?⑹꽦 ?곗궛 李⑤떒 */
+   z-index: 2100 !important;
+   flex-direction: column;
+   justify-content: center;
+   align-items: center;
+-  -webkit-backface-visibility: hidden;
+-  backface-visibility: hidden;
+-  will-change: opacity, transform;
++  /* GPU 怨쇰????좊컻 ?붿냼 ?쒓굅 (?꾨젰 蹂댄샇 紐⑤뱶 ??? */
++  will-change: opacity; 
+   transition: opacity 0.2s ease-in-out;
+ }
+ 
+diff --git a/app/static/js/listing-list-modal.js b/app/static/js/listing-list-modal.js
+index 1124d3d..b2cf5c5 100644
+--- a/app/static/js/listing-list-modal.js
++++ b/app/static/js/listing-list-modal.js
+@@ -1434,7 +1434,7 @@ class ListingListModalManager {
+ 
+         // 理쒖냼/理쒕? ?믪씠 ?쒗븳
+         const minHeight = window.innerHeight * 0.3; // ?붾㈃??30%
+-        const maxHeight = window.innerHeight * 0.8; // ?붾㈃??80%
++        const maxHeight = window.innerHeight;       // ?붾㈃??100% (理쒕? ?뺤옣)
+ 
+         const clampedHeight = Math.max(minHeight, Math.min(maxHeight, newHeight));
+ 
+diff --git a/app/static/js/modules/auth/auth.js b/app/static/js/modules/auth/auth.js
+index b9749b4..1e3f9c7 100644
+--- a/app/static/js/modules/auth/auth.js
++++ b/app/static/js/modules/auth/auth.js
+@@ -392,22 +392,38 @@ function toggleLoginLogoutUI(isLoggedIn) {
+   const mobileLogoutBtn = document.getElementById("mobileLogoutBtn");
+   const manualWrap = document.getElementById("manualUserWrap");
+ 
+-  if (logoutBtn) logoutBtn.classList.toggle("hidden", !isLoggedIn);
+-  if (mobileLogoutBtn) mobileLogoutBtn.classList.toggle("hidden", !isLoggedIn);
+-  if (manualWrap) manualWrap.classList.toggle("hidden", isLoggedIn);
+-  
+-  // 紐⑤컮???섍꼍?먯꽌 濡쒓렇?꾩썐 踰꾪듉 ?쒖떆 泥섎━
+-  if (isLoggedIn && mobileLogoutBtn) {
+-    const isMobile = window.MOBILE_APP || window.innerWidth <= 768 || 
+-                     /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+-    
++  // 紐⑤컮???щ? ?먮떒 (v2.1: ???꾧꺽???덉씠?꾩썐 遺꾨━)
++  const isMobile = window.MOBILE_APP || window.innerWidth <= 768 || 
++                   /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
++
++  if (isLoggedIn) {
+     if (isMobile) {
+-      mobileLogoutBtn.style.display = "inline-block";
+-      mobileLogoutBtn.classList.remove("hidden");
++      // 紐⑤컮???섍꼍: 鍮④컙??踰꾪듉留??몄텧, PC?⑹? 臾댁“嫄??④?
++      if (logoutBtn) {
++        logoutBtn.classList.add("hidden");
++        logoutBtn.style.display = "none";
++      }
++      if (mobileLogoutBtn) {
++        mobileLogoutBtn.classList.remove("hidden");
++        mobileLogoutBtn.style.display = "inline-block";
++      }
+     } else {
+-      mobileLogoutBtn.style.display = "none";
+-      mobileLogoutBtn.classList.add("hidden");
++      // PC ?섍꼍: 湲곗〈 留곹겕留??몄텧, 紐⑤컮?쇱슜? 臾댁“嫄??④?
++      if (logoutBtn) {
++        logoutBtn.classList.remove("hidden");
++        logoutBtn.style.display = "inline-block";
++      }
++      if (mobileLogoutBtn) {
++        mobileLogoutBtn.classList.add("hidden");
++        mobileLogoutBtn.style.display = "none";
++      }
+     }
++    if (manualWrap) manualWrap.classList.add("hidden");
++  } else {
++    // 濡쒓렇?꾩썐 ?곹깭: ?????④?
++    if (logoutBtn) logoutBtn.classList.add("hidden");
++    if (mobileLogoutBtn) mobileLogoutBtn.classList.add("hidden");
++    if (manualWrap) manualWrap.classList.remove("hidden");
+   }
+ }
+ 
+diff --git a/app/static/js/modules/ui/detail-panel.js b/app/static/js/modules/ui/detail-panel.js
+index c4d1412..085173a 100644
+--- a/app/static/js/modules/ui/detail-panel.js
++++ b/app/static/js/modules/ui/detail-panel.js
+@@ -323,9 +323,14 @@ function openLightbox(urlOrPhotos, filenameOrIndex) {
+ 
+   // 1. ??吏??諛⑹?瑜??꾪빐 利됱떆 紐⑤떖 援ъ“ ?쒖떆 (v1.2 理쒖쟻???대옒???곸슜)
+   lightbox.classList.add('active');
++  window.isLightboxOpen = true; // ?뵦 洹쇰낯 ?닿껐: 由ъ궗?댁쫰 猷⑦봽 李⑤떒 ?뚮옒洹??쒖꽦??   
+-  // 2. 諛깃렇?쇱슫???덉씠??怨좎젙 (V1.4: 源쒕컯??諛⑹?瑜??꾪빐 釉붾윭/?щ챸???꾪꽣 ?쒓굅)
++  // 2. 諛깃렇?쇱슫???덉씠??怨좎젙 (V2.0: 源쒕컯??洹쇰낯 ?닿껐???꾪빐 硫붿씤 ?덉씠??臾쇰━??寃⑸━)
+   const appRoot = document.getElementById('appRoot');
++  if (appRoot) {
++    appRoot.style.visibility = 'hidden'; // GPU 濡쒕뱶 ?쒕줈??+  }
++  document.body.style.overflow = 'hidden'; // 諛붾뵒 ?ㅽ겕濡?猷⑦봽 李⑤떒
+ 
+   // 3. 諛깃렇?쇱슫???대?吏 鍮꾨룞湲?濡쒕뵫 ?쒖옉
+   _lbUpdateUI();
+@@ -339,13 +344,19 @@ function openLightbox(urlOrPhotos, filenameOrIndex) {
+         e.stopPropagation();
+       }
+       
+-      // V1.4: ?덉씠??寃⑸━ ?댁젣 (?꾪꽣 ?쒓굅??
++      // V2.0: ?덉씠??寃⑸━ ?댁젣 (吏????蹂듦뎄)
++      const appRoot = document.getElementById('appRoot');
++      if (appRoot) {
++        appRoot.style.visibility = 'visible';
++      }
++      document.body.style.overflow = '';
+ 
+       // 0.05珥?吏?????リ린 (怨좎뒪???대┃ 諛⑹? ?좎?)
+       lightbox.style.pointerEvents = 'none';
+       setTimeout(() => {
+         lightbox.classList.remove('active');
+         lightbox.style.pointerEvents = '';
++        window.isLightboxOpen = false; // ?뵦 洹쇰낯 ?닿껐: 由ъ궗?댁쫰 猷⑦봽 李⑤떒 ?뚮옒洹??댁젣
+       }, 50);
+     };
+     closeBtn.onclick = closeHandler;
