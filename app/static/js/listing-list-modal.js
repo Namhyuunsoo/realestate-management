@@ -278,6 +278,11 @@ class ListingListModalManager {
     }
 
     async openModal(mode = 'toggle') {
+        // 🔥 근본 해결: 모달을 열 때 상세페이지 레이어가 남아있으면 강제 숨김
+        if (this.detailContainer) {
+            this.detailContainer.style.display = 'none';
+        }
+
         // 🔥 근본 해결: 모달 개폐 의도를 명확히 처리
         const isHidden = !this.modal || this.modal.classList.contains('hidden');
 
@@ -441,6 +446,9 @@ class ListingListModalManager {
 
             // 현재 상태를 'detail'로 변경
             this.currentState = 'detail';
+
+            // 🔥 근본 해결: 렌더링 전 이전 데이터 잔상 물리적 소거 (Ghosting 방지)
+            this.detailContent.innerHTML = '<div style="padding: 20px; text-align: center; color: #999;">로딩 중...</div>';
 
             // 모바일 모달 모드 플래그 설정 (2차 사이드바 열기 방지)
             // 🔥 환경 격리: 모바일 앱일 때만 플래그 설정
@@ -1232,6 +1240,11 @@ class ListingListModalManager {
 
         // 리스트 컨테이너 표시 보장 (상세에서 돌아온 뒤 또는 다른 버블 터치 시)
         if (this.container) this.container.style.display = 'block';
+        
+        // 🔥 근본 해결: 클러스터 목록을 열 때 상세페이지 레이어가 남아있으면 강제 숨김
+        if (this.detailContainer) {
+            this.detailContainer.style.display = 'none';
+        }
 
         if (this.container) {
             // 클러스터 목록 헤더
@@ -1393,6 +1406,8 @@ class ListingListModalManager {
                         // 상세정보 닫기
                         this.detailContainer.style.display = 'none';
                         this.currentState = 'cluster';
+                        // 🔥 근본 해결: 클러스터 목록으로 돌아올 때 ID 캐시 초기화 (Sticking 방지)
+                        this.currentListingId = null;
                     }
 
                     // 매물리스트 표시
@@ -1410,6 +1425,27 @@ class ListingListModalManager {
 
                 backBtn._clusterBackHandler = clusterBackHandler;
                 backBtn.addEventListener('click', clusterBackHandler);
+            }
+        }
+    }
+
+    // 🔥 추가: 클러스터 내비게이션 복귀 시 ID 캐시 초기화
+    clusterBackHandler() {
+        // 상세정보가 열려있으면 닫기
+        if (this.currentState === 'detail' && this.detailContainer) {
+            this.detailContainer.style.display = 'none';
+            this.currentState = 'cluster';
+            this.currentListingId = null; // ID 캐시 초기화 (Sticking 방지)
+        }
+
+        // 매물리스트 표시
+        if (this.container) {
+            this.container.style.display = 'block';
+            this.currentState = 'listing';
+
+            if (this.originalListingContent) {
+                this.container.innerHTML = this.originalListingContent;
+                this.bindListItemEvents();
             }
         }
     }

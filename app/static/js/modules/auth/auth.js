@@ -392,23 +392,34 @@ function toggleLoginLogoutUI(isLoggedIn) {
   const mobileLogoutBtn = document.getElementById("mobileLogoutBtn");
   const manualWrap = document.getElementById("manualUserWrap");
 
-  if (logoutBtn) logoutBtn.classList.toggle("hidden", !isLoggedIn);
-  if (mobileLogoutBtn) mobileLogoutBtn.classList.toggle("hidden", !isLoggedIn);
-  if (manualWrap) manualWrap.classList.toggle("hidden", isLoggedIn);
-  
-  // 모바일 환경에서 로그아웃 버튼 표시 처리
-  if (isLoggedIn && mobileLogoutBtn) {
-    const isMobile = window.MOBILE_APP || window.innerWidth <= 768 || 
-                     /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    
+  // 기기 판정 (UA + 화면 너비)
+  const isMobile = window.MOBILE_APP || window.innerWidth <= 768 || 
+                   /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+  // 1) PC용 로그아웃 버튼 제어 (모바일이면 무조건 숨김, PC면 로그인 상태에 따름)
+  if (logoutBtn) {
     if (isMobile) {
-      mobileLogoutBtn.style.display = "inline-block";
-      mobileLogoutBtn.classList.remove("hidden");
+      logoutBtn.classList.add("hidden");
+      logoutBtn.style.display = "none";
     } else {
-      mobileLogoutBtn.style.display = "none";
-      mobileLogoutBtn.classList.add("hidden");
+      logoutBtn.classList.toggle("hidden", !isLoggedIn);
+      if (isLoggedIn) logoutBtn.style.display = ""; // 기본값 복구
     }
   }
+
+  // 2) 모바일용 로그아웃 버튼 제어 (PC면 무조건 숨김, 모바일이면 로그인 상태에 따름)
+  if (mobileLogoutBtn) {
+    if (isMobile && isLoggedIn) {
+      mobileLogoutBtn.classList.remove("hidden");
+      mobileLogoutBtn.style.display = "inline-block";
+    } else {
+      mobileLogoutBtn.classList.add("hidden");
+      mobileLogoutBtn.style.display = "none";
+    }
+  }
+
+  // 로그인 폼(아이콘+이메일입력창 등) 제어
+  if (manualWrap) manualWrap.classList.toggle("hidden", isLoggedIn);
 }
 
 function toggleAdminUI(isAdmin) {
