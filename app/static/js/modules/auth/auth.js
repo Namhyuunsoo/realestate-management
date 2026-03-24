@@ -227,19 +227,8 @@ function clearHistoryOnLogout() {
  **************************************/
 
 function showLoginScreen(msg = "") {
-  
-  const loginRequired = document.getElementById("loginRequiredScreen");
-  const appRoot = document.getElementById("appRoot");
-  
-  if (loginRequired) {
-    loginRequired.classList.remove("hidden");
-    // style.display 직접 조작 제거 - CSS의 flexbox가 작동하도록 함
-  }
-  
-  if (appRoot) {
-    appRoot.classList.add("hidden");
-    appRoot.style.display = "none";
-  }
+  // 인라인 화면 대신 정식 로그인 페이지로 이동 (v8.7)
+  window.location.href = '/login';
 }
 
 function hideLoginScreen() {

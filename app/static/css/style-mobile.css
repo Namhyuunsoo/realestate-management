@@ -1,6 +1,6 @@
-@media screen and (max-width: 768px) {
+﻿@media screen and (max-width: 768px) {
 
-  /* PC ?꾩슜 ?곴?/二쇳깮 ?꾪솚, ?쒕툕??? ?곷떒 ?꾪꽣諛??붿냼 ?꾩쟾 ?④? */
+  /* PC ?袁⑹뒠 ?怨?/雅뚯눛源??袁れ넎, ??뺥닏???? ?怨룸뼊 ?袁り숲獄??遺용꺖 ?袁⑹읈 ??? */
   #listingModeToggle,
   .subtype-buttons,
   #topFilterBar,
@@ -10,7 +10,7 @@
   }
 
 
-  /* ?곷떒諛붾? ?섎떒?쇰줈 ?대룞 - 鍮덇났媛??쒓굅 */
+  /* ?怨룸뼊獄쏅뗀? ??롫뼊??곗쨮 ??猷?- ??뜃?у첎???볤탢 */
   #topbar {
     position: fixed !important;
     bottom: 0 !important;
@@ -31,7 +31,7 @@
     justify-content: space-between !important;
   }
 
-  /* ?곷떒諛??대? ?붿냼???뺣━ */
+  /* ?怨룸뼊獄???? ?遺용꺖???類ｂ봺 */
   #topbar .topbar-left,
   #topbar .topbar-right {
     display: flex !important;
@@ -45,7 +45,7 @@
     white-space: nowrap !important;
   }
 
-  /* ?곹깭移댁슫?몃컮瑜??곷떒諛??꾨줈 ?대룞 - 鍮덇났媛??쒓굅 */
+  /* ?怨밴묶燁삳똻??紐껋뺍???怨룸뼊獄??袁⑥쨮 ??猷?- ??뜃?у첎???볤탢 */
   #statusCounts {
     position: fixed !important;
     bottom: 61px !important;
@@ -69,12 +69,12 @@
     overflow: hidden;
   }
 
-  /* ??猷⑦듃 而⑦뀒?대꼫 - ?섎떒諛?諛곌꼍??蹂댁씠?꾨줉 */
+  /* ???룐뫂???뚢뫂???瑗?- ??롫뼊獄?獄쏄퀗瑗??癰귣똻??袁⑥쨯 */
   #appRoot {
     overflow: visible !important;
   }
 
-  /* 紐⑤컮??濡쒓렇?꾩썐 踰꾪듉 ?ㅽ???*/
+  /* 筌뤴뫀而??嚥≪뮄??袁⑹뜍 甕곌쑵???????*/
   .mobile-logout-btn {
     background: #dc3545;
     color: white;
@@ -93,7 +93,7 @@
     border-color: #bd2130;
   }
 
-  /* ?덉씠?꾩썐 ?곸뿭 ?꾩껜?붾㈃ - 紐⑤컮?쇱뿉??媛뺤젣 ?곸슜 */
+  /* ??됱뵠?袁⑹뜍 ?怨몃열 ?袁⑷퍥?遺얇늺 - 筌뤴뫀而??깅퓠??揶쏅벡???怨몄뒠 */
   #layout {
     position: absolute !important;
     top: 0 !important;
@@ -105,7 +105,7 @@
     overflow: hidden !important;
   }
 
-  /* 硫붿씤 肄섑뀗痢??곸뿭 議곗젙 (吏???꾩껜?붾㈃) - 紐⑤컮?쇱뿉??媛뺤젣 ?곸슜 */
+  /* 筌롫뗄???꾩꼹?쀯㎘??怨몃열 鈺곌퀣??(筌왖???袁⑷퍥?遺얇늺) - 筌뤴뫀而??깅퓠??揶쏅벡???怨몄뒠 */
   #mainContent {
     position: absolute !important;
     top: 0 !important;
@@ -119,13 +119,13 @@
     padding: 0 !important;
   }
 
-  /* 留ㅻЪ由ъ뒪???⑤꼸???뺤옣?섎㈃ 硫붿씤 肄섑뀗痢??곸뿭 議곗젙 */
+  /* 筌띲끇窺?귐딅뮞????ㅺ섯???類ㅼ삢??롢늺 筌롫뗄???꾩꼹?쀯㎘??怨몃열 鈺곌퀣??*/
   .property-list-panel.expanded~#mainContent,
   .property-list-panel.expanded+#mainContent {
     bottom: 500px;
   }
 
-  /* 湲곗〈 ?ъ씠?쒕컮? 愿???붿냼???꾩쟾 ?쒓굅 - 紐⑤컮?쇱뿉??媛뺤젣 ?곸슜 */
+  /* 疫꿸퀣???????뺤뺍?? ?온???遺용꺖???袁⑹읈 ??볤탢 - 筌뤴뫀而??깅퓠??揶쏅벡???怨몄뒠 */
   #sidebar,
   #sidebarToggle,
   .mobile-notch {
@@ -141,7 +141,7 @@
     pointer-events: none !important;
   }
 
-  /* 吏???곸뿭 ?꾩껜?붾㈃ ?ㅼ젙 - 紐⑤컮?쇱뿉??媛뺤젣 ?곸슜 */
+  /* 筌왖???怨몃열 ?袁⑷퍥?遺얇늺 ??쇱젟 - 筌뤴뫀而??깅퓠??揶쏅벡???怨몄뒠 */
   #mapWrap {
     position: absolute !important;
     top: 0 !important;
@@ -164,7 +164,7 @@
     height: 100% !important;
   }
 
-  /* 2李??ъ씠?쒕컮瑜??꾩껜?붾㈃?쇰줈 蹂寃?*/
+  /* 2筌??????뺤뺍???袁⑷퍥?遺얇늺??곗쨮 癰궰野?*/
   #secondaryPanel {
     position: fixed;
     top: 0;
@@ -182,7 +182,7 @@
     transform: translateX(0);
   }
 
-  /* 留ㅻЪ由ъ뒪???쒕옒洹??⑤꼸 */
+  /* 筌띲끇窺?귐딅뮞????뺤삋域???ㅺ섯 */
   .property-list-panel {
     position: fixed;
     bottom: 0;
@@ -201,7 +201,7 @@
     border-radius: 20px 20px 0 0;
   }
 
-  /* ?쒕옒洹??몃뱾 */
+  /* ??뺤삋域??紐껊굶 */
   .drag-handle {
     width: 100%;
     height: 20px;
@@ -225,7 +225,7 @@
     border-radius: 2px;
   }
 
-  /* 留ㅻЪ由ъ뒪???ㅻ뜑 */
+  /* 筌띲끇窺?귐딅뮞????삳쐭 */
   .property-list-header {
     padding: 12px 16px;
     border-bottom: 1px solid #e0e0e0;
@@ -255,14 +255,14 @@
     color: white;
   }
 
-  /* 留ㅻЪ由ъ뒪??肄섑뀗痢?*/
+  /* 筌띲끇窺?귐딅뮞???꾩꼹?쀯㎘?*/
   .property-list-content {
     flex: 1;
     overflow-y: auto;
     padding: 8px;
   }
 
-  /* ?곷떒諛붿뿉???④만 ?붿냼??*/
+  /* ?怨룸뼊獄쏅뗄肉????ｋ쭔 ?遺용꺖??*/
   #topbar .user-role-name,
   #topbar .admin-only,
   #topbar .admin-only.hidden,
@@ -272,7 +272,7 @@
     display: none;
   }
 
-  /* 紐⑤컮???섍꼍?먯꽌 auth-links???쒖떆?섎릺 ?대? ?붿냼留?議곗젙 */
+  /* 筌뤴뫀而????띻펾?癒?퐣 auth-links????뽯뻻??롫┷ ??? ?遺용꺖筌?鈺곌퀣??*/
   #topbar .auth-links {
     display: flex !important;
     align-items: center;
@@ -280,7 +280,7 @@
     flex-wrap: nowrap;
   }
 
-  /* ?곹깭移댁슫?몃컮?먯꽌 ?④만 ?붿냼??*/
+  /* ?怨밴묶燁삳똻??紐껋뺍?癒?퐣 ??ｋ쭔 ?遺용꺖??*/
   #statusCounts .count-info {
     display: flex;
     flex-direction: column;
@@ -303,7 +303,7 @@
     display: none !important;
   }
 
-  /* ?꾪꽣 ??而⑦뀒?대꼫 */
+  /* ?袁り숲 ???뚢뫂???瑗?*/
   #statusCounts .filter-row-container {
     display: flex;
     gap: 4px;
@@ -313,7 +313,7 @@
     flex-shrink: 0;
   }
 
-  /* ?꾪꽣 踰꾪듉 ?ㅽ???*/
+  /* ?袁り숲 甕곌쑵???????*/
   #statusCounts .btn-filter {
     flex: 0 0 25%;
     padding: 8px 4px;
@@ -331,7 +331,7 @@
     color: white;
   }
 
-  /* ?꾪꽣 ?붿빟 ?ㅽ???*/
+  /* ?袁り숲 ?遺용튋 ?????*/
   #statusCounts .filter-summary {
     flex: 1;
     padding: 8px 4px;
@@ -346,7 +346,7 @@
     border-radius: 4px;
   }
 
-  /* 紐⑤뱺 踰꾪듉 而⑦뀒?대꼫 */
+  /* 筌뤴뫀諭?甕곌쑵???뚢뫂???瑗?*/
   #statusCounts .all-buttons-container {
     display: flex;
     gap: 4px;
@@ -355,7 +355,7 @@
     flex-shrink: 0;
   }
 
-  /* 紐⑤뱺 踰꾪듉 怨듯넻 ?ㅽ???*/
+  /* 筌뤴뫀諭?甕곌쑵???⑤벏???????*/
   #statusCounts .btn-add-listing,
   #statusCounts .mobile-buttons .btn-property-list,
   #statusCounts .mobile-buttons .btn-customer-list,
@@ -388,7 +388,7 @@
     display: none;
   }
 
-  /* ?ㅽ뵾???뺣낫 紐⑤컮???덉씠?꾩썐 */
+  /* ??쎈돗???類ｋ궖 筌뤴뫀而????됱뵠?袁⑹뜍 */
   .office-info {
     display: flex !important;
     flex-direction: row !important;
@@ -416,7 +416,7 @@
     cursor: pointer;
   }
 
-  /* ?꾪꽣 紐⑤떖 */
+  /* ?袁り숲 筌뤴뫀??*/
   #filterModal.modal:not(.hidden) {
     overflow: hidden !important;
     display: flex !important;
@@ -439,7 +439,7 @@
     box-shadow: none !important;
   }
 
-  /* 留ㅻЪ由ъ뒪??紐⑤떖 */
+  /* 筌띲끇窺?귐딅뮞??筌뤴뫀??*/
   .listing-list-modal {
     position: fixed;
     bottom: 0;
@@ -455,7 +455,7 @@
     box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
   }
 
-  /* 怨좉컼由ъ뒪??紐⑤떖 */
+  /* ?⑥쥒而쇘뵳????筌뤴뫀??*/
   .customer-list-modal {
     position: fixed;
     top: 0;
@@ -464,17 +464,17 @@
     bottom: 0;
     width: 100vw;
     height: 100dvh;
-    background: rgba(0, 0, 0, 0.5);
+    background: transparent;
     z-index: 1100;
   }
 
-  /* 吏??而⑦듃濡??꾩튂 議곗젙 */
+  /* 筌왖???뚢뫂?껅에??袁⑺뒄 鈺곌퀣??*/
   .map-controls {
     top: 60px !important;
     right: 20px !important;
   }
 
-  /* 紐⑤컮??濡쒕뱶酉?誘몃땲留?議곗젙 */
+  /* 筌뤴뫀而??嚥≪뮆諭띌뀎?沃섎챶?뀐쭕?鈺곌퀣??*/
   .roadview-minimap {
     width: 105px !important;
     height: 72px !important;
@@ -501,7 +501,7 @@
     display: none !important;
   }
 
-  /* ?ъ쭊 ?몄쭛 紐⑤뱶 UI */
+  /* ??彛??紐꾩춿 筌뤴뫀諭?UI */
   .photo-edit-actions {
     position: sticky;
     bottom: 0;
@@ -541,7 +541,7 @@
     border-radius: 4px;
   }
 
-  /* 紐⑤뱺 踰꾪듉 而⑦뀒?대꼫 */
+  /* 筌뤴뫀諭?甕곌쑵???뚢뫂???瑗?*/
   #statusCounts .all-buttons-container {
     display: flex;
     gap: 4px;
@@ -550,7 +550,7 @@
     flex-shrink: 0;
   }
 
-  /* 紐⑤뱺 踰꾪듉 怨듯넻 ?ㅽ???*/
+  /* 筌뤴뫀諭?甕곌쑵???⑤벏???????*/
   #statusCounts .btn-add-listing,
   #statusCounts .mobile-buttons .btn-property-list,
   #statusCounts .mobile-buttons .btn-customer-list,
@@ -583,7 +583,7 @@
     display: none;
   }
 
-  /* ?ㅽ뵾???뺣낫 紐⑤컮???덉씠?꾩썐 */
+  /* ??쎈돗???類ｋ궖 筌뤴뫀而????됱뵠?袁⑹뜍 */
   .office-info {
     display: flex !important;
     flex-direction: row !important;
@@ -611,7 +611,7 @@
     cursor: pointer;
   }
 
-  /* ?꾪꽣 紐⑤떖 */
+  /* ?袁り숲 筌뤴뫀??*/
   #filterModal.modal:not(.hidden) {
     overflow: hidden !important;
     display: flex !important;
@@ -634,7 +634,7 @@
     box-shadow: none !important;
   }
 
-  /* 留ㅻЪ由ъ뒪??紐⑤떖 */
+  /* 筌띲끇窺?귐딅뮞??筌뤴뫀??*/
   .listing-list-modal {
     position: fixed;
     bottom: 0;
@@ -650,7 +650,7 @@
     box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
   }
 
-  /* 怨좉컼由ъ뒪??紐⑤떖 */
+  /* ?⑥쥒而쇘뵳????筌뤴뫀??*/
   .customer-list-modal {
     position: fixed;
     top: 0;
@@ -659,17 +659,17 @@
     bottom: 0;
     width: 100vw;
     height: 100dvh;
-    background: rgba(0, 0, 0, 0.5);
+    background: transparent;
     z-index: 1100;
   }
 
-  /* 吏??而⑦듃濡??꾩튂 議곗젙 */
+  /* 筌왖???뚢뫂?껅에??袁⑺뒄 鈺곌퀣??*/
   .map-controls {
     top: 60px !important;
     right: 20px !important;
   }
 
-  /* 紐⑤컮??濡쒕뱶酉?誘몃땲留?議곗젙 */
+  /* 筌뤴뫀而??嚥≪뮆諭띌뀎?沃섎챶?뀐쭕?鈺곌퀣??*/
   .roadview-minimap {
     width: 105px !important;
     height: 72px !important;
@@ -696,7 +696,7 @@
     display: none !important;
   }
 
-  /* ?ъ쭊 ?몄쭛 紐⑤뱶 UI */
+  /* ??彛??紐꾩춿 筌뤴뫀諭?UI */
   .photo-edit-actions {
     position: sticky;
     bottom: 0;
@@ -738,12 +738,12 @@
   }
 
   /* ========================================
-     최적화된 사진 라이트박스 (v1.4 - style.css 통합)
+     理쒖쟻?붾맂 ?ъ쭊 ?쇱씠?몃컯??(v1.4 - style.css ?듯빀)
      ======================================== */
   #map { 
     contain: layout paint; 
     will-change: transform; 
-    transition: none !important; /* v6.6: 전환 과정의 깜빡임을 막기 위해 즉시 전환 */
+    transition: none !important; /* v6.6: ?꾪솚 怨쇱젙??源쒕묀?꾩쓣 留됯린 ?꾪빐 利됱떆 ?꾪솚 */
     backface-visibility: hidden;
     -webkit-backface-visibility: hidden;
     transform: translate3d(0,0,0);
@@ -751,24 +751,29 @@
   
   .modal, .lightbox-modal, #photoLightbox { 
     isolation: isolate; 
-    will-change: transform, opacity;
+    /* will-change: transform, opacity;  <-- 紐⑤컮?쇱뿉??釉붾윭 ?꾩긽???쇱쑝?????덉뼱 二쇱꽍 泥섎━ */
     backface-visibility: hidden;
     -webkit-backface-visibility: hidden;
   }
+
 }
 
-/* @media screen and (max-width: 768px) 전체 격리 종료 */
+/* @media screen and (max-width: 768px) ?꾩껜 寃⑸━ 醫낅즺 */
 
-/* v1.6 모바일 UI 개선 및 리사이징 버그 최종 수정 */
-#listingListModal.modal, #clusterListModal.modal { background: #ffffff !important; pointer-events: none; }
+/* v1.6 紐⑤컮??UI 媛쒖꽑 諛?由ъ궗?댁쭠 踰꾧렇 理쒖쥌 ?섏젙 */
+#listingListModal.modal, #clusterListModal.modal { pointer-events: none; }
 #listingListModal.modal .modal-content, #clusterListModal.modal .modal-content { pointer-events: auto; }
 .listing-list-modal .modal-body { position: relative !important; flex: 1 !important; min-height: 0 !important; }
 
-/* v6.4 (Final): DOM 순서와 상관없이 모달이 떠 있으면 지도를 렌더링에서 제외 */
-body:has(.modal.active) #map,
+/* v6.4 (Final): 紐⑤떖 ?쒖꽦????吏???몄텧 諛⑹? 洹쒖튃 ??젣 (?ъ옣??吏?? ?щ챸??諛곌꼍 ?쇱껜 湲덉?) */
+/* body:has(.modal.active) #map,
 body:has(#photoLightbox.active) #map,
 .modal.active ~ #mapWrap #map,
 #photoLightbox.active ~ #mapWrap #map {
   opacity: 0.01 !important;
   pointer-events: none !important;
+} */
+/* v8.9: ?ъ쭊 ?쇱씠?몃컯???쒖꽦???쒖뿉留?吏?꾨? 臾쇰━?곸쑝濡??④꺼 源쒕묀??諛⑹? (?щ챸??ghosting ?놁쓬) */
+body:has(#photoLightbox.active) #map {
+  visibility: hidden !important;
 }

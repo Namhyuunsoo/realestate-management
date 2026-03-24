@@ -46,10 +46,9 @@
   </script>
 
   <!-- 파서 레벨에서 동기 로딩을 보장하는 표준 링크 태그 -->
-  <link rel="stylesheet" href="/static/css/style.css?v=20260311_v9">
-
-  <!-- 모바일 환경에서만 style-mobile.css 로드 (media 쿼리 가중치) -->
-  <link rel="stylesheet" href="/static/css/style-mobile.css?v=20260311_v9" media="screen and (max-width: 768px)">
+  <link rel="stylesheet" href="/static/css/style.css">
+  <!-- 모바일 스타일을 선언적으로 로드하여 레이아웃 시프트를 방지함 -->
+  <link rel="stylesheet" href="/static/css/style-mobile.css" media="screen and (max-width: 768px)">
 
   <!-- 
     태블릿 등 UA 기준 모바일이지만 해상도가 넓은 예외 케이스 처리
@@ -223,35 +222,15 @@
 </head>
 
 <body>
-  <!-- 로그인 필요 안내 화면 -->
-  <div id="loginRequiredScreen" class="login-required-screen hidden">
-    <div class="login-required-box">
-      <h2 style="margin-bottom:16px;">로그인이 필요합니다</h2>
-      <p style="margin-bottom:24px; color:#666;">매물 관리 시스템을 사용하려면 로그인해주세요.</p>
-
-      <!-- 인라인 로그인 폼 -->
-      <form id="inlineLoginForm" class="login-form">
-        <div class="form-group">
-          <label for="inlineLoginEmail">이메일</label>
-          <input type="email" id="inlineLoginEmail" name="email" placeholder="email@example.com" required>
-        </div>
-
-        <div class="form-group">
-          <label for="inlineLoginPassword">비밀번호</label>
-          <input type="password" id="inlineLoginPassword" name="password" placeholder="비밀번호를 입력하세요" required>
-        </div>
-
-        <div id="inlineLoginErrorMsg" class="error-message"></div>
-
-        <button type="submit" class="btn btn-primary">로그인</button>
-
-        <div class="login-links">
-          <a href="/register">회원가입</a>
-          <a href="#" onclick="alert('관리자에게 문의하세요.')">비밀번호 찾기</a>
-        </div>
-      </form>
-    </div>
+  <!-- 프리미엄 로딩 가림막: 데이터 완비 전까지 노출됨 (v8.3) -->
+  <div id="loadingShield" style="position:fixed; top:0; left:0; width:100%; height:100%; background:#fff; z-index:9999; display:flex; flex-direction:column; align-items:center; justify-content:center; transition: opacity 0.4s ease, visibility 0.4s;">
+    <div style="font-size:24px; font-weight:bold; color:#007AFF; margin-bottom:15px; letter-spacing:-0.5px;">SK REALESTATE</div>
+    <div class="loading-spinner" style="width:40px; height:40px; border:3px solid #f3f3f3; border-top:3px solid #007AFF; border-radius:50%; animation: spin 1s linear infinite;"></div>
+    <style>@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }</style>
   </div>
+
+  <!-- 로그인 화면은 별도 페이지(/login)로 통합되어 인라인 마크업 삭제됨 (v8.7) -->
+
 
   <!-- 앱 종료 확인 다이얼로그 -->
   <div id="exitConfirmOverlay" class="exit-confirm-overlay hidden">
@@ -346,7 +325,7 @@
         </div>
       </div>
       <div class="sheet-controls">
-        <div class="sheet-buttons">
+        <div class="sheet-buttons" style="min-width: 151px; min-height: 24px;">
           <!-- 매물장 버튼들이 여기에 동적으로 로드됩니다 -->
         </div>
         <button id="openGoogleSheetBtn" class="btn-sheet-open">
