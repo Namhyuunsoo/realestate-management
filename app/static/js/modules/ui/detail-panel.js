@@ -228,8 +228,9 @@ async function loadAndRenderPhotos(listingId) {
     const data = await response.json();
 
     if (data.success && data.photos && data.photos.length > 0) {
-      gallery.innerHTML = data.photos.map(photo => `
-        <div class="gallery-item" onclick="openLightbox('${photo.full_url}', '${photo.file_name}')">
+      window._currentSidebarPhotos = data.photos; // 전역 변수에 저장하여 Lightbox에서 참조
+      gallery.innerHTML = data.photos.map((photo, index) => `
+        <div class="gallery-item" onclick="openLightbox(window._currentSidebarPhotos, ${index})">
           <img src="${photo.full_url}" alt="매물사진" onerror="this.src='/static/img/no-image.png'">
         </div>
       `).join('');
@@ -380,6 +381,20 @@ function openLightbox(urlOrPhotos, filenameOrIndex) {
     }, { passive: true });
 
     modalContent.dataset.swipeBound = "true";
+  }
+
+  // 키보드 내비게이션 (v7.0: PC 사용자 편의성)
+  if (!window._lbKeyHandlerBound) {
+    document.addEventListener('keydown', (e) => {
+      if (!window.isLightboxOpen) return;
+      if (e.key === 'ArrowRight') lightboxNavigate(1);
+      else if (e.key === 'ArrowLeft') lightboxNavigate(-1);
+      else if (e.key === 'Escape') {
+        const closeBtn = document.getElementById('closeLightbox');
+        if (closeBtn) closeBtn.click();
+      }
+    });
+    window._lbKeyHandlerBound = true;
   }
 }
 
