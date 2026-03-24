@@ -678,10 +678,11 @@ class ListingListModalManager {
                 window._currentMobilePhotos = data.photos;
 
                 gallery.innerHTML = data.photos.map((photo, idx) => `
-                    <div class="gallery-item ${this.isPhotoDeleteMode ? 'edit-mode' : ''} ${this.selectedPhotoFiles.has(photo.file_name) ? 'selected' : ''}" 
+                    <div class="gallery-item ${this.isPhotoDeleteMode ? 'edit-mode' : ''} ${this.selectedPhotoFiles.has(String(photo.id)) ? 'selected' : ''}" 
                          data-filename="${photo.file_name}"
+                         data-id="${photo.id}"
                          onclick="${this.isPhotoDeleteMode 
-                            ? `(window.listingListModalManager || this).togglePhotoSelection('${photo.file_name}')` 
+                            ? `(window.listingListModalManager || this).togglePhotoSelection('${photo.id}')` 
                             : `window.openLightbox && window.openLightbox(window._currentMobilePhotos, ${idx})`}">
                         <img src="${photo.full_url}" alt="매물사진" decoding="async" style="transform: translateZ(0); pointer-events: none;" onerror="this.src='/static/img/no-image.png'">
                     </div>
@@ -731,10 +732,10 @@ class ListingListModalManager {
     refreshGalleryUI() {
         const galleryItems = document.querySelectorAll('.gallery-item');
         galleryItems.forEach(item => {
-            const fileName = item.getAttribute('data-filename');
+            const photoId = item.getAttribute('data-id');
             if (this.isPhotoDeleteMode) {
                 item.classList.add('edit-mode');
-                if (this.selectedPhotoFiles.has(fileName)) {
+                if (this.selectedPhotoFiles.has(photoId)) {
                     item.classList.add('selected');
                 } else {
                     item.classList.remove('selected');
@@ -753,14 +754,14 @@ class ListingListModalManager {
         }
     }
 
-    // 사진 선택 토글
-    togglePhotoSelection(fileName) {
+    // 사진 선택 토글 (v8.9: 파일명 대신 DB ID 사용)
+    togglePhotoSelection(photoId) {
         if (!this.isPhotoDeleteMode) return;
 
-        if (this.selectedPhotoFiles.has(fileName)) {
-            this.selectedPhotoFiles.delete(fileName);
+        if (this.selectedPhotoFiles.has(photoId)) {
+            this.selectedPhotoFiles.delete(photoId);
         } else {
-            this.selectedPhotoFiles.add(fileName);
+            this.selectedPhotoFiles.add(photoId);
         }
         this.refreshGalleryUI();
     }
@@ -785,10 +786,10 @@ class ListingListModalManager {
         }
 
         try {
-            // 순차적 삭제 (병렬로 하면 서버 과부화 우려가 있으므로 순차 처리 유지하되 에러 핸들링 보강)
-            for (const fileName of photosToDelete) {
+            // 순차적 삭제 (v8.9: 서버 규격에 맞게 /api/listings/photos/<id> 호출)
+            for (const photoId of photosToDelete) {
                 try {
-                    const response = await fetch(`/api/listings/${listingId}/photos/${fileName}`, {
+                    const response = await fetch(`/api/listings/photos/${photoId}`, {
                         method: 'DELETE',
                         headers: {
                             'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.content || ''
@@ -798,11 +799,11 @@ class ListingListModalManager {
                     if (data.success) {
                         successCount++;
                     } else {
-                        console.warn(`사진 삭제 실패 (${fileName}):`, data.error);
+                        console.warn(`사진 삭제 실패 (ID: ${photoId}):`, data.error);
                         failCount++;
                     }
                 } catch (e) {
-                    console.error(`사진 삭제 통신 오류 (${fileName}):`, e);
+                    console.error(`사진 삭제 통신 오류 (ID: ${photoId}):`, e);
                     failCount++;
                 }
             }
