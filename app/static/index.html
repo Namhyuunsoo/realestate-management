@@ -1388,14 +1388,14 @@
     <div id="photoLightbox" class="hidden photo-lightbox-v2">
       <div class="modal-content">
         <span id="closeLightbox" class="close" style="color: #fff; position: absolute; right: 15px; top: max(15px, env(safe-area-inset-top)); z-index: 10; font-size: 30px;">&times;</span>
-        <div id="lightboxCounter" style="display: none; position: absolute; top: max(14px, env(safe-area-inset-top)); left: 15px; color: #fff; font-size: 14px; font-weight: bold; z-index: 10; background: rgba(0,0,0,0.5); padding: 3px 10px; border-radius: 12px;"></div>
-        <button id="lightboxPrev" onclick="window.lightboxNavigate && window.lightboxNavigate(-1)" style="display: none; position: absolute; left: 5px; top: 50%; transform: translateY(-50%); z-index: 10; background: rgba(255,255,255,0.25); border: none; color: #fff; font-size: 28px; width: 44px; height: 44px; border-radius: 50%; cursor: pointer; line-height: 1;">❮</button>
+        <div id="lightboxCounter" style="display: none; position: absolute; top: max(14px, env(safe-area-inset-top)); left: 15px; color: #fff; font-size: 14px; font-weight: bold; z-index: 10; background: #000; padding: 3px 10px; border-radius: 12px;"></div>
+        <button id="lightboxPrev" onclick="window.lightboxNavigate && window.lightboxNavigate(-1)" style="display: none; position: absolute; left: 5px; top: 50%; transform: translateY(-50%) translateZ(0); z-index: 10; background: #444; border: none; color: #fff; font-size: 28px; width: 44px; height: 44px; border-radius: 50%; cursor: pointer; line-height: 1;">❮</button>
         <div style="flex: 1; width: 100%; display: flex; justify-content: center; align-items: center; overflow: hidden;">
           <img id="lightboxImage" src="" decoding="async" loading="lazy">
         </div>
-        <button id="lightboxNext" onclick="window.lightboxNavigate && window.lightboxNavigate(1)" style="display: none; position: absolute; right: 5px; top: 50%; transform: translateY(-50%); z-index: 10; background: rgba(255,255,255,0.25); border: none; color: #fff; font-size: 28px; width: 44px; height: 44px; border-radius: 50%; cursor: pointer; line-height: 1;">❯</button>
+        <button id="lightboxNext" onclick="window.lightboxNavigate && window.lightboxNavigate(1)" style="display: none; position: absolute; right: 5px; top: 50%; transform: translateY(-50%) translateZ(0); z-index: 10; background: #444; border: none; color: #fff; font-size: 28px; width: 44px; height: 44px; border-radius: 50%; cursor: pointer; line-height: 1;">❯</button>
         <div style="margin-top: 15px; display: flex; justify-content: center; padding-bottom: 10px; width: 100%;">
-          <a id="downloadPhotoBtn" href="" download class="btn" style="background: #28a745; color: white; padding: 10px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 14px; box-shadow: 0 4px 6px rgba(0,0,0,0.2);">
+          <a id="downloadPhotoBtn" href="" download class="btn" style="background: #28a745; color: white; padding: 10px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 14px; box-shadow: 0 4px 6px #000; transform: translateZ(0);">
             📥 원본 다운로드
           </a>
         </div>

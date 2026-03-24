@@ -1,6 +1,6 @@
 @media screen and (max-width: 768px) {
 
-  /* PC 전용 상가/주택 전환, 서브타입, 상단 필터바 요소 완전 숨김 */
+  /* PC ?꾩슜 ?곴?/二쇳깮 ?꾪솚, ?쒕툕??? ?곷떒 ?꾪꽣諛??붿냼 ?꾩쟾 ?④? */
   #listingModeToggle,
   .subtype-buttons,
   #topFilterBar,
@@ -10,7 +10,7 @@
   }
 
 
-  /* 상단바를 하단으로 이동 - 빈공간 제거 */
+  /* ?곷떒諛붾? ?섎떒?쇰줈 ?대룞 - 鍮덇났媛??쒓굅 */
   #topbar {
     position: fixed !important;
     bottom: 0 !important;
@@ -31,7 +31,7 @@
     justify-content: space-between !important;
   }
 
-  /* 상단바 내부 요소들 정리 */
+  /* ?곷떒諛??대? ?붿냼???뺣━ */
   #topbar .topbar-left,
   #topbar .topbar-right {
     display: flex !important;
@@ -45,7 +45,7 @@
     white-space: nowrap !important;
   }
 
-  /* 상태카운트바를 상단바 위로 이동 - 빈공간 제거 */
+  /* ?곹깭移댁슫?몃컮瑜??곷떒諛??꾨줈 ?대룞 - 鍮덇났媛??쒓굅 */
   #statusCounts {
     position: fixed !important;
     bottom: 61px !important;
@@ -69,12 +69,12 @@
     overflow: hidden;
   }
 
-  /* 앱 루트 컨테이너 - 하단바 배경이 보이도록 */
+  /* ??猷⑦듃 而⑦뀒?대꼫 - ?섎떒諛?諛곌꼍??蹂댁씠?꾨줉 */
   #appRoot {
     overflow: visible !important;
   }
 
-  /* 모바일 로그아웃 버튼 스타일 */
+  /* 紐⑤컮??濡쒓렇?꾩썐 踰꾪듉 ?ㅽ???*/
   .mobile-logout-btn {
     background: #dc3545;
     color: white;
@@ -93,7 +93,7 @@
     border-color: #bd2130;
   }
 
-  /* 레이아웃 영역 전체화면 - 모바일에서 강제 적용 */
+  /* ?덉씠?꾩썐 ?곸뿭 ?꾩껜?붾㈃ - 紐⑤컮?쇱뿉??媛뺤젣 ?곸슜 */
   #layout {
     position: absolute !important;
     top: 0 !important;
@@ -105,7 +105,7 @@
     overflow: hidden !important;
   }
 
-  /* 메인 콘텐츠 영역 조정 (지도 전체화면) - 모바일에서 강제 적용 */
+  /* 硫붿씤 肄섑뀗痢??곸뿭 議곗젙 (吏???꾩껜?붾㈃) - 紐⑤컮?쇱뿉??媛뺤젣 ?곸슜 */
   #mainContent {
     position: absolute !important;
     top: 0 !important;
@@ -119,13 +119,13 @@
     padding: 0 !important;
   }
 
-  /* 매물리스트 패널이 확장되면 메인 콘텐츠 영역 조정 */
+  /* 留ㅻЪ由ъ뒪???⑤꼸???뺤옣?섎㈃ 硫붿씤 肄섑뀗痢??곸뿭 議곗젙 */
   .property-list-panel.expanded~#mainContent,
   .property-list-panel.expanded+#mainContent {
     bottom: 500px;
   }
 
-  /* 기존 사이드바와 관련 요소들 완전 제거 - 모바일에서 강제 적용 */
+  /* 湲곗〈 ?ъ씠?쒕컮? 愿???붿냼???꾩쟾 ?쒓굅 - 紐⑤컮?쇱뿉??媛뺤젣 ?곸슜 */
   #sidebar,
   #sidebarToggle,
   .mobile-notch {
@@ -141,7 +141,7 @@
     pointer-events: none !important;
   }
 
-  /* 지도 영역 전체화면 설정 - 모바일에서 강제 적용 */
+  /* 吏???곸뿭 ?꾩껜?붾㈃ ?ㅼ젙 - 紐⑤컮?쇱뿉??媛뺤젣 ?곸슜 */
   #mapWrap {
     position: absolute !important;
     top: 0 !important;
@@ -164,7 +164,7 @@
     height: 100% !important;
   }
 
-  /* 2차 사이드바를 전체화면으로 변경 */
+  /* 2李??ъ씠?쒕컮瑜??꾩껜?붾㈃?쇰줈 蹂寃?*/
   #secondaryPanel {
     position: fixed;
     top: 0;
@@ -182,7 +182,7 @@
     transform: translateX(0);
   }
 
-  /* 매물리스트 드래그 패널 */
+  /* 留ㅻЪ由ъ뒪???쒕옒洹??⑤꼸 */
   .property-list-panel {
     position: fixed;
     bottom: 0;
@@ -201,7 +201,7 @@
     border-radius: 20px 20px 0 0;
   }
 
-  /* 드래그 핸들 */
+  /* ?쒕옒洹??몃뱾 */
   .drag-handle {
     width: 100%;
     height: 20px;
@@ -225,7 +225,7 @@
     border-radius: 2px;
   }
 
-  /* 매물리스트 헤더 */
+  /* 留ㅻЪ由ъ뒪???ㅻ뜑 */
   .property-list-header {
     padding: 12px 16px;
     border-bottom: 1px solid #e0e0e0;
@@ -255,14 +255,14 @@
     color: white;
   }
 
-  /* 매물리스트 콘텐츠 */
+  /* 留ㅻЪ由ъ뒪??肄섑뀗痢?*/
   .property-list-content {
     flex: 1;
     overflow-y: auto;
     padding: 8px;
   }
 
-  /* 상단바에서 숨길 요소들 */
+  /* ?곷떒諛붿뿉???④만 ?붿냼??*/
   #topbar .user-role-name,
   #topbar .admin-only,
   #topbar .admin-only.hidden,
@@ -272,7 +272,7 @@
     display: none;
   }
 
-  /* 모바일 환경에서 auth-links는 표시하되 내부 요소만 조정 */
+  /* 紐⑤컮???섍꼍?먯꽌 auth-links???쒖떆?섎릺 ?대? ?붿냼留?議곗젙 */
   #topbar .auth-links {
     display: flex !important;
     align-items: center;
@@ -280,7 +280,7 @@
     flex-wrap: nowrap;
   }
 
-  /* 상태카운트바에서 숨길 요소들 */
+  /* ?곹깭移댁슫?몃컮?먯꽌 ?④만 ?붿냼??*/
   #statusCounts .count-info {
     display: flex;
     flex-direction: column;
@@ -303,7 +303,7 @@
     display: none !important;
   }
 
-  /* 필터 행 컨테이너 */
+  /* ?꾪꽣 ??而⑦뀒?대꼫 */
   #statusCounts .filter-row-container {
     display: flex;
     gap: 4px;
@@ -313,7 +313,7 @@
     flex-shrink: 0;
   }
 
-  /* 필터 버튼 스타일 */
+  /* ?꾪꽣 踰꾪듉 ?ㅽ???*/
   #statusCounts .btn-filter {
     flex: 0 0 25%;
     padding: 8px 4px;
@@ -331,7 +331,7 @@
     color: white;
   }
 
-  /* 필터 요약 스타일 */
+  /* ?꾪꽣 ?붿빟 ?ㅽ???*/
   #statusCounts .filter-summary {
     flex: 1;
     padding: 8px 4px;
@@ -346,7 +346,7 @@
     border-radius: 4px;
   }
 
-  /* 모든 버튼 컨테이너 */
+  /* 紐⑤뱺 踰꾪듉 而⑦뀒?대꼫 */
   #statusCounts .all-buttons-container {
     display: flex;
     gap: 4px;
@@ -355,7 +355,7 @@
     flex-shrink: 0;
   }
 
-  /* 모든 버튼 공통 스타일 */
+  /* 紐⑤뱺 踰꾪듉 怨듯넻 ?ㅽ???*/
   #statusCounts .btn-add-listing,
   #statusCounts .mobile-buttons .btn-property-list,
   #statusCounts .mobile-buttons .btn-customer-list,
@@ -388,7 +388,7 @@
     display: none;
   }
 
-  /* 오피스 정보 모바일 레이아웃 */
+  /* ?ㅽ뵾???뺣낫 紐⑤컮???덉씠?꾩썐 */
   .office-info {
     display: flex !important;
     flex-direction: row !important;
@@ -416,7 +416,7 @@
     cursor: pointer;
   }
 
-  /* 필터 모달 */
+  /* ?꾪꽣 紐⑤떖 */
   #filterModal.modal:not(.hidden) {
     overflow: hidden !important;
     display: flex !important;
@@ -439,7 +439,7 @@
     box-shadow: none !important;
   }
 
-  /* 매물리스트 모달 */
+  /* 留ㅻЪ由ъ뒪??紐⑤떖 */
   .listing-list-modal {
     position: fixed;
     bottom: 0;
@@ -455,7 +455,7 @@
     box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
   }
 
-  /* 고객리스트 모달 */
+  /* 怨좉컼由ъ뒪??紐⑤떖 */
   .customer-list-modal {
     position: fixed;
     top: 0;
@@ -468,13 +468,13 @@
     z-index: 1100;
   }
 
-  /* 지도 컨트롤 위치 조정 */
+  /* 吏??而⑦듃濡??꾩튂 議곗젙 */
   .map-controls {
     top: 60px !important;
     right: 20px !important;
   }
 
-  /* 모바일 로드뷰 미니맵 조정 */
+  /* 紐⑤컮??濡쒕뱶酉?誘몃땲留?議곗젙 */
   .roadview-minimap {
     width: 105px !important;
     height: 72px !important;
@@ -501,7 +501,202 @@
     display: none !important;
   }
 
-  /* 사진 편집 모드 UI */
+  /* ?ъ쭊 ?몄쭛 紐⑤뱶 UI */
+  .photo-edit-actions {
+    position: sticky;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: #f8f9fa;
+    padding: 12px 16px;
+    border-top: 1px solid #ddd;
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    z-index: 1001;
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
+  }
+
+  .photo-edit-btn {
+    flex: 1;
+    padding: 10px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+  }
+
+  #mobilePhotoEditBtn {
+    background: #6c757d;
+    color: white;
+    border: none;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: flex;
+    align-items: center;
+    background: #f8f9fa;
+    border-radius: 4px;
+  }
+
+  /* 紐⑤뱺 踰꾪듉 而⑦뀒?대꼫 */
+  #statusCounts .all-buttons-container {
+    display: flex;
+    gap: 4px;
+    width: 100%;
+    align-items: stretch;
+    flex-shrink: 0;
+  }
+
+  /* 紐⑤뱺 踰꾪듉 怨듯넻 ?ㅽ???*/
+  #statusCounts .btn-add-listing,
+  #statusCounts .mobile-buttons .btn-property-list,
+  #statusCounts .mobile-buttons .btn-customer-list,
+  #statusCounts .mobile-buttons .btn-customer-add {
+    flex: 1;
+    padding: 8px 4px;
+    border-radius: 4px;
+    font-size: 11px;
+    cursor: pointer;
+    border: none;
+    box-sizing: border-box;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
+  }
+
+  #statusCounts .btn-add-listing { background: #007bff; color: white; }
+  #statusCounts .mobile-buttons .btn-property-list { background: #28a745; color: white; }
+  #statusCounts .mobile-buttons .btn-customer-list { background: #ffc107; color: black; }
+  #statusCounts .mobile-buttons .btn-customer-add { background: #dc3545; color: white; }
+
+  #statusCounts .sheet-controls,
+  #statusCounts .sheet-buttons,
+  #statusCounts .btn-sheet-open,
+  #statusCounts .refresh-controls,
+  #statusCounts .refresh-btn,
+  #statusCounts .last-update {
+    display: none;
+  }
+
+  /* ?ㅽ뵾???뺣낫 紐⑤컮???덉씠?꾩썐 */
+  .office-info {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 8px !important;
+  }
+
+  .button-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .filter-toggle-btn {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 12px;
+    background: #007AFF;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    cursor: pointer;
+  }
+
+  /* ?꾪꽣 紐⑤떖 */
+  #filterModal.modal:not(.hidden) {
+    overflow: hidden !important;
+    display: flex !important;
+    flex-direction: column !important;
+  }
+
+  .filter-modal,
+  .modal-content.filter-modal {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 100vw !important;
+    border-radius: 0 !important;
+    background: white !important;
+    z-index: 1100 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    box-shadow: none !important;
+  }
+
+  /* 留ㅻЪ由ъ뒪??紐⑤떖 */
+  .listing-list-modal {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    height: 50dvh;
+    max-height: 80dvh;
+    min-height: 30dvh;
+    background: white;
+    border-radius: 12px 12px 0 0;
+    z-index: 1100;
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
+  }
+
+  /* 怨좉컼由ъ뒪??紐⑤떖 */
+  .customer-list-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100vw;
+    height: 100dvh;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 1100;
+  }
+
+  /* 吏??而⑦듃濡??꾩튂 議곗젙 */
+  .map-controls {
+    top: 60px !important;
+    right: 20px !important;
+  }
+
+  /* 紐⑤컮??濡쒕뱶酉?誘몃땲留?議곗젙 */
+  .roadview-minimap {
+    width: 105px !important;
+    height: 72px !important;
+    bottom: 60px !important;
+    left: 20px !important;
+  }
+
+  .minimap-label {
+    font-size: 9px !important;
+    padding: 2px 6px !important;
+    top: -18px !important;
+  }
+
+  .minimap-header,
+  .minimap-controls {
+    transform: scale(0.6);
+  }
+
+  .minimap-content {
+    min-height: 50px !important;
+  }
+
+  .roadview-address-box {
+    display: none !important;
+  }
+
+  /* ?ъ쭊 ?몄쭛 紐⑤뱶 UI */
   .photo-edit-actions {
     position: sticky;
     bottom: 0;
@@ -545,11 +740,35 @@
   /* ========================================
      최적화된 사진 라이트박스 (v1.4 - style.css 통합)
      ======================================== */
+  #map { 
+    contain: layout paint; 
+    will-change: transform; 
+    transition: none !important; /* v6.6: 전환 과정의 깜빡임을 막기 위해 즉시 전환 */
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    transform: translate3d(0,0,0);
+  }
+  
+  .modal, .lightbox-modal, #photoLightbox { 
+    isolation: isolate; 
+    will-change: transform, opacity;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+  }
 }
 
 /* @media screen and (max-width: 768px) 전체 격리 종료 */
 
-/* v1.6 ����� UI ���� �� ������¡ ���� ���� ���� */
-#listingListModal.modal, #clusterListModal.modal { background: transparent !important; pointer-events: none; }
+/* v1.6 모바일 UI 개선 및 리사이징 버그 최종 수정 */
+#listingListModal.modal, #clusterListModal.modal { background: #ffffff !important; pointer-events: none; }
 #listingListModal.modal .modal-content, #clusterListModal.modal .modal-content { pointer-events: auto; }
 .listing-list-modal .modal-body { position: relative !important; flex: 1 !important; min-height: 0 !important; }
+
+/* v6.4 (Final): DOM 순서와 상관없이 모달이 떠 있으면 지도를 렌더링에서 제외 */
+body:has(.modal.active) #map,
+body:has(#photoLightbox.active) #map,
+.modal.active ~ #mapWrap #map,
+#photoLightbox.active ~ #mapWrap #map {
+  opacity: 0.01 !important;
+  pointer-events: none !important;
+}

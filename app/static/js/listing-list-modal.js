@@ -583,9 +583,7 @@ class ListingListModalManager {
         this.isPhotoDeleteMode = false;
         this.selectedPhotoFiles.clear();
 
-        // 🔥 모바일 깜박임 방지 (v5.17): 사진 관리 모드 진입 시에만 '지도'를 숨깁니다.
-        const mapEl = document.getElementById('map');
-        if (mapEl) mapEl.style.visibility = 'hidden';
+        // v6.2: 수칙(Rule 39) 준수를 위해 지도를 숨기지 않고 CSS 레이어 격리만 사용
 
         // 🔥 사진 관리 모드 전체 화면화: 모달 높이를 확충하여 환경 격리
         if (this.modalContent) {
@@ -603,17 +601,14 @@ class ListingListModalManager {
         this.isPhotoDeleteMode = false;
         this.selectedPhotoFiles.clear();
 
-        // 🔥 가시성 복구: 사진 관리를 마칠 때 지도를 다시 보이게 함
-        const mapEl = document.getElementById('map');
-        if (mapEl) mapEl.style.visibility = 'visible';
-
-        // 🔥 모달 높이 원복
-        if (this.modalContent && this._originalModalHeight) {
-            this.modalContent.style.height = this._originalModalHeight;
-            this.modalContent.style.top = '';
-        }
-
-        this.showListingDetail(listing); // 원래 상세정보로 복귀
+        // v6.6: 닫기 애니메이션 안정화를 위해 미세 지연 후 상세정보 렌더링
+        setTimeout(() => {
+            if (this.modalContent && this._originalModalHeight) {
+                this.modalContent.style.height = this._originalModalHeight;
+                this.modalContent.style.top = '';
+            }
+            this.showListingDetail(listing);
+        }, 30);
     }
 
     // 사진 편집 UI 렌더링
@@ -644,8 +639,8 @@ class ListingListModalManager {
                 <input type="file" id="mobilePhotoInput" style="display: none;" accept="image/*">
             </div>
 
-            <!-- 하단 액션 바 -->
-            <div class="photo-edit-actions" id="photoEditActions">
+            <!-- 하단 액션 바 (v6.5: 불투명화 및 하드웨어 가속 강제) -->
+            <div class="photo-edit-actions" id="photoEditActions" style="background: #f8f9fa !important; box-shadow: 0 -2px 10px #ccc; transform: translateZ(0);">
                 <button class="photo-edit-btn upload" id="photoEditUploadBtn">📷 사진 등록</button>
                 <button class="photo-edit-btn delete" id="photoEditDeleteStartBtn">🗑️ 사진 삭제</button>
             </div>
@@ -688,7 +683,7 @@ class ListingListModalManager {
                          onclick="${this.isPhotoDeleteMode 
                             ? `(window.listingListModalManager || this).togglePhotoSelection('${photo.file_name}')` 
                             : `window.openLightbox && window.openLightbox(window._currentMobilePhotos, ${idx})`}">
-                        <img src="${photo.full_url}" alt="매물사진" onerror="this.src='/static/img/no-image.png'">
+                        <img src="${photo.full_url}" alt="매물사진" decoding="async" style="transform: translateZ(0); pointer-events: none;" onerror="this.src='/static/img/no-image.png'">
                     </div>
                 `).join('');
             } else {
@@ -709,7 +704,8 @@ class ListingListModalManager {
         const tip = document.getElementById('photoEditTip');
         if (tip) {
             tip.innerHTML = '<b style="color: #f44336;">삭제할 사진들을 터치하여 선택하세요.</b>';
-            tip.style.background = '#ffebee';
+            tip.style.background = '#ffffff';
+            tip.style.border = '2px solid #f44336';
         }
 
         const actions = document.getElementById('photoEditActions');
