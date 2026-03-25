@@ -400,9 +400,8 @@ function showCustomerContextMenu(e, customer) {
 // 고객 수정 함수
 window.editCustomerById = async function (customerId) {
   try {
-    // 현재 로드된 고객 목록에서 고객 데이터 찾기
-    const customer = window.currentCustomerList.find(c => c.id === customerId);
-
+    // 통합된 조회 함수 사용 (PC/모바일 모두 체크)
+    const customer = getCustomerById(customerId);
 
     if (!customer) {
       console.error('❌ 고객을 찾을 수 없습니다:', customerId);
@@ -413,7 +412,13 @@ window.editCustomerById = async function (customerId) {
     // 현재 선택된 고객 저장 (취소 버튼용)
     window.selectedCustomer = customer;
 
-    // 수정 전용 패널 열기
+    // 모바일 환경 대응: 사이드바 대신 전체 화면 모달 사용
+    if (window.MOBILE_APP && window.customerAddManager) {
+      window.customerAddManager.openEditModal(customer);
+      return;
+    }
+
+    // PC 환경: 기존 방식대로 수정 전용 패널 열기
     showSecondaryPanel('viewCustomerEdit');
     renderCustomerEditForm(customer);
 
@@ -446,8 +451,13 @@ window.deleteCustomerById = async function (customerId) {
 
     if (response.ok) {
       showToast('고객이 삭제되었습니다.', 'success');
-      // 고객 목록 새로고침
+      // 고객 목록 새로고침 (PC 버전)
       loadCustomerList();
+      
+      // 모바일 모달이 열려있으면 모바일 목록도 새로고침
+      if (window.customerListModalManager && window.customerListModalManager.isOpen) {
+        window.customerListModalManager.loadCustomerList();
+      }
       return true;
     } else {
       const error = await response.text();
@@ -464,7 +474,15 @@ window.deleteCustomerById = async function (customerId) {
 
 // 고객 ID로 고객 데이터 가져오기
 function getCustomerById(customerId) {
-  return window.currentCustomerList ? window.currentCustomerList.find(c => c.id === customerId) : null;
+  // 1. PC 전역 변수에서 찾기
+  let customer = window.currentCustomerList ? window.currentCustomerList.find(c => c.id === customerId) : null;
+  
+  // 2. PC에 없으면 모바일 모달 데이터에서 찾기
+  if (!customer && window.customerListModalManager && window.customerListModalManager.currentCustomers) {
+    customer = window.customerListModalManager.currentCustomers.find(c => c.id === customerId);
+  }
+  
+  return customer;
 }
 
 // 고객 선택 초기화

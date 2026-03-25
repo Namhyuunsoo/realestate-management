@@ -132,6 +132,14 @@ async function renderCustomerListAndDetail(selectedIdx = null) {
 
 // 고객 저장 후 목록 갱신 (submitCustomerForm 내부에서 호출 필요)
 window.afterCustomerSaved = function () {
+  // 모바일 환경 대응: 사이드바를 열지 않고 데이터만 갱신 [v11.0]
+  if (window.MOBILE_APP) {
+    if (window.customerListModalManager && window.customerListModalManager.loadCustomerList) {
+      window.customerListModalManager.loadCustomerList();
+    }
+    return;
+  }
+
   hideAllSecondaryViews();
   showSecondaryPanel('viewCustomerList');
   const detailTitleEl = document.getElementById('secondaryPanelTitle');

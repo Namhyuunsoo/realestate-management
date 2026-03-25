@@ -18,12 +18,10 @@ class CustomerListModalManager {
     // 'open' 모드이거나, 'toggle' 인데 닫혀있는 경우에만 엽니다.
     if (mode === 'open' || (mode === 'toggle' && isHidden)) {
       if (!isHidden && this.isOpen) return Promise.resolve();
-      // ... 아래 로직 진행 ...
     } else if (mode === 'close' || (mode === 'toggle' && !isHidden)) {
       this.closeModal();
       return Promise.resolve();
     }
-    
     
     // 인증 상태 확인 및 복원 시도
     if (!window.currentUser) {
@@ -53,11 +51,9 @@ class CustomerListModalManager {
 
     // 고객 목록 로드
     await this.loadCustomerList();
-
   }
 
   createModal() {
-    
     // 모달 컨테이너 생성
     this.container = document.createElement('div');
     this.container.id = 'customerListModal';
@@ -152,13 +148,11 @@ class CustomerListModalManager {
   }
 
   closeModal() {
-    
     if (this.container) {
       this.container.style.display = 'none';
       this.container.classList.add('hidden');
     }
     
-    // 🔥 파생 사이드바도 닫기 (고객 상세 모달 등)
     // 고객 상세 모달이 열려있으면 함께 닫기
     const customerDetailModals = document.querySelectorAll('.customer-detail-modal');
     customerDetailModals.forEach(modal => {
@@ -168,24 +162,15 @@ class CustomerListModalManager {
     });
     
     this.isOpen = false;
-    this.currentCustomers = [];
   }
 
   async loadCustomerList() {
-    
-    // 인증 상태 재확인 빛 복원
     if (!window.currentUser) {
       const savedUser = localStorage.getItem('X-USER');
-      if (savedUser) {
-        window.currentUser = savedUser;
-        if (typeof currentUser !== 'undefined') {
-          currentUser = savedUser;
-        }
-      }
+      if (savedUser) window.currentUser = savedUser;
     }
     
     try {
-      // 사용자 역할에 따라 필터 설정
       const userRole = localStorage.getItem("X-USER-ROLE") || "user";
       const filter = (userRole === 'admin' || userRole === 'manager') ? 'all' : 'own';
       
@@ -196,22 +181,19 @@ class CustomerListModalManager {
         url += '?filter=all';
       }
       
-      
       const res = await fetch(url, {
         headers: {
           'X-User': window.currentUser
         }
       });
       
-      if (!res.ok) {
-        throw new Error(`HTTP ${res.status}: ${res.statusText}`);
-      }
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       
       const data = await res.json();
       const customerList = data.items || data.itema || [];
       
-      
       this.currentCustomers = customerList;
+      window.currentCustomerList = customerList;
       this.renderCustomerList(customerList);
       
     } catch (error) {
@@ -221,24 +203,16 @@ class CustomerListModalManager {
   }
 
   renderCustomerList(customers) {
-    
     const container = this.container.querySelector('.customer-list-container');
-    if (!container) {
-      console.error('📱 고객리스트 컨테이너를 찾을 수 없습니다');
-      return;
-    }
+    if (!container) return;
 
     if (customers.length === 0) {
       container.innerHTML = '<div style="text-align: center; padding: 40px; color: #666;">등록된 고객이 없습니다.</div>';
       return;
     }
 
-    // 고객 목록 HTML 생성
     let listHtml = '';
-    
-    customers.forEach((customer, index) => {
-      
-      // 고객 정보 요약
+    customers.forEach((customer) => {
       const summary = [];
       if (customer.regions) summary.push(`📍 ${customer.regions}`);
       if (customer.floor_pref || customer.floor) summary.push(`🏢 ${customer.floor_pref || customer.floor}층`);
@@ -247,14 +221,12 @@ class CustomerListModalManager {
       if (customer.rent_pref || customer.rent) summary.push(`💵 월:${customer.rent_pref || customer.rent}`);
       if (customer.premium_pref || customer.premium) summary.push(`🔑 권:${customer.premium_pref || customer.premium}`);
       
-      // 참고사항 처리 (긴 경우 줄임)
       let notesDisplay = '';
       if (customer.notes && customer.notes.trim()) {
         const notes = customer.notes.trim();
         notesDisplay = notes.length > 30 ? notes.substring(0, 30) + '...' : notes;
       }
       
-      // 상태 표시
       const status = customer.status || '생';
       const statusConfig = {
         '생': { label: '생성', color: '#28a745', bgColor: '#d4edda' },
@@ -274,6 +246,7 @@ class CustomerListModalManager {
           cursor: pointer;
           transition: all 0.2s ease;
           position: relative;
+          touch-action: manipulation; /* 🔥 더블 탭 줌 대기 시간 제거 (v14.0) */
         ">
           <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 4px;">
             <div style="font-weight: bold; color: #333; font-size: 14px;">${this.escapeHtml(customer.name || '이름 없음')}</div>
@@ -299,219 +272,139 @@ class CustomerListModalManager {
     });
 
     container.innerHTML = listHtml;
-
-    // 고객카드 이벤트 바인딩
     this.bindCustomerCardEvents();
   }
 
   bindCustomerCardEvents() {
-    
     const customerCards = this.container.querySelectorAll('.customer-card');
-    
     customerCards.forEach(card => {
-      // 터치 이벤트 변수 초기화
-      let touchStartY = 0;
-      let touchStartTime = 0;
-      let isScrolling = false;
-      
-      // 터치 시작
-      card.addEventListener('touchstart', (e) => {
-        touchStartY = e.touches[0].clientY;
-        touchStartTime = Date.now();
-        isScrolling = false;
-        
-        // 터치 시작 시 시각적 피드백
+      // 1. 시각적 피드백 (터치 시 배경색 변경)만 유지
+      card.addEventListener('touchstart', () => {
         card.style.backgroundColor = '#f0f8ff';
       }, { passive: true });
       
-      // 터치 이동
-      card.addEventListener('touchmove', (e) => {
-        const touchY = e.touches[0].clientY;
-        const deltaY = Math.abs(touchY - touchStartY);
-        
-        // 10px 이상 움직이면 스크롤로 판단
-        if (deltaY > 10) {
-          isScrolling = true;
-        }
+      card.addEventListener('touchend', () => {
+        card.style.backgroundColor = 'white';
+      }, { passive: true });
+
+      card.addEventListener('touchcancel', () => {
+        card.style.backgroundColor = 'white';
       }, { passive: true });
       
-      // 터치 종료
-      card.addEventListener('touchend', (e) => {
-        const touchEndTime = Date.now();
-        const touchDuration = touchEndTime - touchStartTime;
-        
-        // 터치 종료 시 시각적 피드백 제거
-        card.style.backgroundColor = 'white';
-        
-        // 스크롤이 아니고 짧은 터치인 경우에만 클릭 처리
-        if (!isScrolling && touchDuration < 500) {
-          e.preventDefault();
-          e.stopPropagation();
-          
-          const customerId = card.getAttribute('data-customer-id');
-          const customer = this.currentCustomers.find(c => c.id === customerId);
-          
-          if (customer) {
-            this.showCustomerDetail(customer);
-          }
-        }
-      }, { passive: false });
-      
-      // 마우스 이벤트 (데스크톱 테스트용)
+      // 2. 모달 오픈 로직을 click 이벤트로 일원화 (v14.0)
+      // 이유: click 이벤트는 브라우저의 모든 합성 클릭 처리가 끝난 후 발생하므로 
+      // 모달이 열린 뒤에 "유령 클릭"이 발생하여 버튼을 누르는 현상이 원천 차단됨.
       card.addEventListener('click', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        
         const customerId = card.getAttribute('data-customer-id');
         const customer = this.currentCustomers.find(c => c.id === customerId);
-        
         if (customer) {
           this.showCustomerDetail(customer);
         }
       });
-      
-      // 호버 효과 (데스크톱용)
-      card.addEventListener('mouseenter', () => {
-        if (!isScrolling) {
-          card.style.backgroundColor = '#f0f8ff';
-        }
-      });
-      
-      card.addEventListener('mouseleave', () => {
-        card.style.backgroundColor = 'white';
-      });
     });
-    
   }
 
   showCustomerDetail(customer) {
-    
-    // 고객 상세보기 모달 생성
     this.createCustomerDetailModal(customer);
   }
 
   createCustomerDetailModal(customer) {
-    
-    // 기존 상세보기 모달이 있으면 제거
     const existingModal = document.getElementById('customerDetailModal');
-    if (existingModal) {
-      existingModal.remove();
-    }
+    if (existingModal) existingModal.remove();
     
-    // 상세보기 모달 생성
     const detailModal = document.createElement('div');
     detailModal.id = 'customerDetailModal';
     detailModal.className = 'customer-detail-modal';
     detailModal.style.cssText = `
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      width: 100vw;
-      height: 100vh;
-      background: rgba(0, 0, 0, 0.5);
-      z-index: 3000;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.5);
+      z-index: 3000; display: flex; align-items: center; justify-content: center;
     `;
 
-    // 고객 상세정보 HTML 생성
     const detailHtml = this.generateCustomerDetailHtml(customer);
-    
     detailModal.innerHTML = `
       <div class="detail-modal-content" style="
-        width: 90%;
-        max-width: 500px;
-        max-height: 80vh;
-        background: white;
-        border-radius: 8px;
-        overflow: hidden;
-        display: flex;
-        flex-direction: column;
+        width: 90%; max-width: 500px; max-height: 80vh;
+        background: white; border-radius: 8px; overflow: hidden;
+        display: flex; flex-direction: column;
       ">
         <div class="detail-modal-header" style="
-          padding: 16px;
-          border-bottom: 1px solid #eee;
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          background: #f8f9fa;
+          padding: 16px; border-bottom: 1px solid #eee;
+          display: flex; justify-content: space-between; align-items: center; background: #f8f9fa;
         ">
           <h3 style="margin: 0; font-size: 18px; color: #333;">고객 상세정보</h3>
-          <button class="detail-close-btn" style="
-            background: none;
-            border: none;
-            font-size: 24px;
-            cursor: pointer;
-            color: #666;
-            padding: 0;
-            width: 30px;
-            height: 30px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-          ">×</button>
+          <button class="detail-close-btn" style="background: none; border: none; font-size: 24px;">×</button>
         </div>
-        <div class="detail-modal-body" style="
-          flex: 1;
-          overflow-y: auto;
-          padding: 16px;
-        ">
+        <div class="detail-modal-body" style="flex: 1; overflow-y: auto; padding: 16px;">
           ${detailHtml}
         </div>
-        <div class="detail-modal-footer" style="
-          padding: 16px;
-          border-top: 1px solid #eee;
-          display: flex;
-          gap: 8px;
-          background: #f8f9fa;
-        ">
-          <button class="apply-filter-btn" style="
-            flex: 1;
-            padding: 12px;
-            background: #007bff;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 14px;
-            font-weight: bold;
-          ">필터 적용</button>
-          <button class="cancel-btn" style="
-            flex: 1;
-            padding: 12px;
-            background: #6c757d;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 14px;
-          ">취소</button>
+        <div class="detail-modal-footer" style="padding: 16px; border-top: 1px solid #eee; background: #f8f9fa;">
+          <div class="default-footer-actions" style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+            <button class="apply-filter-btn" style="padding: 12px; background: #007bff; color: white; border-radius: 4px; font-weight: bold;">필터 적용</button>
+            <button class="edit-btn" style="padding: 12px; background: #1976d2; color: white; border-radius: 4px; font-weight: bold;">수정</button>
+            <button class="delete-btn" style="padding: 12px; background: #dc3545; color: white; border-radius: 4px;">삭제</button>
+            <button class="cancel-btn" style="padding: 12px; background: #6c757d; color: white; border-radius: 4px;">취소</button>
+          </div>
+          <div class="delete-confirm-actions" style="display: none; flex-direction: column; gap: 12px; text-align: center;">
+            <div style="font-weight: bold; color: #dc3545;">정말로 삭제하시겠습니까?</div>
+            <div style="display: flex; gap: 8px;">
+              <button class="confirm-delete-btn" style="flex: 1; padding: 12px; background: #dc3545; color: white; border-radius: 4px;">삭제 확인</button>
+              <button class="back-from-delete-btn" style="flex: 1; padding: 12px; background: #6c757d; color: white; border-radius: 4px;">이전</button>
+            </div>
+          </div>
         </div>
       </div>
     `;
 
-    // 이벤트 바인딩
     const closeBtn = detailModal.querySelector('.detail-close-btn');
     const cancelBtn = detailModal.querySelector('.cancel-btn');
+    const editBtn = detailModal.querySelector('.edit-btn');
+    const deleteBtn = detailModal.querySelector('.delete-btn');
     const applyFilterBtn = detailModal.querySelector('.apply-filter-btn');
-    
+    const defaultActions = detailModal.querySelector('.default-footer-actions');
+    const deleteConfirmActions = detailModal.querySelector('.delete-confirm-actions');
+    const confirmDeleteBtn = detailModal.querySelector('.confirm-delete-btn');
+    const backFromDeleteBtn = detailModal.querySelector('.back-from-delete-btn');
+
     closeBtn.addEventListener('click', () => detailModal.remove());
     cancelBtn.addEventListener('click', () => detailModal.remove());
     
     applyFilterBtn.addEventListener('click', () => {
       this.applyCustomerFilter(customer);
       detailModal.remove();
-      this.closeModal(); // 고객리스트 모달도 닫기
+      this.closeModal();
     });
 
-    // 모달 배경 클릭 시 닫기
-    detailModal.addEventListener('click', (e) => {
-      if (e.target === detailModal) {
+    editBtn.addEventListener('click', () => {
+      if (typeof window.editCustomerById === 'function') {
+        window.editCustomerById(customer.id);
         detailModal.remove();
+        // this.closeModal(); // 🔥 수정 진입 시 리스트 모달을 닫지 않음 (v13.0)
       }
+    });
+
+    deleteBtn.addEventListener('click', () => {
+      defaultActions.style.display = 'none';
+      deleteConfirmActions.style.display = 'flex';
+    });
+
+    backFromDeleteBtn.addEventListener('click', () => {
+      deleteConfirmActions.style.display = 'none';
+      defaultActions.style.display = 'grid';
+    });
+
+    confirmDeleteBtn.addEventListener('click', async () => {
+      if (typeof window.deleteCustomerById === 'function') {
+        const success = await window.deleteCustomerById(customer.id);
+        if (success !== false) {
+          detailModal.remove();
+          this.loadCustomerList();
+        }
+      }
+    });
+
+    detailModal.addEventListener('click', (e) => {
+      if (e.target === detailModal) detailModal.remove();
     });
 
     document.body.appendChild(detailModal);
@@ -521,127 +414,49 @@ class CustomerListModalManager {
     const phoneRaw = customer.phone || '';
     const telPhone = this.toTelPhone(phoneRaw);
     const phoneDisplay = phoneRaw ? this.escapeHtml(phoneRaw) : '연락처 없음';
-    const phoneHtml = telPhone
-      ? `<a href="tel:${telPhone}" style="color: #0d6efd; text-decoration: none;">${phoneDisplay}</a>`
-      : phoneDisplay;
+    const phoneHtml = telPhone ? `<a href="tel:${telPhone}" style="color: #0d6efd; text-decoration: none;">${phoneDisplay}</a>` : phoneDisplay;
 
-    // 고객 상세정보 HTML 생성
-    let html = `
-      <div style="background: white; border: 1px solid #e0e0e0; border-radius: 8px; padding: 16px; margin-bottom: 16px;">
-        <div class="detail-row" style="margin-bottom: 12px;">
-          <label style="display: block; font-weight: 600; color: #333; margin-bottom: 4px; font-size: 12px;">담당자</label>
-          <div style="color: #666; font-size: 14px;">${this.escapeHtml(customer.manager || '담당자 없음')}</div>
-        </div>
-        <div class="detail-row" style="margin-bottom: 12px;">
-          <label style="display: block; font-weight: 600; color: #333; margin-bottom: 4px; font-size: 12px;">고객명</label>
-          <div style="color: #666; font-size: 14px;">${this.escapeHtml(customer.name || '이름 없음')}</div>
-        </div>
-        <div class="detail-row" style="margin-bottom: 12px;">
-          <label style="display: block; font-weight: 600; color: #333; margin-bottom: 4px; font-size: 12px;">연락처</label>
-          <div style="color: #666; font-size: 14px;">${phoneHtml}</div>
-        </div>
-        <div class="detail-row" style="margin-bottom: 12px;">
-          <label style="display: block; font-weight: 600; color: #333; margin-bottom: 4px; font-size: 12px;">상태</label>
-          <div style="color: #666; font-size: 14px;">${this.escapeHtml(customer.status || '생성')}</div>
-        </div>
-    `;
+    let html = `<div style="background: white; border: 1px solid #e0e0e0; border-radius: 8px; padding: 16px; margin-bottom: 16px;">`;
+    const fields = [
+      { label: '담당자', value: customer.manager },
+      { label: '고객명', value: customer.name },
+      { label: '연락처', value: phoneHtml, noEscape: true },
+      { label: '상태', value: customer.status || '생' },
+      { label: '희망 지역', value: customer.regions },
+      { label: '희망 층수', value: customer.floor_pref || customer.floor },
+      { label: '희망 면적', value: customer.area_pref || customer.area },
+      { label: '희망 보증금', value: customer.deposit_pref || customer.deposit },
+      { label: '희망 월세', value: customer.rent_pref || customer.rent },
+      { label: '희망 권리금', value: customer.premium_pref || customer.premium },
+      { label: '참고사항', value: customer.notes, isLong: true }
+    ];
 
-    // 희망 조건들
-    if (customer.regions) {
-      html += `
-        <div class="detail-row" style="margin-bottom: 12px;">
-          <label style="display: block; font-weight: 600; color: #333; margin-bottom: 4px; font-size: 12px;">희망 지역</label>
-          <div style="color: #666; font-size: 14px;">${this.escapeHtml(customer.regions)}</div>
-        </div>
-      `;
-    }
-
-    if (customer.floor_pref || customer.floor) {
-      html += `
-        <div class="detail-row" style="margin-bottom: 12px;">
-          <label style="display: block; font-weight: 600; color: #333; margin-bottom: 4px; font-size: 12px;">희망 층수</label>
-          <div style="color: #666; font-size: 14px;">${this.escapeHtml(customer.floor_pref || customer.floor)}</div>
-        </div>
-      `;
-    }
-
-    if (customer.area_pref || customer.area) {
-      html += `
-        <div class="detail-row" style="margin-bottom: 12px;">
-          <label style="display: block; font-weight: 600; color: #333; margin-bottom: 4px; font-size: 12px;">희망 면적</label>
-          <div style="color: #666; font-size: 14px;">${this.escapeHtml(customer.area_pref || customer.area)}</div>
-        </div>
-      `;
-    }
-
-    if (customer.deposit_pref || customer.deposit) {
-      html += `
-        <div class="detail-row" style="margin-bottom: 12px;">
-          <label style="display: block; font-weight: 600; color: #333; margin-bottom: 4px; font-size: 12px;">희망 보증금</label>
-          <div style="color: #666; font-size: 14px;">${this.escapeHtml(customer.deposit_pref || customer.deposit)}</div>
-        </div>
-      `;
-    }
-
-    if (customer.rent_pref || customer.rent) {
-      html += `
-        <div class="detail-row" style="margin-bottom: 12px;">
-          <label style="display: block; font-weight: 600; color: #333; margin-bottom: 4px; font-size: 12px;">희망 월세</label>
-          <div style="color: #666; font-size: 14px;">${this.escapeHtml(customer.rent_pref || customer.rent)}</div>
-        </div>
-      `;
-    }
-
-    if (customer.premium_pref || customer.premium) {
-      html += `
-        <div class="detail-row" style="margin-bottom: 12px;">
-          <label style="display: block; font-weight: 600; color: #333; margin-bottom: 4px; font-size: 12px;">희망 권리금</label>
-          <div style="color: #666; font-size: 14px;">${this.escapeHtml(customer.premium_pref || customer.premium)}</div>
-        </div>
-      `;
-    }
-
-    if (customer.notes && customer.notes.trim()) {
-      html += `
-        <div class="detail-row" style="margin-bottom: 12px;">
-          <label style="display: block; font-weight: 600; color: #333; margin-bottom: 4px; font-size: 12px;">참고사항</label>
-          <div style="color: #666; font-size: 14px; line-height: 1.4;">${this.escapeHtml(customer.notes)}</div>
-        </div>
-      `;
-    }
+    fields.forEach(f => {
+      if (f.value) {
+        html += `
+          <div class="detail-row" style="margin-bottom: 12px;">
+            <label style="display: block; font-weight: 600; color: #333; margin-bottom: 4px; font-size: 12px;">${f.label}</label>
+            <div style="color: #666; font-size: 14px; ${f.isLong ? 'line-height: 1.4;' : ''}">${f.noEscape ? f.value : this.escapeHtml(f.value)}</div>
+          </div>
+        `;
+      }
+    });
 
     html += `</div>`;
-
     return html;
   }
 
   applyCustomerFilter(customer) {
-    
-    // PC의 applyCustomerFilter 로직 재사용
     if (typeof window.applyCustomerFilter === 'function') {
       window.applyCustomerFilter(customer);
-      
-      // 모바일에서 고객 필터 해제 버튼 표시
-      const clearCustomerFilterBtn = document.getElementById('clearCustomerFilterBtn');
-      if (clearCustomerFilterBtn) {
-        clearCustomerFilterBtn.style.display = 'flex';
-      }
-    } else {
-      console.error('❌ applyCustomerFilter 함수를 찾을 수 없습니다');
-      alert('필터 적용 기능을 사용할 수 없습니다.');
+      const clearBtn = document.getElementById('clearCustomerFilterBtn');
+      if (clearBtn) clearBtn.style.display = 'flex';
     }
   }
 
   showError(message) {
     const container = this.container.querySelector('.customer-list-container');
-    if (container) {
-      container.innerHTML = `
-        <div style="text-align: center; padding: 40px; color: #dc3545;">
-          <div style="font-size: 16px; margin-bottom: 8px;">⚠️ 오류</div>
-          <div style="font-size: 14px;">${message}</div>
-        </div>
-      `;
-    }
+    if (container) container.innerHTML = `<div style="text-align: center; padding: 40px; color: #dc3545;">⚠️ ${message}</div>`;
   }
 
   escapeHtml(text) {
@@ -653,10 +468,8 @@ class CustomerListModalManager {
 
   toTelPhone(phone) {
     if (!phone) return '';
-    const normalized = String(phone).replace(/[^0-9+]/g, '');
-    return normalized.replace(/(?!^)\+/g, '');
+    return String(phone).replace(/[^0-9+]/g, '').replace(/(?!^)\+/g, '');
   }
 }
 
-// 전역 인스턴스 생성
 window.customerListModalManager = new CustomerListModalManager();

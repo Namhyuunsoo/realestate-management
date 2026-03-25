@@ -128,6 +128,11 @@ class ListingAddManager {
             this.modal.classList.remove('hidden');
             this.autoFillData = presetData;
 
+            // 🔥 모바일 Z-index 위계 정립 (Layer 3: 4000) [v13.0]
+            if (window.MOBILE_APP) {
+                this.modal.style.zIndex = '4000';
+            }
+
             // 모달 열 때 폼과 탭 뷰 초기화
             this.clearForm();
             this.dynamicContainer.style.display = 'none';

@@ -392,7 +392,10 @@ function renderCustomerForm(c = {}) {
 }
 
 function renderCustomerEditForm(c = {}) {
-  showSecondaryPanel('viewCustomerEdit');
+  // 모바일 모달 모드일 때는 사이드바를 열지 않음 [NEW]
+  if (!window.isMobileModalMode) {
+    showSecondaryPanel('viewCustomerEdit');
+  }
 
   const detailTitleEl = document.getElementById("secondaryPanelTitle");
   const viewCustomerEdit = document.getElementById("viewCustomerEdit");

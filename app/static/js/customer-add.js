@@ -4,6 +4,7 @@ class CustomerAddManager {
     constructor() {
         this.modal = null;
         this.formContainer = null;
+        this.currentEditingCustomer = null;
         this.init();
     }
     
@@ -52,51 +53,109 @@ class CustomerAddManager {
         }
         
         if (this.modal && this.formContainer) {
+            // 초기 UI 설정 (등록 모드)
+            this.resetModalUI();
+            
             // PC버전의 renderCustomerForm() 함수를 사용해서 폼 렌더링
             if (typeof window.renderCustomerForm === 'function') {
-                // 임시로 2차 사이드바에 렌더링한 후 내용을 가져옴
                 const originalView = document.getElementById('viewCustomerForm');
                 if (originalView) {
-                    // 기존 내용 백업
                     const originalContent = originalView.innerHTML;
-                    
-                    // 모바일 환경에서는 showSecondaryPanel 호출을 건너뛰도록 플래그 설정
                     if (window.MOBILE_APP) window.isMobileModalMode = true;
-                    
                     try {
-                        // PC버전 함수로 폼 렌더링
                         window.renderCustomerForm();
                     } finally {
-                        // 모바일 플래그 제거
                         window.isMobileModalMode = false;
                     }
-                    
-                    // 렌더링된 내용을 모달로 복사
                     this.formContainer.innerHTML = originalView.innerHTML;
-                    
-                    // 모달 내부의 등록/취소 버튼 숨기기
-                    const submitBtn = this.formContainer.querySelector('#submitCustomerFormBtn');
-                    const cancelBtn = this.formContainer.querySelector('#cancelCustomerFormBtn');
-                    if (submitBtn) submitBtn.style.display = 'none';
-                    if (cancelBtn) cancelBtn.style.display = 'none';
-                    
-                    // 기존 내용 복원
+                    this.hideDefaultButtons();
                     originalView.innerHTML = originalContent;
-                } else {
-                    console.error('viewCustomerForm 요소를 찾을 수 없습니다.');
                 }
             } else {
                 console.error('renderCustomerForm 함수를 찾을 수 없습니다.');
                 this.formContainer.innerHTML = '<p>고객등록 폼을 로드할 수 없습니다.</p>';
             }
-            
             this.modal.classList.remove('hidden');
+            // 🔥 모바일 Z-index 위계 정립 (Layer 3: 4000) [v13.0]
+            if (window.MOBILE_APP) {
+                this.modal.style.zIndex = '4000';
+            }
+        }
+    }
+
+    // 고객 수정 모달 열기
+    openEditModal(customer) {
+        if (!this.modal || !this.formContainer) return;
+
+        // UI를 수정 모드로 변경
+        const headerTitle = this.modal.querySelector('.modal-header h2');
+        if (headerTitle) headerTitle.textContent = "고객 정보 수정";
+
+        const submitBtn = document.getElementById('submitCustomer');
+        if (submitBtn) {
+            submitBtn.textContent = "수정";
+            // 기존 편집 중인 고객 정보 저장 [NEW]
+            this.currentEditingCustomer = customer;
+
+            // 기존 이벤트 리스너 제거 (복제하여 교체)
+            const newSubmitBtn = submitBtn.cloneNode(true);
+            submitBtn.parentNode.replaceChild(newSubmitBtn, submitBtn);
+            newSubmitBtn.addEventListener('click', () => this.updateCustomer(customer.id));
+        }
+
+        // 폼 렌더링
+        if (typeof window.renderCustomerEditForm === 'function') {
+            const originalView = document.getElementById('viewCustomerEdit');
+            if (originalView) {
+                const originalContent = originalView.innerHTML;
+                if (window.MOBILE_APP) window.isMobileModalMode = true;
+                try {
+                    window.renderCustomerEditForm(customer);
+                } finally {
+                    window.isMobileModalMode = false;
+                }
+                this.formContainer.innerHTML = originalView.innerHTML;
+                this.hideDefaultButtons();
+                originalView.innerHTML = originalContent;
+            }
+        } else {
+            console.error('renderCustomerEditForm 함수를 찾을 수 없습니다.');
+            this.formContainer.innerHTML = '<p>고객수정 폼을 로드할 수 없습니다.</p>';
+        }
+
+        this.modal.classList.remove('hidden');
+        // 🔥 모바일 Z-index 위계 정립 (Layer 3: 4000) [v13.0]
+        if (window.MOBILE_APP) {
+            this.modal.style.zIndex = '4000';
+        }
+    }
+
+    // 기본 버튼 숨기기
+    hideDefaultButtons() {
+        const submitBtn = this.formContainer.querySelector('#submitCustomerFormBtn, #submitCustomerEditFormBtn');
+        const cancelBtn = this.formContainer.querySelector('#cancelCustomerFormBtn, #cancelCustomerEditFormBtn');
+        if (submitBtn) submitBtn.style.display = 'none';
+        if (cancelBtn) cancelBtn.style.display = 'none';
+    }
+
+    // 모달 UI 초기화
+    resetModalUI() {
+        const headerTitle = this.modal.querySelector('.modal-header h2');
+        if (headerTitle) headerTitle.textContent = "고객등록";
+
+        const submitBtn = document.getElementById('submitCustomer');
+        if (submitBtn) {
+            submitBtn.textContent = "등록";
+            const newSubmitBtn = submitBtn.cloneNode(true);
+            submitBtn.parentNode.replaceChild(newSubmitBtn, submitBtn);
+            newSubmitBtn.addEventListener('click', () => this.submitCustomer());
         }
     }
     
     closeModal() {
         if (this.modal) {
             this.modal.classList.add('hidden');
+            this.resetModalUI();
         }
     }
     
@@ -107,21 +166,12 @@ class CustomerAddManager {
         }
 
         try {
-            // 폼 데이터 수집 (PC방식 필터데이터 포함)
             const formData = this.collectFormData();
+            if (!this.validateForm(formData)) return;
             
-            // 유효성 검사
-            if (!this.validateForm(formData)) {
-                return;
-            }
-            
-            // URL은 최신 RESTful API 방식 사용
             const url = '/api/customers/';
-            
-            // formData에서 NaN 값 제거 (PC 로직 복제)
             const cleanedFormData = window.cleanObject ? window.cleanObject(formData) : formData;
             
-            // API 직접 호출
             const response = await fetch(url, {
                 method: 'POST',
                 headers: {
@@ -132,12 +182,10 @@ class CustomerAddManager {
             });
             
             if (response.ok) {
-                const result = await response.json();
                 this.showSuccessMessage('고객정보가 성공적으로 등록되었습니다.');
                 this.closeModal();
                 this.refreshCustomerList();
                 
-                // 저장 후 발생 이벤트 트리거 (PC 동기화)
                 if (window.afterCustomerSaved) {
                     window.afterCustomerSaved();
                 }
@@ -145,10 +193,61 @@ class CustomerAddManager {
                 const errorText = await response.text();
                 this.showErrorMessage('고객등록에 실패했습니다: ' + errorText);
             }
-            
         } catch (error) {
             console.error('고객등록 오류:', error);
             this.showErrorMessage('고객등록 중 오류가 발생했습니다.');
+        }
+    }
+
+    // 고객 정보 업데이트
+    async updateCustomer(customerId) {
+        if (!window.currentUser) {
+            this.showErrorMessage('로그인이 필요합니다.');
+            return;
+        }
+
+        try {
+            const formData = this.collectEditFormData();
+            if (!this.validateForm(formData)) return;
+            
+            const url = `/api/customers/${customerId}`;
+            const cleanedFormData = window.cleanObject ? window.cleanObject(formData) : formData;
+            
+            const response = await fetch(url, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-User': window.currentUser
+                },
+                body: JSON.stringify(cleanedFormData)
+            });
+            
+            if (response.ok) {
+                this.showSuccessMessage('고객정보가 성공적으로 수정되었습니다.');
+                this.closeModal();
+                this.refreshCustomerList();
+                
+                // 🔥 모바일 환경: 수정 후 상세 모달로 복귀 [v12.0]
+                if (window.MOBILE_APP && window.customerListModalManager && this.currentEditingCustomer) {
+                    // 전송한 데이터로 병합하여 표시
+                    const updatedCustomer = { ...this.currentEditingCustomer, ...cleanedFormData };
+                    
+                    // 약간의 지연 후 상세 모달 다시 열기 (애니메이션 겹침 방지)
+                    setTimeout(() => {
+                        window.customerListModalManager.createCustomerDetailModal(updatedCustomer);
+                    }, 100);
+                }
+
+                if (window.afterCustomerSaved) {
+                    window.afterCustomerSaved();
+                }
+            } else {
+                const errorText = await response.text();
+                this.showErrorMessage('고객수정에 실패했습니다: ' + errorText);
+            }
+        } catch (error) {
+            console.error('고객수정 오류:', error);
+            this.showErrorMessage('고객수정 중 오류가 발생했습니다.');
         }
     }
     
@@ -158,12 +257,23 @@ class CustomerAddManager {
         const rentVal = window.cleanValue ? window.cleanValue(this.formContainer.querySelector('#frmRent')?.value) : (this.formContainer.querySelector('#frmRent')?.value || '');
         const premiumVal = window.cleanValue ? window.cleanValue(this.formContainer.querySelector('#frmPremium')?.value) : (this.formContainer.querySelector('#frmPremium')?.value || '');
         
+        const regionsInput = this.formContainer.querySelector('#frmRegions')?.value || '';
+        
+        const filterData = {
+            region: regionsInput,
+            floor: this.formContainer.querySelector('#frmFloor')?.value || '',
+            area_real: areaVal,
+            deposit: depositVal,
+            rent: rentVal,
+            premium: premiumVal
+        };
+
         const formData = {
             manager: this.formContainer.querySelector('#frmManager')?.value || '',
             name: this.formContainer.querySelector('#frmName')?.value || '',
             phone: this.formContainer.querySelector('#frmPhone')?.value || '',
-            regions: this.formContainer.querySelector('#frmRegions')?.value || '',
-            floor: this.formContainer.querySelector('#frmFloor')?.value || '',
+            regions: regionsInput,
+            floor: filterData.floor,
             area: areaVal,
             deposit: depositVal,
             rent: rentVal,
@@ -173,64 +283,61 @@ class CustomerAddManager {
             created_at: new Date().toISOString()
         };
         
-        // 지역명 정규화 (PC 동기화)
-        function normalizeRegion(region) {
-            if (!region) return region;
-            region = region.trim();
-            if (region.includes("구 전체") || region.includes("구 전부")) {
-                return region.split("구")[0] + "구";
-            }
-            if (region.includes("구전체") || region.includes("구전부")) {
-                return region.split("구전체")[0] + "구";
-            }
-            if (region.includes("시 전체") || region.includes("시 전부")) {
-                return region.split("시")[0] + "시";
-            }
-            if (region.includes("시전체") || region.includes("시전부")) {
-                return region.split("시전체")[0] + "시";
-            }
-            return region;
-        }
+        formData.filter_data = JSON.stringify(filterData);
+        return formData;
+    }
 
-        const normalizedRegion = normalizeRegion(formData.regions);
-
-        // 필터 전용 데이터 구성
+    collectEditFormData() {
+        const areaVal = window.cleanValue ? window.cleanValue(this.formContainer.querySelector('#editArea')?.value) : (this.formContainer.querySelector('#editArea')?.value || '');
+        const depositVal = window.cleanValue ? window.cleanValue(this.formContainer.querySelector('#editDeposit')?.value) : (this.formContainer.querySelector('#editDeposit')?.value || '');
+        const rentVal = window.cleanValue ? window.cleanValue(this.formContainer.querySelector('#editRent')?.value) : (this.formContainer.querySelector('#editRent')?.value || '');
+        const premiumVal = window.cleanValue ? window.cleanValue(this.formContainer.querySelector('#editPremium')?.value) : (this.formContainer.querySelector('#editPremium')?.value || '');
+        
+        const regionsInput = this.formContainer.querySelector('#editRegions')?.value || '';
+        
         const filterData = {
-            region: normalizedRegion,
-            floor: formData.floor,
-            area_real: formData.area,
-            deposit: formData.deposit,
-            rent: formData.rent,
-            premium: formData.premium
+            region: regionsInput,
+            floor: this.formContainer.querySelector('#editFloor')?.value || '',
+            area_real: areaVal,
+            deposit: depositVal,
+            rent: rentVal,
+            premium: premiumVal
         };
 
-        formData.filter_data = JSON.stringify(filterData);
-        
-        return formData;
+        return {
+            manager: this.formContainer.querySelector('#editManager')?.value || '',
+            name: this.formContainer.querySelector('#editName')?.value || '',
+            phone: this.formContainer.querySelector('#editPhone')?.value || '',
+            regions: regionsInput,
+            floor_pref: filterData.floor,
+            area_pref: areaVal,
+            deposit_pref: depositVal,
+            rent_pref: rentVal,
+            premium_pref: premiumVal,
+            notes: this.formContainer.querySelector('#editNotes')?.value || '',
+            status: this.formContainer.querySelector('#editStatus')?.value || '생',
+            filter_data: JSON.stringify(filterData),
+            updated_at: new Date().toISOString()
+        };
     }
     
     validateForm(formData) {
-        // 필수 필드 검사
         if (!formData.manager || formData.manager.trim() === '') {
             this.showErrorMessage('담당자는 필수 입력 항목입니다.');
             return false;
         }
-        
         if (!formData.name || formData.name.trim() === '') {
             this.showErrorMessage('고객명은 필수 입력 항목입니다.');
             return false;
         }
-        
         if (!formData.phone || formData.phone.trim() === '') {
             this.showErrorMessage('연락처는 필수 입력 항목입니다.');
             return false;
         }
-        
         return true;
     }
     
     showSuccessMessage(message) {
-        // 성공 메시지 표시 (기존 토스트 시스템 사용)
         if (window.showToast) {
             window.showToast(message, 'success');
         } else {
@@ -239,7 +346,6 @@ class CustomerAddManager {
     }
     
     showErrorMessage(message) {
-        // 에러 메시지 표시 (기존 토스트 시스템 사용)
         if (window.showToast) {
             window.showToast(message, 'error');
         } else {
@@ -248,14 +354,15 @@ class CustomerAddManager {
     }
     
     refreshCustomerList() {
-        // 고객 목록 새로고침 (필요시)
         if (window.loadCustomerList) {
             window.loadCustomerList(window.isUserAdmin ? 'all' : 'own');
+        }
+        if (window.customerListModalManager && window.customerListModalManager.loadCustomerList) {
+            window.customerListModalManager.loadCustomerList();
         }
     }
 }
 
-// 페이지 로드 시 초기화
 document.addEventListener('DOMContentLoaded', () => {
     window.customerAddManager = new CustomerAddManager();
 });

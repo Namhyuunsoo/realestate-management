@@ -87,9 +87,15 @@ window.initializeApp = async function () {
       panel.classList.remove('hidden');
       panel.classList.add('visible');
 
-      // 강제로 display와 transform 설정 (다른 스크립트가 방해하는 경우 대비)
+      // 강제로 display와 transform 설정
       panel.style.display = 'block';
-      panel.style.transform = 'translateX(280px)';
+      if (window.innerWidth <= 768) {
+        panel.style.transform = 'translateX(0)'; // 모바일은 꽉 차게
+        panel.style.width = '100%';
+        panel.style.left = '0';
+      } else {
+        panel.style.transform = 'translateX(280px)'; // PC는 1차 사이드바 옆에
+      }
       panel.style.visibility = 'visible';
       panel.style.opacity = '1';
       // 1차 사이드바는 그대로 유지 (크기나 위치 변경하지 않음)
@@ -121,9 +127,13 @@ window.initializeApp = async function () {
       secondaryPanel.classList.add('hidden');
       secondaryPanel.classList.remove('visible');
 
-      // 강제로 스타일 초기화 (다른 스크립트가 방해하는 경우 대비)
+      // 강제로 스타일 초기화
       secondaryPanel.style.display = 'none';
-      secondaryPanel.style.transform = 'translateX(-100%)';
+      if (window.innerWidth <= 768) {
+        secondaryPanel.style.transform = 'translateX(-100%)';
+      } else {
+        secondaryPanel.style.transform = 'translateX(-100%)'; // 기본값으로 복원
+      }
       secondaryPanel.style.visibility = 'hidden';
       secondaryPanel.style.opacity = '0';
       hideAllSecondaryViews();
