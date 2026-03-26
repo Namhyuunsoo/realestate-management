@@ -101,15 +101,24 @@ class SecurityManager:
         return False
     
     def validate_session(self, session_id: str) -> bool:
-        """세션 유효성 확인"""
+        """세션 유효성 확인 (Sliding Session 적용)"""
         if session_id not in self.sessions:
             return False
         
         session_data = self.sessions[session_id]
-        if time.time() - session_data['created_at'] > 3600:  # 1시간 만료
+        now = time.time()
+        
+        # 설정된 타임아웃 값 가져오기 (기본 1시간)
+        timeout = current_app.config.get('SESSION_TIMEOUT', 3600)
+        
+        # 마지막 활동 시간 기준으로 체크 (Sliding Window)
+        if now - session_data['last_activity'] > timeout:
+            logger.info(f"Session {session_id} expired due to inactivity")
             del self.sessions[session_id]
             return False
         
+        # 활동이 확인되었으므로 세션 시간 연장
+        self.update_session(session_id)
         return True
     
     def create_session(self, user_id: str) -> str:

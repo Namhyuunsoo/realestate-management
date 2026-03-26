@@ -608,7 +608,63 @@ function initializeRefreshControls() {
     console.warn('⚠️ updateLastUpdateTime 함수를 찾을 수 없습니다.');
   }
 
+  // 🔥 실시간 동기화 장애 감지 루프 시작 (v20.1)
+  startSyncHealthCheck();
+
   // console.log('✅ 새로고침 컨트롤 초기화 완료');
+}
+
+/**
+ * 동기화 상태 정밀 감지 (하트비트 기반)
+ */
+async function startSyncHealthCheck() {
+  const refreshBtn = document.getElementById('refresh-btn');
+  if (!refreshBtn) return;
+
+  const checkStatus = async () => {
+    try {
+      if (!window.supabase) return;
+      
+      const { data, error } = await window.supabase
+        .from('sheet_registry')
+        .select('slot_id, last_sync_heartbeat, last_sync_status, manager_name')
+        .eq('is_active', true);
+      
+      if (error) throw error;
+      
+      let hasError = false;
+      let errorSlots = [];
+      const now = new Date();
+      const tenMinutesAgo = new Date(now.getTime() - 10 * 60 * 1000);
+
+      data.forEach(slot => {
+        const heartbeat = slot.last_sync_heartbeat ? new Date(slot.last_sync_heartbeat) : null;
+        // 하트비트가 10분 이상 끊겼거나 명시적 에러 상태인 경우
+        if (slot.last_sync_status === 'error' || (heartbeat && heartbeat < tenMinutesAgo)) {
+          hasError = true;
+          errorSlots.push(slot.manager_name || slot.slot_id);
+        }
+      });
+
+      if (hasError) {
+        refreshBtn.classList.remove('btn-primary', 'btn-secondary');
+        refreshBtn.classList.add('btn-danger');
+        refreshBtn.classList.add('animate-pulse'); // 경고 애니메이션 (필요시 CSS 추가)
+        refreshBtn.title = `⚠️ 동기화 장애 발생: ${errorSlots.join(', ')} 슬롯 점검 필요`;
+        // dbg(`⚠️ 동기화 장애 감지: ${errorSlots.join(', ')}`);
+      } else {
+        refreshBtn.classList.remove('btn-danger', 'animate-pulse');
+        refreshBtn.classList.add('btn-primary');
+        refreshBtn.title = '부동산 데이터 새로고침';
+      }
+    } catch (err) {
+      console.error('동기화 상태 체크 실패:', err);
+    }
+  };
+
+  // 1분마다 체크
+  await checkStatus();
+  setInterval(checkStatus, 60000);
 }
 
 // 초기화 관련 함수들을 전역으로 export
