@@ -295,6 +295,40 @@ class CommercialSyncService:
                 sheet_slug = "r" if "임대" in sheet_name else "s" if "구분" in sheet_name else "l"
                 record_id = f"c_{sheet_slug}_slot{slot_id}_{row_idx:06d}"
             
+            # 지오코딩 처리 (캐시 우선, 없으면 실시간 추출)
+            addr_key = address_full.strip()
+            coords = self.geocode_cache.get(addr_key)
+            geocoded = False
+
+            if coords:
+                geocoded = True
+            elif addr_key:
+                # 🚀 신규 주소 실시간 지오코딩 수행
+                try:
+                    from .geocoding_service import GeocodingService
+                    geo_service = GeocodingService()
+                    new_coords = geo_service.geocode_address(addr_key)
+                    
+                    if new_coords:
+                        coords = new_coords
+                        geocoded = True
+                        # 메모리 캐시 업데이트
+                        self.geocode_cache[addr_key] = coords
+                        
+                        # DB 캐시(address_geocode_cache)에 저장하여 중복 호출 방지
+                        try:
+                            self.supabase.table("address_geocode_cache").upsert({
+                                "address_full": addr_key,
+                                "lat": coords["lat"],
+                                "lng": coords["lng"],
+                                "last_updated": datetime.now().isoformat()
+                            }).execute()
+                            logger.info(f"✨ 신규 주소 지오코딩 완료 및 캐시 저장: {addr_key}")
+                        except Exception as cache_err:
+                            logger.error(f"지오코딩 DB 캐시 저장 실패: {cache_err}")
+                except Exception as geo_err:
+                    logger.error(f"실시간 지오코딩 오류 ({addr_key}): {geo_err}")
+
             return {
                 "id": record_id,
                 "slot_id": slot_id,
@@ -305,10 +339,11 @@ class CommercialSyncService:
                 "address_comp": {"region2": region2, "region": region, "lot": lot},
                 "fields": fields,
                 "status_raw": fields.get("현황", ""),
-                "coords": self.geocode_cache.get(address_full),
-                "geocoded": self.geocode_cache.get(address_full) is not None
+                "coords": coords,
+                "geocoded": geocoded
             }
-        except Exception:
+        except Exception as e:
+            logger.error(f"Row 처리 중 오류 (Row: {row_idx}): {e}")
             return None
 
 
