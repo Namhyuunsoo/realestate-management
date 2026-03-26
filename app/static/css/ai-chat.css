@@ -1,0 +1,214 @@
+/* 
+   Gemini Premium Chat Design v2
+   지적이고 유동적인 구글 제미나이 에스테틱 적용
+*/
+
+:root {
+  --gemini-gradient: linear-gradient(135deg, #4285f4 0%, #9b72cb 50%, #d96570 100%);
+  --gemini-glass: rgba(255, 255, 255, 0.72);
+  --gemini-blur: blur(20px);
+  --gemini-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+}
+
+.gemini-panel {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  width: 380px;
+  max-width: 90vw;
+  height: calc(100% - 100px);
+  max-height: 700px;
+  background: var(--gemini-glass);
+  backdrop-filter: var(--gemini-blur);
+  -webkit-backdrop-filter: var(--gemini-blur);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: 24px;
+  box-shadow: var(--gemini-shadow);
+  display: flex;
+  flex-direction: column;
+  z-index: 2000;
+  overflow: hidden;
+  transition: opacity 0.4s ease; /* transform 트랜지션은 드래그 시 방해될 수 있어 제거 */
+}
+
+.gemini-panel.hidden {
+  display: none !important;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* 헤더: 드래그 핸들 추가 */
+.gemini-panel-header {
+  padding: 20px 24px;
+  background: var(--gemini-gradient);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: move; /* 이동 가능 표시 */
+  user-select: none;
+}
+
+.gemini-panel-header h3 {
+  margin: 0;
+  color: white;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  white-space: nowrap;
+}
+
+/* 모델 선택기 스타일 */
+.gemini-model-select {
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: white;
+  padding: 4px 8px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  outline: none;
+  cursor: pointer;
+  transition: all 0.2s;
+  max-width: 140px;
+}
+
+.gemini-model-select:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.gemini-model-select option {
+  background: #9b72cb; /* 그라데이션 컬러 중 하나로 배경 지정 */
+  color: white;
+}
+
+.gemini-panel-header .close-btn {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: white;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  font-size: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+}
+
+.gemini-panel-header .close-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* 메시지 영역 */
+.gemini-messages {
+  flex: 1;
+  padding: 24px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0,0,0,0.1) transparent;
+}
+
+.message {
+  max-width: 85%;
+  padding: 12px 18px;
+  border-radius: 20px;
+  font-size: 14.5px;
+  line-height: 1.5;
+  position: relative;
+  animation: messageIn 0.3s ease-out;
+}
+
+@keyframes messageIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.message.ai {
+  align-self: flex-start;
+  background: white;
+  color: #1f1f1f;
+  border-bottom-left-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
+
+.message.user {
+  align-self: flex-end;
+  background: #4285f4;
+  color: white;
+  border-bottom-right-radius: 4px;
+  box-shadow: 0 4px 12px rgba(66, 133, 244, 0.2);
+}
+
+/* 입력 영역 */
+.gemini-input-area {
+  padding: 20px 24px;
+  background: rgba(255,255,255,0.5);
+  border-top: 1px solid rgba(0,0,0,0.05);
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.gemini-input-area input {
+  flex: 1;
+  border: 1px solid rgba(0,0,0,0.1);
+  padding: 12px 16px;
+  border-radius: 14px;
+  font-size: 14px;
+  background: white;
+  transition: border-color 0.2s;
+  outline: none;
+}
+
+.gemini-input-area input:focus {
+  border-color: #4285f4;
+}
+
+.gemini-input-area .send-btn {
+  background: var(--gemini-gradient);
+  border: none;
+  color: white;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  transition: transform 0.2s;
+  flex-shrink: 0;
+}
+
+.gemini-input-area .send-btn:hover {
+  transform: scale(1.05);
+}
+
+/* 로딩 애니메이션 */
+.message.loading {
+  background: rgba(255,255,255,0.8);
+  font-style: italic;
+  color: #666;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.message.loading::after {
+  content: "...";
+  display: inline-block;
+  animation: dots 1.5s infinite;
+  width: 1.2em;
+  text-align: left;
+}
+
+@keyframes dots {
+  0%, 20% { content: "."; }
+  40% { content: ".."; }
+  60% { content: "..."; }
+  80%, 100% { content: ""; }
+}

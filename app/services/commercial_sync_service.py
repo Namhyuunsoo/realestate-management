@@ -142,29 +142,35 @@ class CommercialSyncService:
         }
         
         # 동기화 작업 중복 실행 방지 (optimistic locking)
-        # 현재 시간으로 `last_sync_attempt`를 업데이트하고, 이전 값이 현재 시간보다 오래된 경우에만 진행
         try:
-            now = datetime.now().isoformat()
-            response = self.supabase.table("sheet_registry") \
-                .update({"last_sync_attempt": now}) \
-                .eq("slot_id", slot_id) \
-                .is_("is_syncing", False) \
-                .execute()
+            now_dt = datetime.now()
+            now = now_dt.isoformat()
+            
+            # [Self-Healing] 10분 이상 지났다면 비정상 종료로 간주하고 잠금 무시
+            # PostgreSQL DSL: (is_syncing = false) OR (last_sync_attempt < now - 10 min)
+            from datetime import timedelta
+            stale_threshold = (now_dt - timedelta(minutes=10)).isoformat()
+
+            # 1. 잠금 시도 및 타임아웃 확인 (Atomic)
+            # is_syncing이 False이거나, 마지막 시도 시각이 10분 전인 경우에만 업데이트 허용
+            query = self.supabase.table("sheet_registry") \
+                .update({"last_sync_attempt": now, "is_syncing": True, "last_synced_at": now}) \
+                .eq("slot_id", slot_id)
+            
+            # 복합 조건: (is_syncing == False) OR (last_sync_attempt < stale_threshold)
+            # Supabase Python 클라이언트에서는 .or_()를 사용
+            response = query.or_(f"is_syncing.eq.false,last_sync_attempt.lt.{stale_threshold}").execute()
             
             if not response.data:
-                logger.info(f"슬롯 {slot_id}는 이미 동기화 중이거나 최근에 동기화 시도가 있었습니다. 건너뜁니다.")
-                res["errors"].append("Already syncing or recently synced.")
+                logger.info(f"슬롯 {slot_id}는 현재 동기화 중이며 아직 타임아웃(10분)이 지나지 않았습니다. 건너뜁니다.")
+                res["errors"].append("Already syncing and not timed out yet.")
                 return res
             
-            # 동기화 시작 플래그 설정
-            self.supabase.table("sheet_registry") \
-                .update({"is_syncing": True, "last_synced_at": now}) \
-                .eq("slot_id", slot_id) \
-                .execute()
+            logger.info(f"슬롯 {slot_id} 동기화 잠금 획득 완료 (진행 시각: {now})")
 
         except Exception as e:
-            logger.error(f"슬롯 {slot_id} 동기화 시작 플래그 설정 중 오류 발생: {e}")
-            res["errors"].append(f"Failed to set sync flag: {e}")
+            logger.error(f"슬롯 {slot_id} 동기화 잠금 설정 중 오류 발생: {e}")
+            res["errors"].append(f"Failed to set sync lock: {e}")
             return res
 
         try:

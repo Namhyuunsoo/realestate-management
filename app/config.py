@@ -67,6 +67,9 @@ class AppConfig:
     SUPABASE_ANON_KEY: str = os.getenv("SUPABASE_ANON_KEY", "")
     SUPABASE_SERVICE_ROLE_KEY: str = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "")
     
+    # Google AI Studio (Gemini) 설정
+    GOOGLE_API_KEY: str = os.getenv("GOOGLE_API_KEY", "")
+    
     # Supabase 기능 플래그 (기능별 전환 제어)
     USE_SUPABASE_CUSTOMERS: bool = os.getenv("USE_SUPABASE_CUSTOMERS", "false").lower() == "true"
     USE_SUPABASE_BRIEFINGS: bool = os.getenv("USE_SUPABASE_BRIEFINGS", "false").lower() == "true"
@@ -108,6 +111,7 @@ class AppConfig:
             'NAVER_MAPS_NCP_KEY_ID': self.NAVER_MAPS_NCP_KEY_ID,
             'NAVER_MAPS_NCP_CLIENT_ID': self.NAVER_MAPS_NCP_CLIENT_ID,
             'NAVER_MAPS_NCP_CLIENT_SECRET': '***' if self.NAVER_MAPS_NCP_CLIENT_SECRET else '',
+            'GOOGLE_API_KEY': '***' if self.GOOGLE_API_KEY else '',
         }
 
 def load_config(app):
@@ -158,6 +162,9 @@ def load_config(app):
     app.config['SUPABASE_URL'] = config.SUPABASE_URL
     app.config['SUPABASE_ANON_KEY'] = config.SUPABASE_ANON_KEY
     app.config['SUPABASE_SERVICE_ROLE_KEY'] = config.SUPABASE_SERVICE_ROLE_KEY
+    
+    # Google AI Studio 설정
+    app.config['GOOGLE_API_KEY'] = config.GOOGLE_API_KEY
     
     # Supabase 기능 플래그
     app.config['USE_SUPABASE_CUSTOMERS'] = config.USE_SUPABASE_CUSTOMERS

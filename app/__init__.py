@@ -293,6 +293,7 @@ def register_blueprints(app):
     from .routes.recommendations import bp as recommendations_bp
     from .routes.webhooks import bp as webhooks_bp
     from .routes.crons import bp as crons_bp
+    from .routes.ai import ai_bp
 
     app.register_blueprint(health_bp)
     app.register_blueprint(listings_bp)
@@ -308,3 +309,4 @@ def register_blueprints(app):
     app.register_blueprint(recommendations_bp)
     app.register_blueprint(webhooks_bp)
     app.register_blueprint(crons_bp)
+    app.register_blueprint(ai_bp, url_prefix='/api/ai')

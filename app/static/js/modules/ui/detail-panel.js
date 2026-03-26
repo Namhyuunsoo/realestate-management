@@ -325,7 +325,7 @@ function openLightbox(urlOrPhotos, filenameOrIndex) {
   // 1. 탭 지연 방지를 위해 즉시 모달 구조 표시 (v1.2 최적화 클래스 적용)
   lightbox.classList.add('active');
   window.isLightboxOpen = true; // 🔥 근본 해결: 리사이즈 루프 차단 플래그 활성화
-  
+
   // 2. 백그라운드 레이어 격리 (V6.2: !important 및 visibility: hidden 제거)
   // CSS의 isolation: isolate와 contain: paint를 통해 브라우저 네이티브 격리 수행
 
@@ -340,7 +340,7 @@ function openLightbox(urlOrPhotos, filenameOrIndex) {
         e.preventDefault();
         e.stopPropagation();
       }
-      
+
       // V1.4: 레이어 격리 해제 (필터 제거됨)
 
       // 0.05초 지연 후 닫기 (고스트 클릭 방지 유지)
@@ -448,4 +448,85 @@ function toggleSensitiveField(fieldName) {
 // 상세 패널 UI 관련 함수들을 전역으로 export
 window.renderDetailPanel = renderDetailPanel;
 
-window.toggleSensitiveField = toggleSensitiveField; 
+window.toggleSensitiveField = toggleSensitiveField;
+
+
+// 현황 상태 색상 가져오기
+function getStatusColor(status) {
+  switch (status) {
+    case '생': return '#28a745';
+    case '완': return '#6c757d';
+    case '보류': return '#ffc107';
+    default: return '#17a2b8';
+  }
+}
+
+// 현황 상태 변경 다이얼로그
+async function changeListingStatus(listingId, currentStatus) {
+  const statuses = [
+    { key: '생', label: '생 (진행중)' },
+    { key: '완', label: '완 (완료)' },
+    { key: '보류', label: '보류' },
+    { key: '', label: '없음' }
+  ];
+
+  const options = statuses.map(s =>
+    `<div class="status-option" style="padding: 10px; cursor: pointer; border-bottom: 1px solid #eee; ${s.key === currentStatus ? 'font-weight: bold; background: #e9ecef;' : ''}" 
+          onclick="submitStatusChange('${listingId}', '${s.key}')">
+      ${s.label}
+    </div>`
+  ).join('');
+
+  const modalHtml = `
+    <div id="statusChangeModal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 10000;">
+      <div style="background: white; width: 250px; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+        <div style="padding: 12px; background: #f8f9fa; border-bottom: 1px solid #dee2e6; font-weight: bold;">현황 상태 변경</div>
+        ${options}
+        <div style="padding: 10px; text-align: center; cursor: pointer; color: #666;" onclick="document.getElementById('statusChangeModal').remove()">취소</div>
+      </div>
+    </div>
+  `;
+
+  document.body.insertAdjacentHTML('beforeend', modalHtml);
+}
+
+// 상태 변경 API 호출
+async function submitStatusChange(listingId, newStatus) {
+  try {
+    const response = await fetch(`/api/listings/${listingId}/status`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.content || ''
+      },
+      body: JSON.stringify({ status: newStatus })
+    });
+
+    const data = await response.json();
+    if (data.success) {
+      if (typeof showToast === 'function') showToast(data.message, 'success');
+      if (document.getElementById('statusChangeModal')) document.getElementById('statusChangeModal').remove();
+
+      // 화면 갱신
+      if (window.UI_STATE && window.UI_STATE.selectedItem && window.UI_STATE.selectedItem.id === listingId) {
+        window.UI_STATE.selectedItem.status_raw = newStatus;
+        if (typeof renderDetailPanel === 'function') renderDetailPanel(window.UI_STATE.selectedItem);
+      }
+
+      // 전체 리스트 데이터 업데이트
+      if (window._listingData) {
+        const item = window._listingData.find(i => i.id === listingId);
+        if (item) item.status_raw = newStatus;
+      }
+    } else {
+      alert('상태 변경 실패: ' + (data.error || '알 수 없는 오류'));
+    }
+  } catch (error) {
+    console.error('상태 변경 중 오류:', error);
+    alert('상태 변경 중 오류가 발생했습니다.');
+  }
+}
+
+// 전역 할당
+window.changeListingStatus = changeListingStatus;
+window.submitStatusChange = submitStatusChange;
