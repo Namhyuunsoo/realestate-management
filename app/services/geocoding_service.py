@@ -271,66 +271,78 @@ class GeocodingService:
             return {}
     
     def geocode_address(self, address: str) -> Optional[Tuple[float, float]]:
-        """네이버 지오코딩 API로 주소를 좌표로 변환"""
-        # API 키 상태 확인 (로그에는 노출하지 않음)
-        self.logger.info(f"=== 지오코딩 시작: {address} ===")
-        
-        if not self.naver_client_id or not self.naver_client_secret:
-            self.logger.error(f"❌ 지오코딩 실패: 네이버 API 키가 설정되지 않았습니다. ({address})")
+        """네이버 지오코딩 API로 주소를 좌표로 변환 (지능형 단계별 폴백 적용)"""
+        if not address:
             return None
+
+        # 부평 사무실 기준 좌표 (부평구 부평동 근처)
+        OFFICE_LAT = 37.5088
+        OFFICE_LNG = 126.7117
+
+        def get_dist(lat, lng):
+            # 직선 거리 근사치 연산 (km 단위)
+            return ((lat - OFFICE_LAT)**2 + (lng - OFFICE_LNG)**2)**0.5 * 111
+
+        # [전처리] 복수 지번 처리: 콤마(,)가 있으면 첫 번째 부분만 사용
+        addr_to_search = address.split(',')[0].strip() if ',' in address else address
         
-        try:
-            url = "https://maps.apigw.ntruss.com/map-geocode/v2/geocode"
-            headers = {
-                "X-NCP-APIGW-API-KEY-ID": self.naver_client_id,
-                "X-NCP-APIGW-API-KEY": self.naver_client_secret,
-                "Accept": "application/json"
-            }
-            params = {
-                "query": address
-            }
-            
-            # 디버깅: 헤더 값 로그 출력 (API 키는 제외)
-            self.logger.info(f"지오코딩 API 호출 - URL: {url}")
-            self.logger.info(f"지오코딩 API 호출 - Params: {params}")
-            
-            response = requests.get(url, headers=headers, params=params, timeout=10)
-            
-            # 응답 상태 및 내용 로깅
-            self.logger.info(f"API 응답 상태 코드: {response.status_code}")
-            self.logger.info(f"API 응답 헤더: {dict(response.headers)}")
-            
-            if response.status_code != 200:
-                self.logger.error(f"API 응답 내용: {response.text}")
-            
-            response.raise_for_status()
-            
-            data = response.json()
-            
-            # 응답 데이터 로깅
-            self.logger.info(f"API 응답 데이터: {data}")
-            
-            if data.get("status") == "OK" and data.get("addresses"):
-                address_info = data["addresses"][0]
-                lat = float(address_info["y"])
-                lng = float(address_info["x"])
-                
-                # 한국 지역 범위 확인
-                if 33 <= lat <= 39 and 124 <= lng <= 132:
-                    return (lat, lng)
-                else:
-                    self.logger.warning(f"⚠️ 한국 지역 범위를 벗어난 좌표: {address} → ({lat}, {lng})")
-                    return None
-            else:
-                error_msg = data.get('errorMessage', 'Unknown error')
-                if not error_msg:
-                    error_msg = f"Status: {data.get('status', 'Unknown')}"
-                self.logger.warning(f"⚠️ 지오코딩 실패: {address} - {error_msg}")
-                return None
-                
-        except Exception as e:
-            self.logger.error(f"❌ 지오코딩 API 호출 실패 ({address}): {e}")
+        self.logger.info(f"=== 지능형 지오코딩 시작: {address} (검색어: {addr_to_search}) ===")
+
+        def call_api(query):
+            if not self.naver_client_id or not self.naver_client_secret:
+                return []
+            try:
+                url = "https://maps.apigw.ntruss.com/map-geocode/v2/geocode"
+                headers = {
+                    "X-NCP-APIGW-API-KEY-ID": self.naver_client_id,
+                    "X-NCP-APIGW-API-KEY": self.naver_client_secret,
+                }
+                params = {"query": query}
+                res = requests.get(url, headers=headers, params=params, timeout=10)
+                if res.status_code == 200:
+                    data = res.json()
+                    return data.get("addresses", [])
+            except Exception as e:
+                self.logger.error(f"지오코딩 API 호출 실패: {e}")
+            return []
+
+        # 1차 시도: 정석 주소 검색
+        results = call_api(addr_to_search)
+
+        # 2차 시도: 1차 실패 시 '#N/A' 제거 후 '동+지번' 폴백 검색
+        if not results and "#N/A" in addr_to_search:
+            fallback_query = addr_to_search.replace("#N/A", "").strip()
+            self.logger.info(f"🔄 2차 시도(폴백): {fallback_query}")
+            results = call_api(fallback_query)
+
+        if not results:
+            self.logger.warning(f"⚠️ 지오코딩 결과 없음: {address}")
             return None
+
+        # 결과 처리
+        if len(results) > 1:
+            self.logger.info(f"⚖️ 중복 결과 발생({len(results)}개), 부평 사무실 기준 근접 거리 선택 중...")
+            best_match = None
+            min_dist = float('inf')
+            
+            for addr_info in results:
+                try:
+                    lat, lng = float(addr_info["y"]), float(addr_info["x"])
+                    dist = get_dist(lat, lng)
+                    if dist < min_dist:
+                        min_dist = dist
+                        best_match = (lat, lng)
+                except: continue
+            
+            if best_match and min_dist < 50: # 50km 이내 결과만 인정
+                self.logger.info(f"✅ 최적지 선택 완료 (거리: {min_dist:.2f}km)")
+                return best_match
+            return None
+        else:
+            # 단일 결과
+            res = results[0]
+            lat, lng = float(res["y"]), float(res["x"])
+            return (lat, lng)
     
     def _get_supabase_client(self) -> Optional[Client]:
         """Supabase 클라이언트 생성 (설정이 없으면 None 반환)"""
