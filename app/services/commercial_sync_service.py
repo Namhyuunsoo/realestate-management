@@ -44,13 +44,14 @@ class CommercialSyncService:
         return client
 
     def normalize_header(self, header: str) -> str:
-        """헤더 텍스트 정규화 (공백, 특수문자 제거)"""
+        """헤더 텍스트 정규화 (공백, 특수문자 완벽 제거 v22.3)"""
         if not header: return ""
         # 괄호와 그 안의 내용 제거 (예: 분양(㎡) -> 분양)
         clean = re.sub(r'\(.*?\)', '', header)
-        # 공백 및 특수문자 제거
+        # 모든 공백 문자(유니코드 포함) 및 특수문자 제거
+        clean = re.sub(r'\s+', '', clean)
         clean = re.sub(r'[^가-힣a-zA-Z0-9]', '', clean)
-        return clean
+        return clean.strip()
 
     def get_header_mapping(self, actual_headers: List[str], expected_headers: List[str]) -> Dict[str, int]:
         """실제 시트 헤더와 기대하는 헤더 간의 매핑 보구 로직"""
@@ -222,20 +223,27 @@ class CommercialSyncService:
                         for item in batch_data:
                             unique_data[item["id"]] = item
                         batch_data = list(unique_data.values())
+                        
+                        current_ids = [item["id"] for item in batch_data]
 
-                        # [Atomic Sync] Upsert 기반 동기화 (1행 = 1레코드 보장)
-                        # ID(slot_id + row_idx)가 같으면 무조건 덮어쓰기하여 중복 방지
+                        # [Atomic Sync] Upsert 기반 동기화
                         try:
                             self.supabase.table(table_name).upsert(batch_data).execute()
                             logger.info(f"슬롯 {slot_id} ({sheet_name}) Upsert 완료: {len(batch_data)}개")
                             
-                            # 시트에서 삭제된 행(기존 DB에는 있으나 현재 시트에는 없는 행) 청소
-                            # 현재 시트의 최대 행 번호보다 큰 레코드를 삭제
-                            max_row_idx = max(item["raw_row_index"] for item in batch_data)
-                            self.supabase.table(table_name).delete() \
-                                .eq("slot_id", slot_id) \
-                                .gt("raw_row_index", max_row_idx) \
-                                .execute()
+                            # 🚀 [Ghost Record Cleanup] 차집합 기반 삭제 도입 (전수조사 개선안)
+                            # 현재 시트에 존재하는 ID들을 제외한 나머지 레코드를 삭제하여 1:1 정합성 보장
+                            # 단, 대량 데이터 시 ID 목록 길이 제한(PostgREST URL 길이 등) 고려 필요 (필요시 분할 처리)
+                            try:
+                                # 해당 슬롯과 시트에 속하는 데이터 중 현재 ID 목록에 없는 것들 일괄 삭제
+                                self.supabase.table(table_name).delete() \
+                                    .eq("slot_id", slot_id) \
+                                    .not_.in_("id", current_ids) \
+                                    .execute()
+                                logger.info(f"🗑️ 슬롯 {slot_id} ({sheet_name}) 고스트 데이터(삭제된 행) 정리 완료")
+                            except Exception as del_err:
+                                logger.warning(f"고스트 데이터 정리 중 오류 (무시 가능): {del_err}")
+
                         except Exception as sync_err:
                             logger.error(f"슬롯 {slot_id} 동기화 실패: {sync_err}")
                             res["errors"].append(str(sync_err))
@@ -297,10 +305,9 @@ class CommercialSyncService:
             # 지오코딩 처리 (주소 변경 시 강제 갱신 로직 포함)
             addr_key = address_full.strip()
             
-            # 기존 DB 레코드 확인 (주소 변경 여부 판단용)
+            # 기존 DB 레코드 확인 (주소 변경 여부 판단 및 누락된 좌표 보충용)
             existing_record = None
             try:
-                # 메모리 효율을 위해 필요한 필드만 조회
                 exist_res = self.supabase.table("listings_rent" if "임대" in sheet_name else "listings_unit" if "구분" in sheet_name else "listings_land").select("address_full, coords").eq("id", record_id).execute()
                 if exist_res.data:
                     existing_record = exist_res.data[0]
@@ -310,21 +317,25 @@ class CommercialSyncService:
             coords = None
             geocoded = False
             
-            # 🚀 [강제 갱신 조건]: 기존 주소와 현재 주소가 다른 경우 캐시를 무시하고 새로 지오코딩
+            # 🚀 [강제 갱신 조건]: 기존 주소와 현재 주소가 다른 경우 '무조건' 새로 지오코딩
             force_re_geocode = False
-            if existing_record and existing_record.get("address_full") != addr_key:
+            if addr_key and existing_record and existing_record.get("address_full") != addr_key:
                 logger.info(f"🔄 주소 변경 감지 ({existing_record.get('address_full')} -> {addr_key}): 지오코딩 강제 갱신 수행")
                 force_re_geocode = True
 
+            # 🚀 [보충 조건]: 기존에 주소는 있는데 좌표가 없는 경우에도 재시도 대상으로 간주
+            if addr_key and existing_record and not existing_record.get("coords"):
+                logger.info(f"📍 좌표 누락 매물 재지오코딩 시도: {addr_key}")
+                force_re_geocode = True
+
             # 강제 갱신이 아닐 때만 캐시 확인
-            if not force_re_geocode:
+            if not force_re_geocode and addr_key:
                 coords = self.geocode_cache.get(addr_key)
                 if coords:
                     geocoded = True
             
-            # 캐시에 없거나 강제 갱신이 필요한 경우 실시간 지오코딩 수행
+            # 캐시가 없거나 강제 갱신이 필요한 경우 실시간 지오코딩 수행
             if not coords and addr_key:
-                # 🚀 신규 주소 실시간 지오코딩 수행
                 try:
                     from .geocoding_service import GeocodingService
                     geo_service = GeocodingService()
@@ -333,10 +344,9 @@ class CommercialSyncService:
                     if new_coords:
                         coords = new_coords
                         geocoded = True
-                        # 메모리 캐시 업데이트
                         self.geocode_cache[addr_key] = coords
                         
-                        # DB 캐시(address_geocode_cache)에 저장하여 중복 호출 방지
+                        # DB 캐시 저장
                         try:
                             self.supabase.table("address_geocode_cache").upsert({
                                 "address_full": addr_key,
@@ -344,11 +354,13 @@ class CommercialSyncService:
                                 "lng": coords["lng"],
                                 "last_updated": datetime.now().isoformat()
                             }).execute()
-                            logger.info(f"✨ 신규 주소 지오코딩 완료 및 캐시 저장: {addr_key}")
+                            logger.info(f"✨ 지오코딩 성공 및 캐시 저장: {addr_key}")
                         except Exception as cache_err:
-                            logger.error(f"지오코딩 DB 캐시 저장 실패: {cache_err}")
+                            logger.error(f"지오코딩 캐시 저장 실패: {cache_err}")
+                    else:
+                        logger.warning(f"⚠️ 지오코딩 실패 (결과 없음): {addr_key}")
                 except Exception as geo_err:
-                    logger.error(f"실시간 지오코딩 오류 ({addr_key}): {geo_err}")
+                    logger.error(f"지오코딩 도중 오류 발생 ({addr_key}): {geo_err}")
 
             return {
                 "id": record_id,

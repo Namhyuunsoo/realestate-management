@@ -590,8 +590,15 @@ function applyAllFilters() {
       }
       if (tk === "status") {
         // 🚀 현황(status) 필터는 공백에 민감하므로 엄격하게 trim() 후 비교
+        // 현황이 '생'인 경우 공백("") 매물도 유효한 매물로 취급하여 표시함 (사용자 요청)
         const cleanedV = (v || "").toString().trim();
-        if (!matchesTextTokens(cleanedV, parsedText[tk])) return false;
+        const filterStr = (EFFECTIVE_FILTERS[tk] || "").trim();
+        
+        if (filterStr === "생") {
+          if (cleanedV !== "생" && cleanedV !== "") return false;
+        } else {
+          if (!matchesTextTokens(cleanedV, parsedText[tk])) return false;
+        }
       } else {
         if (!matchesTextTokens(v, parsedText[tk])) return false;
       }

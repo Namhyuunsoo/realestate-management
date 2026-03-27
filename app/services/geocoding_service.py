@@ -271,22 +271,14 @@ class GeocodingService:
             return {}
     
     def geocode_address(self, address: str) -> Optional[Tuple[float, float]]:
-        """네이버 지오코딩 API로 주소를 좌표로 변환 (지능형 단계별 폴백 적용)"""
+        """네이버 지오코딩 API로 주소를 좌표로 변환 (단순화된 버전 v22.3)"""
         if not address:
             return None
-
-        # 부평 사무실 기준 좌표 (부평구 부평동 근처)
-        OFFICE_LAT = 37.5088
-        OFFICE_LNG = 126.7117
-
-        def get_dist(lat, lng):
-            # 직선 거리 근사치 연산 (km 단위)
-            return ((lat - OFFICE_LAT)**2 + (lng - OFFICE_LNG)**2)**0.5 * 111
 
         # [전처리] 복수 지번 처리: 콤마(,)가 있으면 첫 번째 부분만 사용
         addr_to_search = address.split(',')[0].strip() if ',' in address else address
         
-        self.logger.info(f"=== 지능형 지오코딩 시작: {address} (검색어: {addr_to_search}) ===")
+        self.logger.info(f"=== 지오코딩 시작: {address} (검색어: {addr_to_search}) ===")
 
         def call_api(query):
             if not self.naver_client_id or not self.naver_client_secret:
@@ -309,40 +301,17 @@ class GeocodingService:
         # 1차 시도: 정석 주소 검색
         results = call_api(addr_to_search)
 
-        # 2차 시도: 1차 실패 시 '#N/A' 제거 후 '동+지번' 폴백 검색
-        if not results and "#N/A" in addr_to_search:
-            fallback_query = addr_to_search.replace("#N/A", "").strip()
-            self.logger.info(f"🔄 2차 시도(폴백): {fallback_query}")
-            results = call_api(fallback_query)
-
         if not results:
             self.logger.warning(f"⚠️ 지오코딩 결과 없음: {address}")
             return None
 
-        # 결과 처리
-        if len(results) > 1:
-            self.logger.info(f"⚖️ 중복 결과 발생({len(results)}개), 부평 사무실 기준 근접 거리 선택 중...")
-            best_match = None
-            min_dist = float('inf')
-            
-            for addr_info in results:
-                try:
-                    lat, lng = float(addr_info["y"]), float(addr_info["x"])
-                    dist = get_dist(lat, lng)
-                    if dist < min_dist:
-                        min_dist = dist
-                        best_match = (lat, lng)
-                except: continue
-            
-            if best_match and min_dist < 50: # 50km 이내 결과만 인정
-                self.logger.info(f"✅ 최적지 선택 완료 (거리: {min_dist:.2f}km)")
-                return best_match
-            return None
-        else:
-            # 단일 결과
-            res = results[0]
+        # 결과 처리: 복수 결과 발생 시 네이버 API 기준 가장 정확한 첫 번째 결과 채택
+        res = results[0]
+        try:
             lat, lng = float(res["y"]), float(res["x"])
             return (lat, lng)
+        except (ValueError, KeyError):
+            return None
     
     def _get_supabase_client(self) -> Optional[Client]:
         """Supabase 클라이언트 생성 (설정이 없으면 None 반환)"""

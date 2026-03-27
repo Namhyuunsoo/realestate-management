@@ -198,11 +198,14 @@ def sync_housing_sheets_to_supabase(
         result["total_rows"] = 0
         return result
 
-    # 각 테이블별로 배치 저장
+    # 각 테이블별로 배치 저장 및 고스트 데이터 삭제
     batch_size = 500
     saved = 0
     
     for table_name, rows in rows_by_table.items():
+        current_ids = [r["id"] for r in rows]
+        
+        # 1. Upsert (저장/업데이트)
         for i in range(0, len(rows), batch_size):
             batch = rows[i : i + batch_size]
             payload = [
@@ -223,25 +226,25 @@ def sync_housing_sheets_to_supabase(
                 saved += len(payload)
             except Exception as e:
                 result["errors"].append(f"{table_name} 배치 저장 실패: {e}")
-                # 개별 저장 시도
-                for r in batch:
-                    try:
-                        supabase.table(table_name).upsert(
-                            {
-                                "id": r["id"],
-                                "raw_row_index": r["raw_row_index"],
-                                "status_raw": r["status_raw"],
-                                "address_full": r["address_full"],
-                                "address_comp": r["address_comp"],
-                                "fields": r["fields"],
-                                "coords": r["coords"],
-                                "geocoded": r["geocoded"],
-                            },
-                            on_conflict="id",
-                        ).execute()
-                        saved += 1
-                    except Exception as e2:
-                        result["errors"].append(f"{table_name}/{r['id']}: {e2}")
+
+        # 2. 🚀 [Ghost Record Cleanup] 차집합 삭제 (전수조사 개선안)
+        try:
+            if current_ids:
+                supabase.table(table_name).delete().not_.in_("id", current_ids).execute()
+                print(f"🗑️ {table_name}: 고스트 데이터 정리 완료")
+        except Exception as del_err:
+            result["errors"].append(f"{table_name} 삭제 로직 실패: {del_err}")
+
+    # 3. 🚀 [Real-time Geocoding] 지오코딩 즉시 트리거
+    try:
+        from .geocoding_service import GeocodingService
+        geo_service = GeocodingService()
+        print("🚀 주택 매물 실시간 지오코딩 업데이트 시작...")
+        geo_service.run_geocoding_update()
+        geo_service.sync_coords_to_supabase_listings()
+        print("✅ 주택 매물 지오코딩 및 좌표 반영 완료")
+    except Exception as geo_err:
+        result["errors"].append(f"실시간 지오코딩 실패: {geo_err}")
 
     result["total_rows"] = saved
     result["success"] = len(result["errors"]) == 0

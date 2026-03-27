@@ -132,6 +132,53 @@ class SheetsWebhookService:
             logger.error(error_msg)
             return False
     
+    def register_all_commercial_webhooks(self, expiration_hours: int = 24) -> Dict[str, Any]:
+        """
+        registry에 등록된 모든 활성 상가 매물 슬롯에 대해 웹훅을 등록합니다.
+        
+        Args:
+            expiration_hours: 웹훅 만료 시간
+            
+        Returns:
+            결과 요약 (성공/실패 수 등)
+        """
+        results = {
+            "total": 0,
+            "success": 0,
+            "failed": 0,
+            "details": []
+        }
+        
+        try:
+            from app.services.repositories import get_sheet_registry_repository
+            repo = get_sheet_registry_repository()
+            slots = repo.get_all_slots()
+            
+            active_slots = [s for s in slots if s.get("is_active") and s.get("sheet_url") and s.get("user_id")]
+            results["total"] = len(active_slots)
+            
+            logger.info(f"상가 매물 웹훅 일괄 등록 시작: 대상 슬롯 {len(active_slots)}개")
+            
+            for slot in active_slots:
+                slot_id = slot.get("slot_id")
+                user_id = slot.get("user_id")
+                sheet_url = slot.get("sheet_url")
+                
+                channel_info = self.register_user_sheet_webhook(user_id, sheet_url)
+                if channel_info:
+                    results["success"] += 1
+                    results["details"].append({"slot_id": slot_id, "status": "success"})
+                else:
+                    results["failed"] += 1
+                    results["details"].append({"slot_id": slot_id, "status": "failed"})
+            
+            logger.info(f"상가 매물 웹훅 일괄 등록 완료: 성공 {results['success']}, 실패 {results['failed']}")
+            return results
+        except Exception as e:
+            logger.error(f"상가 매물 웹훅 일괄 등록 중 치명적 오류: {e}")
+            results["error"] = str(e)
+            return results
+
     def register_user_sheet_webhook(self, user_id: str, sheet_url: str) -> Optional[Dict[str, Any]]:
         """
         사용자 시트에 웹훅 등록

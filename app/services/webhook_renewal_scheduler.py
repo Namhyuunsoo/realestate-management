@@ -67,19 +67,56 @@ class WebhookRenewalScheduler:
         while self.is_running:
             try:
                 now = datetime.now()
+                current_timestamp = time.time()
                 today = now.strftime("%Y-%m-%d")
 
-                # 실행 시간대인지 확인 (예: 5:00~5:04 사이)
+                # 1. 매일 지정 시각 웹훅 갱신 (예: 5:00)
                 if now.hour == self.run_hour and self.run_minute <= now.minute < self.run_minute + 5:
                     if self._last_run_date != today:
                         self._execute_renewal()
                         self._last_run_date = today
+
+                # 2. 주기적 배경 전체 동기화 (6시간마다)
+                # 서버 시작 시 최초 1회 즉시 실행은 제외(필요시 추가), 이후 간격마다 실행
+                if self._last_background_sync == 0:
+                    # 첫 실행 시점 설정 (서버 시작 후 5분 뒤 첫 동기화 권장 혹은 즉시)
+                    self._last_background_sync = current_timestamp
+                
+                if (current_timestamp - self._last_background_sync) >= self._background_sync_interval:
+                    self._execute_background_sync()
+                    self._last_background_sync = current_timestamp
 
                 time.sleep(self._check_interval_seconds)
 
             except Exception as e:
                 self.logger.error(f"웹훅 갱신 스케줄러 오류: {e}")
                 time.sleep(60)
+
+    def _execute_background_sync(self):
+        """웹훅 실패를 대비한 정기적 전체 동기화 실행"""
+        try:
+            self.logger.info("정기적 배경 전체 동기화(Background Fallback Sync) 시작...")
+            
+            # 상가 매물 전체 동기화
+            from .commercial_sync_service import CommercialSyncService
+            com_service = CommercialSyncService()
+            com_res = com_service.sync_all_users()
+            self.logger.info(f"배경 동기화 결과 (상가): {com_res.get('total_synced', 0)}개 성공")
+            
+            # 주택 매물장 전체 동기화
+            from .housing_sheet_to_supabase_sync import sync_housing_sheets_to_supabase
+            house_res = sync_housing_sheets_to_supabase()
+            self.logger.info(f"배경 동기화 결과 (주택): {house_res.get('total_rows', 0)}개 성공")
+            
+            # 지오코딩 업데이트
+            from .geocoding_service import GeocodingService
+            geo_service = GeocodingService()
+            geo_service.run_geocoding_update()
+            geo_service.sync_coords_to_supabase_listings()
+            self.logger.info("배경 동기화 후 지오코딩 업데이트 완료")
+
+        except Exception as e:
+            self.logger.error(f"정기 배경 동기화 중 오류 발생: {e}")
 
     def _execute_renewal(self):
         """웹훅 등록 실행"""
