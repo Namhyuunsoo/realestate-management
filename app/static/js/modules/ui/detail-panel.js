@@ -251,6 +251,37 @@ async function loadAndRenderPhotos(listingId) {
 let _lbPhotos = [];   // [{full_url, file_name}, ...]
 let _lbIndex = 0;
 
+/**
+ * 전역 파일 다운로드 유틸리티 (Blob 방식)
+ * 브라우저의 CORS/Content-Disposition 제한을 우회하여 강제 다운로드 트리거
+ */
+async function downloadFileFromUrl(url, fileName) {
+  try {
+    const response = await fetch(url);
+    if (!response.ok) throw new Error('Network response was not ok');
+    
+    const blob = await response.blob();
+    const blobUrl = window.URL.createObjectURL(blob);
+    
+    const a = document.createElement('a');
+    a.href = blobUrl;
+    a.download = fileName || 'downloaded_image.jpg';
+    document.body.appendChild(a);
+    a.click();
+    
+    // 정리
+    setTimeout(() => {
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(blobUrl);
+    }, 100);
+  } catch (error) {
+    console.error('Download failed:', error);
+    // 폴백: 최후의 수단으로 새 창 열기 (사용자 경험 유지)
+    window.open(url, '_blank');
+  }
+}
+window.downloadFileFromUrl = downloadFileFromUrl;
+
 function _lbUpdateUI() {
   const img = document.getElementById('lightboxImage');
   const downloadBtn = document.getElementById('downloadPhotoBtn');
@@ -279,8 +310,11 @@ function _lbUpdateUI() {
   tempImg.src = photo.full_url;
 
   if (downloadBtn) {
-    downloadBtn.href = photo.full_url;
-    downloadBtn.setAttribute('download', photo.file_name || 'listing_photo.jpg');
+    // V22.2: href 직접 할당 대신 클릭 이벤트 핸들러 사용 (Blob 다운로드)
+    downloadBtn.onclick = (e) => {
+      e.preventDefault();
+      downloadFileFromUrl(photo.full_url, photo.file_name);
+    };
   }
 
   // 다중 사진일 때만 네비게이션 UI 표시
