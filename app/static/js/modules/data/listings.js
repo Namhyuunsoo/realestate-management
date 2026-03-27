@@ -588,7 +588,13 @@ function applyAllFilters() {
           break;
         }
       }
-      if (!matchesTextTokens(v, parsedText[tk])) return false;
+      if (tk === "status") {
+        // 🚀 현황(status) 필터는 공백에 민감하므로 엄격하게 trim() 후 비교
+        const cleanedV = (v || "").toString().trim();
+        if (!matchesTextTokens(cleanedV, parsedText[tk])) return false;
+      } else {
+        if (!matchesTextTokens(v, parsedText[tk])) return false;
+      }
     }
 
     const floorFieldNames = Array.isArray(FIELDS.floor) ? FIELDS.floor : [FIELDS.floor];

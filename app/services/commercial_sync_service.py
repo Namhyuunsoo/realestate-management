@@ -294,14 +294,36 @@ class CommercialSyncService:
                 sheet_slug = "r" if "임대" in sheet_name else "s" if "구분" in sheet_name else "l"
                 record_id = f"c_{sheet_slug}_slot{slot_id}_{row_idx:06d}"
             
-            # 지오코딩 처리 (캐시 우선, 없으면 실시간 추출)
+            # 지오코딩 처리 (주소 변경 시 강제 갱신 로직 포함)
             addr_key = address_full.strip()
-            coords = self.geocode_cache.get(addr_key)
-            geocoded = False
+            
+            # 기존 DB 레코드 확인 (주소 변경 여부 판단용)
+            existing_record = None
+            try:
+                # 메모리 효율을 위해 필요한 필드만 조회
+                exist_res = self.supabase.table("listings_rent" if "임대" in sheet_name else "listings_unit" if "구분" in sheet_name else "listings_land").select("address_full, coords").eq("id", record_id).execute()
+                if exist_res.data:
+                    existing_record = exist_res.data[0]
+            except Exception:
+                pass
 
-            if coords:
-                geocoded = True
-            elif addr_key:
+            coords = None
+            geocoded = False
+            
+            # 🚀 [강제 갱신 조건]: 기존 주소와 현재 주소가 다른 경우 캐시를 무시하고 새로 지오코딩
+            force_re_geocode = False
+            if existing_record and existing_record.get("address_full") != addr_key:
+                logger.info(f"🔄 주소 변경 감지 ({existing_record.get('address_full')} -> {addr_key}): 지오코딩 강제 갱신 수행")
+                force_re_geocode = True
+
+            # 강제 갱신이 아닐 때만 캐시 확인
+            if not force_re_geocode:
+                coords = self.geocode_cache.get(addr_key)
+                if coords:
+                    geocoded = True
+            
+            # 캐시에 없거나 강제 갱신이 필요한 경우 실시간 지오코딩 수행
+            if not coords and addr_key:
                 # 🚀 신규 주소 실시간 지오코딩 수행
                 try:
                     from .geocoding_service import GeocodingService
@@ -337,7 +359,7 @@ class CommercialSyncService:
                 "address_full": address_full or None,
                 "address_comp": {"region2": region2, "region": region, "lot": lot},
                 "fields": fields,
-                "status_raw": fields.get("현황", ""),
+                "status_raw": fields.get("현황", "").strip() if fields.get("현황") else "",  # 🚀 현황 필드 공백 제거 클렌징
                 "coords": coords,
                 "geocoded": geocoded
             }
