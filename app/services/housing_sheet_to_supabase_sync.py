@@ -230,8 +230,17 @@ def sync_housing_sheets_to_supabase(
         # 2. 🚀 [Ghost Record Cleanup] 차집합 삭제 (전수조사 개선안)
         try:
             if current_ids:
-                supabase.table(table_name).delete().not_.in_("id", current_ids).execute()
-                print(f"🗑️ {table_name}: 고스트 데이터 정리 완료")
+                # 1. 현재 테이블의 모든 주택 매물 ID 조회
+                db_res = supabase.table(table_name).select("id").execute()
+                db_ids = set([r["id"] for r in db_res.data]) if db_res.data else set()
+                # 2. 삭제 대상 선별 (DB에는 있고 시트에는 없는 ID)
+                to_delete = list(db_ids - set(current_ids))
+                if to_delete:
+                    # 3. 100개 단위 분할 삭제
+                    for i in range(0, len(to_delete), 100):
+                        chunk = to_delete[i:i+100]
+                        supabase.table(table_name).delete().in_("id", chunk).execute()
+                    print(f"🗑️ {table_name}: 고스트 데이터 {len(to_delete)}개 정리 완료")
         except Exception as del_err:
             result["errors"].append(f"{table_name} 삭제 로직 실패: {del_err}")
 

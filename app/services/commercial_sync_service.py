@@ -68,9 +68,12 @@ class CommercialSyncService:
             
             # 2. 유사 어휘 매핑 (Alias)
             aliases = {
+                "접수일": ["날짜", "접수일자", "date"],
                 "지역2": ["시군구", "구"],
                 "실평수": ["면적", "전용", "전용평수"],
                 "소유자": ["소유주", "임대인"],
+                "연락처": ["전화번호", "휴대폰", "연락"],
+                "가게명": ["상호", "상호명", "건물명"],
             }
             
             found = False
@@ -208,15 +211,59 @@ class CommercialSyncService:
 
                     headers = [h.strip() for h in values[header_idx]]
                     data_rows = values[header_idx + 1:]
-                    header_map = {h: i for i, h in enumerate(headers) if h}
                     
+                    # --- 고도화된 헤더 매핑 적용 ---
+                    expected_headers = [
+                        "접수일", "지역", "지번", "건물명", "층수", "가게명", "분양", "실평수",
+                        "보증금", "월세", "권리금", "비고", "담당자", "현황", "지역2", "연락처",
+                        "의뢰인", "비고3", "위반여부", "현수막번호", "UUID"
+                    ]
+                    # 원본 매핑 (시트에 존재하는 모든 컬럼 유지용)
+                    raw_header_map = {h: i for i, h in enumerate(headers) if h}
+                    # 정규화 및 별칭 매핑 (비즈니스 로직용)
+                    normalized_map = self.get_header_mapping(headers, expected_headers)
+                    
+                    # 통합 헤더 맵 (정규화된 이름 우선, 원본 보존)
+                    header_map = raw_header_map.copy()
+                    header_map.update(normalized_map)
+                    
+                    # 🚀 [UUID Column Check] UUID 컬럼이 없으면 자동 생성
+                    uuid_col_idx = header_map.get("UUID")
+                    if uuid_col_idx is None:
+                        logger.info(f"시트 {sheet_name}에 UUID 컬럼이 없어 새로 생성합니다.")
+                        uuid_col_idx = len(headers)
+                        target_ws.add_cols(1)
+                        target_ws.update_cell(header_idx + 1, uuid_col_idx + 1, "UUID")
+                        header_map["UUID"] = uuid_col_idx
+                        headers.append("UUID")
+
                     batch_data = []
+                    uuid_updates = []
+                    
                     for idx, row in enumerate(data_rows, start=header_idx + 2):
-                        # 슬롯 ID를 기반으로 레코드 처리 (UUID 우선 적용)
+                        # 슬롯 ID를 기반으로 레코드 처리 (UUID 우선 적용, 없으면 생성)
                         record = self._process_row_v3(slot_id, sheet_name, idx, row, header_map, user_id, manager_name)
                         if record:
+                            # 신규 생성된 UUID가 있으면 시트 업데이트 목록에 추가
+                            if record.get("is_new_uuid"):
+                                import gspread
+                                uuid_updates.append({
+                                    'range': gspread.utils.rowcol_to_a1(idx, uuid_col_idx + 1),
+                                    'values': [[record["id"]]]
+                                })
+                            
+                            # 불필요한 플래그 제거 후 저장
+                            record.pop("is_new_uuid", None)
                             batch_data.append(record)
                     
+                    # 🚀 [UUID Write-back] 생성된 UUID를 시트에 일괄 기록
+                    if uuid_updates:
+                        try:
+                            target_ws.batch_update(uuid_updates)
+                            logger.info(f"시트 {sheet_name}에 신규 UUID {len(uuid_updates)}개 박제 완료")
+                        except Exception as wu_err:
+                            logger.error(f"UUID 시트 쓰기 실패: {wu_err}")
+
                     if batch_data:
                         # [De-duplication] 동일한 ID(UUID)가 한 배치에 중복될 경우 대비 (마지막 발생 항목 유지)
                         unique_data = {}
@@ -231,16 +278,18 @@ class CommercialSyncService:
                             self.supabase.table(table_name).upsert(batch_data).execute()
                             logger.info(f"슬롯 {slot_id} ({sheet_name}) Upsert 완료: {len(batch_data)}개")
                             
-                            # 🚀 [Ghost Record Cleanup] 차집합 기반 삭제 도입 (전수조사 개선안)
-                            # 현재 시트에 존재하는 ID들을 제외한 나머지 레코드를 삭제하여 1:1 정합성 보장
-                            # 단, 대량 데이터 시 ID 목록 길이 제한(PostgREST URL 길이 등) 고려 필요 (필요시 분할 처리)
+                            # 🚀 [Ghost Record Cleanup] 정밀 분할 삭제 (Chunked Delete FIX)
                             try:
-                                # 해당 슬롯과 시트에 속하는 데이터 중 현재 ID 목록에 없는 것들 일괄 삭제
-                                self.supabase.table(table_name).delete() \
-                                    .eq("slot_id", slot_id) \
-                                    .not_.in_("id", current_ids) \
-                                    .execute()
-                                logger.info(f"🗑️ 슬롯 {slot_id} ({sheet_name}) 고스트 데이터(삭제된 행) 정리 완료")
+                                # 1. 현재 DB에 있는 해당 슬롯의 모든 ID 조회
+                                db_res = self.supabase.table(table_name).select("id").eq("slot_id", slot_id).execute()
+                                db_ids = set([r["id"] for r in db_res.data]) if db_res.data else set()
+                                # 2. 삭제 대상 선별 (DB에는 있고 시트에는 없는 ID)
+                                to_delete = list(db_ids - set(current_ids))
+                                if to_delete:
+                                    for i in range(0, len(to_delete), 100):
+                                        chunk = to_delete[i:i+100]
+                                        self.supabase.table(table_name).delete().in_("id", chunk).execute()
+                                logger.info(f"🗑️ 슬롯 {slot_id} ({sheet_name}) 고스트 데이터 정리 완료")
                             except Exception as del_err:
                                 logger.warning(f"고스트 데이터 정리 중 오류 (무시 가능): {del_err}")
 
@@ -297,10 +346,15 @@ class CommercialSyncService:
             
             if listing_uuid:
                 record_id = listing_uuid
+                is_new_uuid = False
             else:
-                # 고유 ID 생성 규칙: c_{시트약어}_slot{슬롯ID}_{행번호}
-                sheet_slug = "r" if "임대" in sheet_name else "s" if "구분" in sheet_name else "l"
-                record_id = f"c_{sheet_slug}_slot{slot_id}_{row_idx:06d}"
+                # 🚀 [UUID Auto-Generation] UUID가 없으면 새로 생성하여 박제 준비
+                import uuid
+                listing_uuid = str(uuid.uuid4())
+                record_id = listing_uuid
+                is_new_uuid = True
+                # fields에도 반영하여 저장 시 함께 들어가게 함
+                fields["UUID"] = listing_uuid
             
             # 지오코딩 처리 (주소 변경 시 강제 갱신 로직 포함)
             addr_key = address_full.strip()
@@ -308,7 +362,9 @@ class CommercialSyncService:
             # 기존 DB 레코드 확인 (주소 변경 여부 판단 및 누락된 좌표 보충용)
             existing_record = None
             try:
-                exist_res = self.supabase.table("listings_rent" if "임대" in sheet_name else "listings_unit" if "구분" in sheet_name else "listings_land").select("address_full, coords").eq("id", record_id).execute()
+                # SHEET_CONFIG를 참조하여 정확한 테이블명 가져오기 (결정론적 ID 매칭)
+                target_table = SHEET_CONFIG.get(sheet_name, "listings_rent")
+                exist_res = self.supabase.table(target_table).select("address_full, coords").eq("id", record_id).execute()
                 if exist_res.data:
                     existing_record = exist_res.data[0]
             except Exception:
@@ -373,7 +429,8 @@ class CommercialSyncService:
                 "fields": fields,
                 "status_raw": fields.get("현황", "").strip() if fields.get("현황") else "",  # 🚀 현황 필드 공백 제거 클렌징
                 "coords": coords,
-                "geocoded": geocoded
+                "geocoded": geocoded,
+                "is_new_uuid": is_new_uuid
             }
         except Exception as e:
             logger.error(f"Row 처리 중 오류 (Row: {row_idx}): {e}")
