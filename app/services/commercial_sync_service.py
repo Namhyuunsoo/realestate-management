@@ -437,6 +437,97 @@ class CommercialSyncService:
             return None
 
 
+    def update_listing_status_in_sheet(self, listing_id: str, new_status: str) -> Dict[str, Any]:
+        """UUID를 기반으로 시트의 현황을 직접 업데이트"""
+        try:
+            # 1. DB에서 해당 매물 정보 조회 (어떤 슬롯/시트인지 파악)
+            record = None
+            found_table = None
+            
+            for sheet_name, table_name in SHEET_CONFIG.items():
+                res = self.supabase.table(table_name).select("*").eq("id", listing_id).execute()
+                if res.data:
+                    record = res.data[0]
+                    found_table = table_name
+                    break
+            
+            if not record:
+                return {"success": False, "error": f"매물을 찾을 수 없습니다. (ID: {listing_id})"}
+            
+            slot_id = record.get("slot_id")
+            sheet_name = record.get("sheet_name")
+            
+            if not slot_id or not sheet_name:
+                return {"success": False, "error": "매물의 슬롯 또는 시트 정보가 누락되었습니다."}
+                
+            # 2. 슬롯 정보에서 시트 URL 가져오기
+            slot_res = self.supabase.table("sheet_registry").select("sheet_url").eq("slot_id", slot_id).execute()
+            if not slot_res.data:
+                return {"success": False, "error": f"슬롯 {slot_id}의 등록 정보를 찾을 수 없습니다."}
+            
+            sheet_url = slot_res.data[0]["sheet_url"]
+            
+            # 3. 구글 시트 오픈
+            m = re.search(r"/d/([a-zA-Z0-9-_]+)", sheet_url)
+            if not m:
+                return {"success": False, "error": "잘못된 시트 URL 형식입니다."}
+            
+            spreadsheet = self.gs.open_by_key(m.group(1))
+            try:
+                worksheet = spreadsheet.worksheet(sheet_name)
+            except Exception:
+                # 공백 등 처리를 위해 루프 탐색
+                all_ws = {ws.title.strip(): ws for ws in spreadsheet.worksheets()}
+                worksheet = all_ws.get(sheet_name.strip())
+                
+            if not worksheet:
+                return {"success": False, "error": f"시트 '{sheet_name}'를 찾을 수 없습니다."}
+                
+            # 4. UUID 컬럼 및 해당 행 찾기
+            values = worksheet.get_all_values()
+            if not values:
+                return {"success": False, "error": "시트 데이터가 비어 있습니다."}
+                
+            headers = values[0] # 임시로 첫 행을 헤더로 가정 (정교화 가능)
+            
+            # 헤더 인덱스 찾기 (정규화된 이름으로)
+            norm_headers = [self.normalize_header(h) for h in headers]
+            uuid_norm = self.normalize_header("UUID")
+            status_norm = self.normalize_header("현황")
+            
+            if uuid_norm not in norm_headers:
+                return {"success": False, "error": "시트에 UUID 컬럼이 없습니다."}
+                
+            uuid_col_idx = norm_headers.index(uuid_norm)
+            
+            # 행(Row) 찾기
+            row_idx = -1
+            for i, row in enumerate(values):
+                if i == 0: continue # 헤더 생략
+                if len(row) > uuid_col_idx and row[uuid_col_idx] == listing_id:
+                    row_idx = i + 1 # 1-based index
+                    break
+            
+            if row_idx == -1:
+                return {"success": False, "error": f"시트에서 매물(UUID: {listing_id})을 찾을 수 없습니다."}
+                
+            # '현황' 컬럼 인덱스 찾기
+            if status_norm not in norm_headers:
+                # 만약 현황 컬럼이 없으면 에러
+                return {"success": False, "error": "시트에 '현황' 컬럼이 없습니다."}
+            
+            status_col_idx = norm_headers.index(status_norm)
+            
+            # 5. 셀 업데이트
+            worksheet.update_cell(row_idx, status_col_idx + 1, new_status)
+            
+            logger.info(f"✅ 시트 업데이트 성공: UUID {listing_id} 의 현황을 '{new_status}'로 변경 (Row: {row_idx})")
+            return {"success": True, "message": f"현황이 '{new_status}'로 변경되었습니다. (시트 반영 완료)"}
+            
+        except Exception as e:
+            logger.error(f"시트 업데이트 중 오류 발생: {e}")
+            return {"success": False, "error": f"업데이트 실패: {str(e)}"}
+
     def _load_geocode_cache(self):
         """Supabase에서 지오코딩 캐시를 메모리로 로드"""
         try:

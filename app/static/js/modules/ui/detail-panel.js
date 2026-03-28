@@ -59,15 +59,38 @@ async function renderDetailPanel(item) {
   const addr = item.address_full || '';
   const isHousing = (typeof item.id === 'string' && item.id.startsWith('h_')) || (window.UI_STATE && window.UI_STATE.listingMode === "housing");
 
+  const userRole = localStorage.getItem("X-USER-ROLE") || "user";
+  const isAdmin = userRole === "admin";
+
+  // 담당 슬롯 확인
+  let assignedSlots = [];
+  try {
+    const slotsStr = localStorage.getItem("X-USER-ASSIGNED-SLOTS");
+    if (slotsStr) {
+      assignedSlots = JSON.parse(slotsStr).map(s => String(s));
+    }
+  } catch (e) {
+    console.error("담당 슬롯 정보 파싱 실패:", e);
+  }
+  
+  const isAssignedManager = assignedSlots.includes(String(item.slot_id));
+  const canEditStatus = isAdmin || isAssignedManager;
+
   const sensitiveFields = ['비고', '연락처', '비고3'];
   const dr = (label, val) => {
     const isSensitive = sensitiveFields.includes(label);
     const dataFieldAttr = isSensitive ? `data-field="${label}"` : '';
     const sensitiveValueClass = isSensitive ? 'sensitive-value' : '';
     const toggleIcon = isSensitive ? `<span class="field-toggle" style="cursor: pointer; margin-left: 8px; font-size: 14px;" onclick="toggleSensitiveField('${label}')">📋</span>` : '';
+    
+    // 관리자 또는 담당자인 경우 '현황' 필드를 클릭 가능하게 렌더링
+    const valueContent = (label === '현황' && canEditStatus)
+      ? `<span class="value" style="color: #007bff; cursor: pointer; text-decoration: underline; font-weight: bold;" onclick="changeListingStatus('${item.id}', '${item.status_raw}')">${escapeHtml(val || '-')} 📝</span>`
+      : `<span class="value ${sensitiveValueClass}" style="color: #666; font-size: 13px;">${escapeHtml(val || '-')}</span>`;
+
     return `<div class="detail-row" ${dataFieldAttr} style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #f0f0f0;">
         <span class="label" style="font-weight: 600; color: #333; min-width: 70px; font-size: 13px;">${label}${toggleIcon}</span>
-        <span class="value ${sensitiveValueClass}" style="color: #666; font-size: 13px;">${escapeHtml(val || '-')}</span>
+        ${valueContent}
       </div>`;
   };
 

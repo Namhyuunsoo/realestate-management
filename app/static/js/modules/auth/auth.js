@@ -277,11 +277,13 @@ function setCurrentUser(email) {
       // 사용자 역할 설정
       
       // 사용자 정보를 localStorage에 저장 (다른 모듈에서 사용)
-      if (data.manager_name) {
-        localStorage.setItem('X-USER-MANAGER-NAME', data.manager_name);
-        // 사용자 담당자명 설정
+      // 사용자 정보가 있으면 로컬 스토리지에 저장
+      if (data.user && data.user.assigned_slots) {
+        localStorage.setItem('X-USER-ASSIGNED-SLOTS', JSON.stringify(data.user.assigned_slots));
+      } else {
+        localStorage.removeItem('X-USER-ASSIGNED-SLOTS');
       }
-      
+
       // UI 업데이트
       const userRole = data.role;
       const isAdmin = userRole === "admin";
@@ -619,6 +621,13 @@ async function checkSessionAndAutoLogin() {
         } else {
           localStorage.removeItem('X-USER-ADMIN');
         }
+
+        // 담당 슬롯 정보 저장
+        if (data.user.assigned_slots) {
+          localStorage.setItem('X-USER-ASSIGNED-SLOTS', JSON.stringify(data.user.assigned_slots));
+        } else {
+          localStorage.removeItem('X-USER-ASSIGNED-SLOTS');
+        }
         
         // 로그인 화면 숨기고 앱 화면 표시
         hideLoginScreen();
@@ -685,6 +694,7 @@ function handleLogoutClick(e) {
     localStorage.removeItem("X-USER");
     localStorage.removeItem("X-USER-ADMIN");
     localStorage.removeItem("X-USER-ROLE");
+    localStorage.removeItem("X-USER-ASSIGNED-SLOTS");
     currentUser = null;
   } catch (err) {
     console.error("localStorage 제거 실패", err);

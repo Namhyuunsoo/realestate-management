@@ -191,3 +191,14 @@ class UserService:
         except Exception as e:
             print(f"사용자 시트 URL 설정 실패: {e}")
             return False
+
+    def get_assigned_slots(self, user_id: str) -> List[str]:
+        """사용자에게 할당된 슬롯 ID 목록 반환"""
+        try:
+            from app.services.repositories import get_sheet_registry_repository
+            repo = get_sheet_registry_repository()
+            slots = repo.get_slots_by_user_id(user_id)
+            return [str(s["slot_id"]) for s in slots if s.get("slot_id")]
+        except Exception as e:
+            print(f"할당된 슬롯 조회 실패: {e}")
+            return []

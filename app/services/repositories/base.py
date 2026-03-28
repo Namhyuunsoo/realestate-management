@@ -160,6 +160,11 @@ class SheetRegistryRepository(ABC):
         """전체 슬롯 데이터(혹은 슬롯 단위) 교체/저장"""
         pass
 
+    @abstractmethod
+    def get_slots_by_user_id(self, user_id: str) -> List[Dict[str, Any]]:
+        """특정 사용자에게 할당된 슬롯 목록 조회"""
+        pass
+
 class RecommendationRepository(ABC):
     """추천매물 데이터 저장소 추상 인터페이스"""
     

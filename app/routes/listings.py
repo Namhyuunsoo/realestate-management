@@ -226,3 +226,48 @@ def delete_listing_photo_api(photo_id):
         return jsonify({"success": True})
     else:
         return jsonify({"success": False, "error": "삭제 중 오류가 발생했습니다."}), 500
+
+@bp.route("/api/listings/<listing_id>/status", methods=["PUT"])
+@require_user()
+@validate_csrf_token()
+def update_listing_status_api(listing_id):
+    """매물 현황 업데이트 (관리자 또는 담당 상담사)"""
+    user = request.current_user
+    data = request.get_json()
+    if not data:
+        return jsonify({"success": False, "error": "JSON 데이터가 필요합니다."}), 400
+        
+    new_status = data.get("status")
+    if new_status is None:
+        return jsonify({"success": False, "error": "현황(status) 값이 누락되었습니다."}), 400
+        
+    from ..services.commercial_sync_service import CommercialSyncService, SHEET_CONFIG
+    sync_service = CommercialSyncService()
+    
+    # 권한 체크: 관리자가 아닌 경우 본인 담당 슬롯인지 확인
+    if not user.is_admin():
+        # 매물의 slot_id 조회
+        slot_id = None
+        for _, table_name in SHEET_CONFIG.items():
+            res = sync_service.supabase.table(table_name).select("slot_id").eq("id", listing_id).execute()
+            if res.data:
+                slot_id = res.data[0].get("slot_id")
+                break
+        
+        if not slot_id:
+            return jsonify({"success": False, "error": "매물을 찾을 수 없거나 슬롯 정보가 없습니다."}), 404
+            
+        from ..services.user_service import UserService
+        user_service = UserService()
+        assigned_slots = user_service.get_assigned_slots(user.id)
+        
+        # 슬롯 일치 여부 확인 (문자열 비교)
+        if str(slot_id) not in [str(s) for s in assigned_slots]:
+            return jsonify({"success": False, "error": "회원님의 담당 매물이 아니므로 현황을 수정할 수 없습니다."}), 403
+    
+    result = sync_service.update_listing_status_in_sheet(listing_id, new_status)
+    
+    if result.get("success"):
+        return jsonify(result)
+    else:
+        return jsonify(result), 500

@@ -72,3 +72,11 @@ class SupabaseSheetRegistryRepository(SheetRegistryRepository):
         except Exception as e:
             if has_app_context() and current_app: current_app.logger.error(f"Supabase save_slots error: {e}")
             return False
+
+    def get_slots_by_user_id(self, user_id: str) -> List[Dict[str, Any]]:
+        try:
+            res = self.client.table(self.table_name).select("*").eq("user_id", user_id).execute()
+            return res.data
+        except Exception as e:
+            if has_app_context() and current_app: current_app.logger.error(f"Supabase get_slots_by_user_id error ({user_id}): {e}")
+            return []

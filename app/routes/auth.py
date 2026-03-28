@@ -200,7 +200,8 @@ def login():
                 "email": user.email,
                 "name": user.name,
                 "role": user.role,
-                "status": user.status
+                "status": user.status,
+                "assigned_slots": user_service.get_assigned_slots(user.id)
             }
         })
         
@@ -231,7 +232,8 @@ def check_session():
                             "email": user.email,
                             "name": user.name,
                             "role": user.role,
-                            "status": user.status
+                            "status": user.status,
+                            "assigned_slots": user_service.get_assigned_slots(user.id)
                         }
                     })
         
@@ -276,7 +278,8 @@ def auto_login():
                 "email": user.email,
                 "name": user.name,
                 "role": user.role,
-                "status": user.status
+                "status": user.status,
+                "assigned_slots": user_service.get_assigned_slots(user.id)
             }
         })
         
@@ -319,6 +322,7 @@ def get_current_user():
             "name": user.name,
             "role": user.role,
             "status": user.status,
+            "assigned_slots": user_service.get_assigned_slots(user.id),
             "created_at": user.created_at,
             "approved_at": user.approved_at,
             "last_login": user.last_login

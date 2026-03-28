@@ -109,3 +109,7 @@ class FileSheetRegistryRepository(SheetRegistryRepository):
     def save_slots(self, slots_data: List[Dict[str, Any]]) -> bool:
         # 파일 기반은 통째로 덮어쓰기
         return self._write_data({'slots': slots_data})
+
+    def get_slots_by_user_id(self, user_id: str) -> List[Dict[str, Any]]:
+        slots = self.get_all_slots()
+        return [s for s in slots if s.get('user_id') == user_id]
