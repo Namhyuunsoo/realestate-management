@@ -87,7 +87,7 @@ def _row_to_item(row: Dict[str, Any], coords_map: Dict[str, Tuple[float, float]]
             coords = {"lat": None, "lng": None}
 
     return {
-        "id": row.get("id", ""),
+        "id": "h_" + row.get("id", ""),
         "raw_row_index": row.get("raw_row_index"),
         "address_full": address_full or None,
         "fields": row.get("fields") or {},

@@ -243,6 +243,9 @@ def update_listing_status_api(listing_id):
         
     from ..services.commercial_sync_service import CommercialSyncService, SHEET_CONFIG, HOUSING_SHEET_CONFIG
     sync_service = CommercialSyncService()
+
+    # 주택 매물 ID는 프론트엔드에서 h_ 접두사가 붙어오므로 DB 조회 시 제거
+    db_listing_id = listing_id[2:] if listing_id.startswith("h_") else listing_id
     
     # 권한 체크: 관리자가 아닌 경우 본인 담당 슬롯인지 확인 (또는 주택 매물인지)
     if not user.is_admin():
@@ -252,7 +255,7 @@ def update_listing_status_api(listing_id):
         
         # 1. 상가 테이블 검색
         for _, table_name in SHEET_CONFIG.items():
-            res = sync_service.supabase.table(table_name).select("slot_id").eq("id", listing_id).execute()
+            res = sync_service.supabase.table(table_name).select("slot_id").eq("id", db_listing_id).execute()
             if res.data:
                 slot_id = res.data[0].get("slot_id")
                 break
@@ -260,7 +263,7 @@ def update_listing_status_api(listing_id):
         # 2. 주택 테이블 검색 (상가에 없는 경우)
         if slot_id is None:
             for _, table_name in HOUSING_SHEET_CONFIG.items():
-                res = sync_service.supabase.table(table_name).select("id").eq("id", listing_id).execute()
+                res = sync_service.supabase.table(table_name).select("id").eq("id", db_listing_id).execute()
                 if res.data:
                     is_housing = True
                     break
@@ -283,7 +286,7 @@ def update_listing_status_api(listing_id):
             if str(slot_id) not in [str(s) for s in assigned_slots]:
                 return jsonify({"success": False, "error": "회원님의 담당 매물이 아니므로 현황을 수정할 수 없습니다."}), 403
     
-    result = sync_service.update_listing_status_in_sheet(listing_id, new_status)
+    result = sync_service.update_listing_status_in_sheet(db_listing_id, new_status)
     
     if result.get("success"):
         return jsonify(result)

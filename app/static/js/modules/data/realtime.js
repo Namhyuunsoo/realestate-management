@@ -35,8 +35,11 @@ window.initRealtimeSync = function(url, key) {
     _supabase = supabase.createClient(url, key);
     dbg("🚀 Supabase Realtime 초기화 완료");
 
-    // 상가 임대차, 구분상가, 건물토지 테이블 구독 시작
-    const tables = ["listings_rent", "listings_sale_unit", "listings_sale_land"];
+    // 상가 임대차, 구분상가, 건물토지 + 주택 테이블 구독 시작
+    const tables = [
+      "listings_rent", "listings_sale_unit", "listings_sale_land",
+      "listings_housing_sale", "listings_housing_lease", "listings_housing_oneroom"
+    ];
     
     tables.forEach(table => {
       _supabase.channel(`public:${table}`)
@@ -56,11 +59,14 @@ window.initRealtimeSync = function(url, key) {
  */
 function handleRealtimeEvent(table, payload) {
   const { eventType, new: newRow, old: oldRow } = payload;
-  // 테이블별 ID 접두사 매핑
+  // 테이블별 ID 접두사 매핑 (상가 + 주택)
   const prefixMap = {
     "listings_rent": "r_",
     "listings_sale_unit": "u_",
-    "listings_sale_land": "l_"
+    "listings_sale_land": "l_",
+    "listings_housing_sale": "h_",
+    "listings_housing_lease": "h_",
+    "listings_housing_oneroom": "h_"
   };
   const prefix = prefixMap[table] || "";
   const listingId = prefix + (newRow?.id || oldRow?.id);

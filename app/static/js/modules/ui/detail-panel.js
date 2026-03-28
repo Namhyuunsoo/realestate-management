@@ -564,10 +564,23 @@ async function submitStatusChange(listingId, newStatus) {
       if (typeof showToast === 'function') showToast(data.message, 'success');
       if (document.getElementById('statusChangeModal')) document.getElementById('statusChangeModal').remove();
 
-      // 화면 갱신
+      // 전역 LISTINGS / ORIGINAL_LIST 데이터 즉시 갱신
+      if (window.LISTINGS) {
+        window.LISTINGS.forEach(i => { if (i.id === listingId) i.status_raw = newStatus; });
+      }
+      if (window.ORIGINAL_LIST) {
+        window.ORIGINAL_LIST.forEach(i => { if (i.id === listingId) i.status_raw = newStatus; });
+      }
+
+      // 화면 갱신 (상세 패널 재렌더링)
       if (window.UI_STATE && window.UI_STATE.selectedItem && window.UI_STATE.selectedItem.id === listingId) {
         window.UI_STATE.selectedItem.status_raw = newStatus;
         if (typeof renderDetailPanel === 'function') renderDetailPanel(window.UI_STATE.selectedItem);
+      }
+
+      // 🔥 낙관적 UI: 필터 즉시 재적용 → 마커 즉시 소멸
+      if (typeof window.applyAllFilters === 'function') {
+        window.applyAllFilters();
       }
 
       // 전체 리스트 데이터 업데이트
