@@ -1,4 +1,4 @@
-﻿@media screen and (max-width: 768px) {
+@media screen and (max-width: 768px) {
 
   /* PC ?袁⑹뒠 ?怨?/雅뚯눛源??袁れ넎, ??뺥닏???? ?怨룸뼊 ?袁り숲獄??遺용꺖 ?袁⑹읈 ??? */
   #listingModeToggle,
@@ -754,6 +754,83 @@
     /* will-change: transform, opacity;  <-- 紐⑤컮?쇱뿉??釉붾윭 ?꾩긽???쇱쑝?????덉뼱 二쇱꽍 泥섎━ */
     backface-visibility: hidden;
     -webkit-backface-visibility: hidden;
+  }
+
+  /* ========================================
+     모바일 매물 모드 선택 버튼 (드랍다운)
+     - UNIFIED_AGENT_RULES.md 제6장 준수
+     - 애니메이션 배제 (GPU 부하 방지)
+     - 즉시 노출/숨김 (Immediate show/hide)
+     ======================================== */
+  .mobile-listing-mode-btn-wrap {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    z-index: 1001;
+  }
+
+  .mobile-listing-mode-btn {
+    background: #ffffff;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 8px 12px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #333;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    cursor: pointer;
+    white-space: nowrap;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .mobile-listing-mode-btn .dropdown-arrow {
+    font-size: 10px;
+    color: #666;
+    margin-left: 2px;
+  }
+
+  .mobile-listing-mode-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    margin-top: 2px;
+    background: #ffffff;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    width: 130px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    z-index: 1002;
+  }
+
+  .mobile-listing-mode-dropdown.hidden {
+    display: none;
+  }
+
+  .mobile-listing-mode-dropdown .dropdown-item {
+    padding: 12px;
+    font-size: 13px;
+    color: #333;
+    border-bottom: 1px solid #eee;
+    background: #ffffff;
+    cursor: pointer;
+  }
+
+  .mobile-listing-mode-dropdown .dropdown-item:last-child {
+    border-bottom: none;
+  }
+
+  .mobile-listing-mode-dropdown .dropdown-item:active {
+    background: #f0f0f0;
+  }
+
+  .mobile-listing-mode-dropdown .dropdown-item.disabled {
+    color: #bbb;
+    background: #f9f9f9;
+    cursor: not-allowed;
+    pointer-events: none;
   }
 
 }

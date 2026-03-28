@@ -189,7 +189,8 @@ class CommercialSyncService:
                     if not target_ws: continue
                         
                     values = target_ws.get_all_values()
-                    if len(values) < 2: continue
+                    # 🚀 [Bug Fix] 데이터가 없더라도(헤더만 있더라도) 계속 진행하여 고스트 데이터를 클린업하도록 함
+                    # if len(values) < 2: continue
                     
                     # --- 동적 헤더 탐색 로직 추가 ---
                     header_idx = 0
@@ -239,22 +240,25 @@ class CommercialSyncService:
 
                     batch_data = []
                     uuid_updates = []
+                    current_ids = [] # 🚀 [Bug Fix] 현재 시트의 유효 ID 목록 초기화
                     
-                    for idx, row in enumerate(data_rows, start=header_idx + 2):
-                        # 슬롯 ID를 기반으로 레코드 처리 (UUID 우선 적용, 없으면 생성)
-                        record = self._process_row_v3(slot_id, sheet_name, idx, row, header_map, user_id, manager_name)
-                        if record:
-                            # 신규 생성된 UUID가 있으면 시트 업데이트 목록에 추가
-                            if record.get("is_new_uuid"):
-                                import gspread
-                                uuid_updates.append({
-                                    'range': gspread.utils.rowcol_to_a1(idx, uuid_col_idx + 1),
-                                    'values': [[record["id"]]]
-                                })
-                            
-                            # 불필요한 플래그 제거 후 저장
-                            record.pop("is_new_uuid", None)
-                            batch_data.append(record)
+                    if len(values) >= 1: # 최소한 헤더라도 있는 경우
+                        for idx, row in enumerate(data_rows, start=header_idx + 2):
+                            # 슬롯 ID를 기반으로 레코드 처리 (UUID 우선 적용, 없으면 생성)
+                            record = self._process_row_v3(slot_id, sheet_name, idx, row, header_map, user_id, manager_name)
+                            if record:
+                                # 신규 생성된 UUID가 있으면 시트 업데이트 목록에 추가
+                                if record.get("is_new_uuid"):
+                                    import gspread
+                                    uuid_updates.append({
+                                        'range': gspread.utils.rowcol_to_a1(idx, uuid_col_idx + 1),
+                                        'values': [[record["id"]]]
+                                    })
+                                
+                                # 불필요한 플래그 제거 후 저장
+                                record.pop("is_new_uuid", None)
+                                batch_data.append(record)
+                                current_ids.append(record["id"]) # 🚀 [Bug Fix] 유효 ID 추적
                     
                     # 🚀 [UUID Write-back] 생성된 UUID를 시트에 일괄 기록
                     if uuid_updates:
@@ -264,38 +268,35 @@ class CommercialSyncService:
                         except Exception as wu_err:
                             logger.error(f"UUID 시트 쓰기 실패: {wu_err}")
 
-                    if batch_data:
-                        # [De-duplication] 동일한 ID(UUID)가 한 배치에 중복될 경우 대비 (마지막 발생 항목 유지)
-                        unique_data = {}
-                        for item in batch_data:
-                            unique_data[item["id"]] = item
-                        batch_data = list(unique_data.values())
-                        
-                        current_ids = [item["id"] for item in batch_data]
-
-                        # [Atomic Sync] Upsert 기반 동기화
-                        try:
+                    # 🚀 [Bug Fix] 데이터가 있든 없든(Upsert 성공 후) 클린업 로직 실행
+                    try:
+                        if batch_data:
+                            # [De-duplication] 동일한 ID(UUID)가 한 배치에 중복될 경우 대비 (마지막 발생 항목 유지)
+                            unique_data = {}
+                            for item in batch_data:
+                                unique_data[item["id"]] = item
+                            batch_data = list(unique_data.values())
+                            
+                            # [Atomic Sync] Upsert 기반 동기화
                             self.supabase.table(table_name).upsert(batch_data).execute()
                             logger.info(f"슬롯 {slot_id} ({sheet_name}) Upsert 완료: {len(batch_data)}개")
-                            
-                            # 🚀 [Ghost Record Cleanup] 정밀 분할 삭제 (Chunked Delete FIX)
-                            try:
-                                # 1. 현재 DB에 있는 해당 슬롯의 모든 ID 조회
-                                db_res = self.supabase.table(table_name).select("id").eq("slot_id", slot_id).execute()
-                                db_ids = set([r["id"] for r in db_res.data]) if db_res.data else set()
-                                # 2. 삭제 대상 선별 (DB에는 있고 시트에는 없는 ID)
-                                to_delete = list(db_ids - set(current_ids))
-                                if to_delete:
-                                    for i in range(0, len(to_delete), 100):
-                                        chunk = to_delete[i:i+100]
-                                        self.supabase.table(table_name).delete().in_("id", chunk).execute()
-                                logger.info(f"🗑️ 슬롯 {slot_id} ({sheet_name}) 고스트 데이터 정리 완료")
-                            except Exception as del_err:
-                                logger.warning(f"고스트 데이터 정리 중 오류 (무시 가능): {del_err}")
 
-                        except Exception as sync_err:
-                            logger.error(f"슬롯 {slot_id} 동기화 실패: {sync_err}")
-                            res["errors"].append(str(sync_err))
+                        # 🚀 [Ghost Record Cleanup] 시트에서 사라진 모든 데이터 정리
+                        # 1. 현재 DB에 있는 해당 슬롯의 모든 ID 조회
+                        db_res = self.supabase.table(table_name).select("id").eq("slot_id", slot_id).execute()
+                        db_ids = set([r["id"] for r in db_res.data]) if db_res.data else set()
+                        
+                        # 2. 삭제 대상 선별 (DB에는 있고 시트에는 없는 ID)
+                        # current_ids가 비어있으면 해당 슬롯의 모든 데이터가 삭제됨 (정상 동작)
+                        to_delete = list(db_ids - set(current_ids))
+                        if to_delete:
+                            for i in range(0, len(to_delete), 100):
+                                chunk = to_delete[i:i+100]
+                                self.supabase.table(table_name).delete().in_("id", chunk).execute()
+                            logger.info(f"🗑️ 슬롯 {slot_id} ({sheet_name}) 고스트 데이터 {len(to_delete)}개 정리 완료")
+                    except Exception as sync_err:
+                        logger.error(f"슬롯 {slot_id} 동기화/클린업 중 치명적 오류: {sync_err}")
+                        res["errors"].append(str(sync_err))
 
                         res["sheets"][sheet_name] = len(batch_data)
                         res["total_count"] += len(batch_data)
@@ -338,6 +339,11 @@ class CommercialSyncService:
             # UUID 확인 (최우선)
             listing_uuid = fields.get("UUID", "").strip()
             
+            # 🚀 [Legacy ID Filtering] 만약 ID가 레거시 형식이면(c_..._slot...) 무시하고 새로 생성하도록 유도
+            if listing_uuid and listing_uuid.startswith("c_") and "_slot" in listing_uuid:
+                logger.info(f"♻️ 레거시 ID 감지 ({listing_uuid}): UUID로 강제 전환을 위해 무시 처리함")
+                listing_uuid = ""
+
             # 주소 추출
             region2 = fields.get("지역2", fields.get("시군구", ""))
             region = fields.get("지역", "")
