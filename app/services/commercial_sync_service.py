@@ -17,11 +17,22 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # 하위 시트 및 테이블 매핑
+# 상가 매물용 설정
 SHEET_CONFIG = {
     "상가임대차": "listings_rent",
     "구분상가매매": "listings_sale_unit",
     "건물토지매매": "listings_sale_land"
 }
+
+# 주택 매물용 설정 (동기화 로직과 동일하게 유지)
+HOUSING_SHEET_CONFIG = {
+    "주택 매매": "listings_housing_sale",
+    "주택임대차": "listings_housing_lease",
+    "원룸임대차": "listings_housing_oneroom"
+}
+
+# 주택매물장 스프레드시트 ID
+HOUSING_SHEET_ID = os.getenv("HOUSING_SHEET_ID", "1KZ7aLN_Vzfnp0MhnOsJXuCtPtGIPuVj-UaHB2xP7JRs")
 
 class CommercialSyncService:
     def __init__(self):
@@ -444,34 +455,52 @@ class CommercialSyncService:
 
 
     def update_listing_status_in_sheet(self, listing_id: str, new_status: str) -> Dict[str, Any]:
-        """UUID를 기반으로 시트의 현황을 직접 업데이트"""
+        """UUID를 기반으로 시트의 현황을 직접 업데이트 (상가 및 주택 모두 지원)"""
         try:
-            # 1. DB에서 해당 매물 정보 조회 (어떤 슬롯/시트인지 파악)
+            # 1. DB에서 해당 매물 정보 조회 (상가 -> 주택 순서로 조회)
             record = None
             found_table = None
+            is_housing = False
             
+            # 상가 테이블 먼저 검색
             for sheet_name, table_name in SHEET_CONFIG.items():
                 res = self.supabase.table(table_name).select("*").eq("id", listing_id).execute()
                 if res.data:
                     record = res.data[0]
+                    record["sheet_name"] = sheet_name # 동적 할당
                     found_table = table_name
                     break
             
+            # 상가에 없으면 주택 테이블 검색
+            if not record:
+                for sheet_name, table_name in HOUSING_SHEET_CONFIG.items():
+                    res = self.supabase.table(table_name).select("*").eq("id", listing_id).execute()
+                    if res.data:
+                        record = res.data[0]
+                        record["sheet_name"] = sheet_name
+                        found_table = table_name
+                        is_housing = True
+                        break
+
             if not record:
                 return {"success": False, "error": f"매물을 찾을 수 없습니다. (ID: {listing_id})"}
             
             slot_id = record.get("slot_id")
             sheet_name = record.get("sheet_name")
             
-            if not slot_id or not sheet_name:
-                return {"success": False, "error": "매물의 슬롯 또는 시트 정보가 누락되었습니다."}
+            if is_housing:
+                # 주택 매물은 고정 시트 ID 사용
+                sheet_url = f"https://docs.google.com/spreadsheets/d/{HOUSING_SHEET_ID}"
+            else:
+                # 상가 매물은 슬롯 정보에서 시트 URL 확인
+                if not slot_id or not sheet_name:
+                    return {"success": False, "error": "상가 매물의 슬롯 또는 시트 정보가 누락되었습니다."}
+                    
+                slot_res = self.supabase.table("sheet_registry").select("sheet_url").eq("slot_id", slot_id).execute()
+                if not slot_res.data:
+                    return {"success": False, "error": f"슬롯 {slot_id}의 등록 정보를 찾을 수 없습니다."}
                 
-            # 2. 슬롯 정보에서 시트 URL 가져오기
-            slot_res = self.supabase.table("sheet_registry").select("sheet_url").eq("slot_id", slot_id).execute()
-            if not slot_res.data:
-                return {"success": False, "error": f"슬롯 {slot_id}의 등록 정보를 찾을 수 없습니다."}
-            
-            sheet_url = slot_res.data[0]["sheet_url"]
+                sheet_url = slot_res.data[0]["sheet_url"]
             
             # 3. 구글 시트 오픈
             m = re.search(r"/d/([a-zA-Z0-9-_]+)", sheet_url)

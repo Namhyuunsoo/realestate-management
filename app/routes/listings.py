@@ -241,29 +241,47 @@ def update_listing_status_api(listing_id):
     if new_status is None:
         return jsonify({"success": False, "error": "현황(status) 값이 누락되었습니다."}), 400
         
-    from ..services.commercial_sync_service import CommercialSyncService, SHEET_CONFIG
+    from ..services.commercial_sync_service import CommercialSyncService, SHEET_CONFIG, HOUSING_SHEET_CONFIG
     sync_service = CommercialSyncService()
     
-    # 권한 체크: 관리자가 아닌 경우 본인 담당 슬롯인지 확인
+    # 권한 체크: 관리자가 아닌 경우 본인 담당 슬롯인지 확인 (또는 주택 매물인지)
     if not user.is_admin():
-        # 매물의 slot_id 조회
+        # 매물의 slot_id 조회 (상가) 또는 존재 여부 확인 (주택)
         slot_id = None
+        is_housing = False
+        
+        # 1. 상가 테이블 검색
         for _, table_name in SHEET_CONFIG.items():
             res = sync_service.supabase.table(table_name).select("slot_id").eq("id", listing_id).execute()
             if res.data:
                 slot_id = res.data[0].get("slot_id")
                 break
         
-        if not slot_id:
-            return jsonify({"success": False, "error": "매물을 찾을 수 없거나 슬롯 정보가 없습니다."}), 404
-            
-        from ..services.user_service import UserService
-        user_service = UserService()
-        assigned_slots = user_service.get_assigned_slots(user.id)
+        # 2. 주택 테이블 검색 (상가에 없는 경우)
+        if slot_id is None:
+            for _, table_name in HOUSING_SHEET_CONFIG.items():
+                res = sync_service.supabase.table(table_name).select("id").eq("id", listing_id).execute()
+                if res.data:
+                    is_housing = True
+                    break
         
-        # 슬롯 일치 여부 확인 (문자열 비교)
-        if str(slot_id) not in [str(s) for s in assigned_slots]:
-            return jsonify({"success": False, "error": "회원님의 담당 매물이 아니므로 현황을 수정할 수 없습니다."}), 403
+        if slot_id is None and not is_housing:
+            return jsonify({"success": False, "error": "매물을 찾을 수 없습니다."}), 404
+            
+        if is_housing:
+            # 주택 매물은 매니저/어드민이면 통과 (상단 데코레이터에서 관리되지 않는 경우를 대비해 추가 체크 가능)
+            # 여기서는 API 진입 시 require_user만 있으므로, 주택 수정은 관리자/매니저면 허용
+            if not user.is_admin() and user.role != "manager":
+                return jsonify({"success": False, "error": "주택 매물은 매니저 또는 관리자만 수정 가능합니다."}), 403
+        else:
+            # 상가 매물은 슬롯 권한 체크
+            from ..services.user_service import UserService
+            user_service = UserService()
+            assigned_slots = user_service.get_assigned_slots(user.id)
+            
+            # 슬롯 일치 여부 확인 (문자열 비교)
+            if str(slot_id) not in [str(s) for s in assigned_slots]:
+                return jsonify({"success": False, "error": "회원님의 담당 매물이 아니므로 현황을 수정할 수 없습니다."}), 403
     
     result = sync_service.update_listing_status_in_sheet(listing_id, new_status)
     
