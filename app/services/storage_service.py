@@ -56,11 +56,22 @@ class StorageService:
                 "created_by": user_email
             }
             
-            db_res = self.supabase.table("listing_photos").insert(photo_data).execute()
-            
-            if db_res.data:
-                return db_res.data[0]
-            return None
+            try:
+                db_res = self.supabase.table("listing_photos").insert(photo_data).execute()
+                if db_res.data:
+                    return db_res.data[0]
+                # DB insert 결과 없음 → Storage 롤백
+                raise Exception("DB insert 결과 없음")
+            except Exception as db_err:
+                # 🔥 [Fix] DB insert 실패 시 Storage 파일 즉시 롤백 (고아 파일 방지)
+                import logging
+                logging.error(f"DB insert 실패, Storage 롤백 시도: {db_err}")
+                try:
+                    self.supabase.storage.from_(self.bucket_name).remove([storage_path])
+                    logging.info(f"Storage 롤백 성공: {storage_path}")
+                except Exception as rollback_err:
+                    logging.error(f"Storage 롤백 실패 (수동 삭제 필요): {storage_path} — {rollback_err}")
+                return None
 
         except Exception as e:
             import logging
@@ -110,6 +121,43 @@ class StorageService:
             import logging
             logging.error(f"Error deleting photo: {e}")
             return False
+
+    def delete_photos_by_listing_ids(self, listing_ids: list) -> int:
+        """
+        🔥 [Fix] 매물 삭제 시 사진 cascade 삭제.
+        동기화 엔진에서 고스트 매물 삭제 직전에 호출한다.
+        Storage 파일 + listing_photos DB 레코드 모두 삭제.
+        Returns: 삭제된 사진 수
+        """
+        if not self.supabase or not listing_ids:
+            return 0
+        import logging
+        deleted_count = 0
+        try:
+            # 순수 UUID 목록으로 정규화 (h_, r_, u_, l_ 접두사 제거)
+            pure_ids = [self._normalize_listing_id(lid) for lid in listing_ids]
+
+            # 100개 단위 배치 처리
+            for i in range(0, len(pure_ids), 100):
+                chunk = pure_ids[i:i+100]
+                # 해당 매물의 사진 조회
+                res = self.supabase.table("listing_photos").select("id, storage_path").in_("listing_id", chunk).execute()
+                if not res.data:
+                    continue
+                # Storage 파일 일괄 삭제
+                paths = [r["storage_path"] for r in res.data if r.get("storage_path")]
+                if paths:
+                    try:
+                        self.supabase.storage.from_(self.bucket_name).remove(paths)
+                    except Exception as se:
+                        logging.error(f"Storage 사진 삭제 실패 (계속 진행): {se}")
+                # DB 레코드 삭제
+                photo_ids = [r["id"] for r in res.data]
+                self.supabase.table("listing_photos").delete().in_("id", photo_ids).execute()
+                deleted_count += len(photo_ids)
+        except Exception as e:
+            logging.error(f"사진 cascade 삭제 실패: {e}")
+        return deleted_count
 
 # 싱글톤 인스턴스
 storage_service = StorageService()

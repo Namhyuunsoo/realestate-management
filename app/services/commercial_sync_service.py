@@ -301,6 +301,15 @@ class CommercialSyncService:
                         # current_ids가 비어있으면 해당 슬롯의 모든 데이터가 삭제됨 (정상 동작)
                         to_delete = list(db_ids - set(current_ids))
                         if to_delete:
+                            # 🔥 [Fix] 매물 삭제 전 사진 cascade 삭제 (Storage + DB)
+                            try:
+                                from .storage_service import storage_service
+                                deleted_photos = storage_service.delete_photos_by_listing_ids(to_delete)
+                                if deleted_photos > 0:
+                                    logger.info(f"🗑️ 슬롯 {slot_id} ({sheet_name}): 사진 {deleted_photos}개 cascade 삭제 완료")
+                            except Exception as photo_err:
+                                logger.warning(f"⚠️ 슬롯 {slot_id} ({sheet_name}): 사진 cascade 삭제 실패 (매물 삭제는 계속 진행): {photo_err}")
+                                
                             for i in range(0, len(to_delete), 100):
                                 chunk = to_delete[i:i+100]
                                 self.supabase.table(table_name).delete().in_("id", chunk).execute()

@@ -241,6 +241,14 @@ def sync_housing_sheets_to_supabase(
             # 2. 삭제 대상 선별 (DB에는 있고 시트에는 없는 ID)
             to_delete = list(db_ids - set(current_ids))
             if to_delete:
+                # 🔥 [Fix] 매물 삭제 전 사진 cascade 삭제 (Storage + DB)
+                try:
+                    from .storage_service import storage_service
+                    deleted_photos = storage_service.delete_photos_by_listing_ids(to_delete)
+                    if deleted_photos > 0:
+                        print(f"🗑️ {table_name}: 사진 {deleted_photos}개 cascade 삭제 완료")
+                except Exception as photo_err:
+                    print(f"⚠️ {table_name}: 사진 cascade 삭제 실패 (매물 삭제는 계속 진행): {photo_err}")
                 # 3. 100개 단위 분할 삭제
                 for i in range(0, len(to_delete), 100):
                     chunk = to_delete[i:i+100]

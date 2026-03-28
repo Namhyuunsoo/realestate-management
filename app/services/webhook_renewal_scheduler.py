@@ -30,6 +30,10 @@ class WebhookRenewalScheduler:
         self._last_run_date = None  # "YYYY-MM-DD" 형식
         self._check_interval_seconds = 60  # 1분마다 체크
 
+        # 🔥 [Bug Fix] 배경 폴백 동기화 변수 초기화 (누락으로 인한 AttributeError 수정)
+        self._last_background_sync = 0
+        self._background_sync_interval = 6 * 3600  # 6시간마다 배경 동기화
+
         # 로깅 설정 (기존 스케줄러와 동일)
         logging.basicConfig(level=logging.INFO)
         self.logger = logging.getLogger(__name__)

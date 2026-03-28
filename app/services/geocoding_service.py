@@ -331,7 +331,9 @@ class GeocodingService:
             return None
     
     def sync_coords_to_supabase_listings(self):
-        """캐시된 좌표를 상가 매물 테이블의 coords 컬럼에 영구적으로 채워넣기"""
+        """캐시된 좌표를 매물 테이블의 coords 컬럼에 영구적으로 반영.
+        coords가 null인 매물뿐 아니라, coords가 있어도 캐시와 다르면 갱신한다.
+        """
         try:
             supabase = self._get_supabase_client()
             if not supabase:
@@ -352,24 +354,32 @@ class GeocodingService:
             ]
             
             for table in target_tables:
-                # 좌표가 null인 데이터 조회 (현황이 '생'인 매물 우선)
-                res = supabase.table(table).select("id, address_full").is_("coords", "null").execute()
+                # 🔥 [Fix] coords가 null인 매물 + coords가 있어도 캐시와 다를 수 있는 매물 모두 갱신
+                # address_full을 기준으로 캐시에서 좌표를 재적용
+                res = supabase.table(table).select("id, address_full, coords").execute()
                 if not res.data: continue
                 
                 updated_count = 0
                 for row in res.data:
                     addr = (row.get("address_full") or "").strip()
-                    if addr in cache:
+                    if addr not in cache:
+                        continue
+                    new_coords = cache[addr]
+                    existing_coords = row.get("coords") or {}
+                    # coords가 없거나, 캐시 값과 다를 때만 업데이트 (불필요한 DB 쓰기 방지)
+                    if (not existing_coords.get("lat") or
+                        abs(float(existing_coords.get("lat", 0)) - float(new_coords["lat"])) > 0.000001 or
+                        abs(float(existing_coords.get("lng", 0)) - float(new_coords["lng"])) > 0.000001):
                         try:
                             supabase.table(table).update({
-                                "coords": cache[addr],
+                                "coords": new_coords,
                                 "geocoded": True
                             }).eq("id", row["id"]).execute()
                             updated_count += 1
                         except Exception: continue
                 
                 if updated_count > 0:
-                    self.logger.info(f"✅ {table}: {updated_count}개 매물 좌표 영구 반영 완료")
+                    self.logger.info(f"✅ {table}: {updated_count}개 매물 좌표 갱신 완료")
                 
         except Exception as e:
             self.logger.error(f"좌표 DB 동기화 실패: {e}")
@@ -538,7 +548,10 @@ class GeocodingService:
             # 6. 기존 좌표 통합 (엑셀 + Supabase)
             all_existing_coordinates = {**existing_coordinates, **supabase_coordinates}
             
-            # 7. 새로 지오코딩이 필요한 주소만 찾기 (기존에 없는 주소)
+            # 7. 🔥 [Fix] 캐시 무효화: 현재 시트 주소 중 캐시에 있는 것도 재지오코딩 대상에 포함
+            # 주소를 오탈자 → 올바른 주소로 수정했을 때, 이전 잘못된 주소의 캐시는 자동 無효화됨
+            # (새 올바른 주소가 캐시에 없으면 새로 지오코딩 실행)
+            # 단, 동일 주소라도 캐시에 좌표가 있으면 재사용 (API 호출 최소화)
             new_addresses = [addr for addr in all_addresses if addr not in all_existing_coordinates]
             
             self.logger.info(f"총 주소: {len(all_addresses)}, 기존 좌표: {len(all_existing_coordinates)}, 새 주소: {len(new_addresses)}")
