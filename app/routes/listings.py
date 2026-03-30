@@ -244,8 +244,9 @@ def update_listing_status_api(listing_id):
     from ..services.commercial_sync_service import CommercialSyncService, SHEET_CONFIG, HOUSING_SHEET_CONFIG
     sync_service = CommercialSyncService()
 
-    # 주택 매물 ID는 프론트엔드에서 h_ 접두사가 붙어오므로 DB 조회 시 제거
-    db_listing_id = listing_id[2:] if listing_id.startswith("h_") else listing_id
+    # 프론트엔드에서 넘어오는 접두사(h_, r_, s_, l_ 등) 일괄 제거 (순수 UUID 추출)
+    import re
+    db_listing_id = re.sub(r'^[a-z]_', '', listing_id)
     
     # 권한 체크: 관리자가 아닌 경우 본인 담당 슬롯인지 확인 (또는 주택 매물인지)
     if not user.is_admin():
