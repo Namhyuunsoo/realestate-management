@@ -158,9 +158,18 @@ def fetch_housing_listings(
         query = query.order("raw_row_index", desc=False)
 
         if trade_filter:
-            # 전세/월세: DB에서 필터 불가하므로 전체 조회 후 Python에서 필터
-            result = query.execute()
-            rows = _filter_by_trade_type(list(result.data or []), trade_filter)
+            # 전세/월세: DB에서 필터 불가하므로 전체 DB를 페이지네이션으로 조회 후 Python에서 필터 (500건 제약 해제)
+            all_rows = []
+            p_size = 1000
+            p_num = 0
+            while True:
+                res = query.range(p_num * p_size, (p_num + 1) * p_size - 1).execute()
+                if not res.data: break
+                all_rows.extend(res.data)
+                if len(res.data) < p_size: break
+                p_num += 1
+                
+            rows = _filter_by_trade_type(all_rows, trade_filter)
             total = len(rows)
             rows = rows[offset : offset + limit]
         else:

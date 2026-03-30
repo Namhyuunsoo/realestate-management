@@ -179,6 +179,25 @@ class CommercialSyncService:
             res["errors"].append(f"RPC Lock Error: {e}")
             return res
 
+        # === [전체 매물 DB 캐싱 (중복 UUID 지능형 식별 목적)] ===
+        logger.info(f"🔄 슬롯 {slot_id} 기존 DB 매물 주소록 캐싱 중...")
+        db_existing = {}
+        for t_name in SHEET_CONFIG.values():
+            db_existing[t_name] = {}
+            try:
+                p_size = 1000
+                p_num = 0
+                while True:
+                    db_cache_res = self.supabase.table(t_name).select("id, address_full").eq("slot_id", slot_id).range(p_num * p_size, (p_num + 1) * p_size - 1).execute()
+                    if not db_cache_res.data: break
+                    for r in db_cache_res.data:
+                        db_existing[t_name][r["id"]] = r.get("address_full")
+                    if len(db_cache_res.data) < p_size: break
+                    p_num += 1
+            except Exception as e:
+                logger.error(f"DB 초기 캐싱 실패 ({t_name}): {e}")
+        logger.info("✅ DB 캐싱 완료")
+
         try:
             m = re.search(r"/d/([a-zA-Z0-9-_]+)", sheet_url)
             if not m:
@@ -254,22 +273,48 @@ class CommercialSyncService:
                     current_ids = [] # 🚀 [Bug Fix] 현재 시트의 유효 ID 목록 초기화
                     
                     if len(values) >= 1: # 최소한 헤더라도 있는 경우
+                        from collections import defaultdict
+                        uuid_groups = defaultdict(list)
+                        
                         for idx, row in enumerate(data_rows, start=header_idx + 2):
-                            # 슬롯 ID를 기반으로 레코드 처리 (UUID 우선 적용, 없으면 생성)
                             record = self._process_row_v3(slot_id, sheet_name, idx, row, header_map, user_id, manager_name)
-                            if record:
-                                # 신규 생성된 UUID가 있으면 시트 업데이트 목록에 추가
-                                if record.get("is_new_uuid"):
+                            if record: uuid_groups[record["id"]].append(record)
+
+                        # 지능형 중복 식별 (Smart Resolution)
+                        for uid, recs in uuid_groups.items():
+                            if len(recs) == 1:
+                                record = recs[0]
+                                if record.pop("is_new_uuid", False):
                                     import gspread
-                                    uuid_updates.append({
-                                        'range': gspread.utils.rowcol_to_a1(idx, uuid_col_idx + 1),
-                                        'values': [[record["id"]]]
-                                    })
-                                
-                                # 불필요한 플래그 제거 후 저장
-                                record.pop("is_new_uuid", None)
+                                    uuid_updates.append({'range': gspread.utils.rowcol_to_a1(record["raw_row_index"], uuid_col_idx + 1), 'values': [[uid]]})
                                 batch_data.append(record)
-                                current_ids.append(record["id"]) # 🚀 [Bug Fix] 유효 ID 추적
+                                current_ids.append(record["id"])
+                            else:
+                                target_table = SHEET_CONFIG.get(sheet_name)
+                                db_addr = db_existing.get(target_table, {}).get(uid)
+                                
+                                original_rec = next((r for r in recs if r["address_full"] == db_addr), None)
+                                if not original_rec: original_rec = recs[0]
+                                
+                                original_rec.pop("is_new_uuid", False)
+                                batch_data.append(original_rec)
+                                current_ids.append(original_rec["id"])
+                                
+                                for r in recs:
+                                    if r is original_rec: continue
+                                    r.pop("is_new_uuid", False)
+                                    if r["address_full"] == original_rec["address_full"]:
+                                        # 아직 안 고친 쌍둥이: 대기
+                                        pass
+                                    else:
+                                        # 고친 녀석: 가차없이 새 UUID 발급
+                                        import gspread
+                                        import uuid
+                                        new_uid = str(uuid.uuid4())
+                                        r["id"] = new_uid
+                                        uuid_updates.append({'range': gspread.utils.rowcol_to_a1(r["raw_row_index"], uuid_col_idx + 1), 'values': [[new_uid]]})
+                                        batch_data.append(r)
+                                        current_ids.append(r["id"])
                     
                     # 🚀 [UUID Write-back] 생성된 UUID를 시트에 일괄 기록
                     if uuid_updates:
@@ -293,9 +338,16 @@ class CommercialSyncService:
                             logger.info(f"슬롯 {slot_id} ({sheet_name}) Upsert 완료: {len(batch_data)}개")
 
                         # 🚀 [Ghost Record Cleanup] 시트에서 사라진 모든 데이터 정리
-                        # 1. 현재 DB에 있는 해당 슬롯의 모든 ID 조회
-                        db_res = self.supabase.table(table_name).select("id").eq("slot_id", slot_id).execute()
-                        db_ids = set([r["id"] for r in db_res.data]) if db_res.data else set()
+                        # 1. 500건 제약을 패치하여 페이지네이션으로 전수 ID 추출
+                        db_ids = set()
+                        p_size = 1000
+                        p_num = 0
+                        while True:
+                            db_res = self.supabase.table(table_name).select("id").eq("slot_id", slot_id).range(p_num * p_size, (p_num + 1) * p_size - 1).execute()
+                            if not db_res.data: break
+                            db_ids.update(r["id"] for r in db_res.data)
+                            if len(db_res.data) < p_size: break
+                            p_num += 1
                         
                         # 2. 삭제 대상 선별 (DB에는 있고 시트에는 없는 ID)
                         # current_ids가 비어있으면 해당 슬롯의 모든 데이터가 삭제됨 (정상 동작)

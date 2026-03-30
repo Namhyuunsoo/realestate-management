@@ -140,6 +140,25 @@ def sync_housing_sheets_to_supabase(
         result["errors"].append(str(e))
         return result
 
+    # === [전체 매물 DB 캐싱 (중복 UUID 지능형 식별 목적)] ===
+    print("🔄 기존 DB 매물 주소록 캐싱 중...")
+    db_existing = {}
+    for t_name in ["listings_housing_sale", "listings_housing_lease", "listings_housing_oneroom"]:
+        db_existing[t_name] = {}
+        try:
+            p_size = 1000
+            p_num = 0
+            while True:
+                res = supabase.table(t_name).select("id, address_full").range(p_num * p_size, (p_num + 1) * p_size - 1).execute()
+                if not res.data: break
+                for r in res.data:
+                    db_existing[t_name][r["id"]] = r.get("address_full")
+                if len(res.data) < p_size: break
+                p_num += 1
+        except Exception as e:
+            result["errors"].append(f"DB 초기 캐싱 실패 ({t_name}): {e}")
+    print("✅ DB 캐싱 완료")
+
     # 시트별로 데이터 수집 (테이블별로 그룹화)
     # 🚀 [Bug Fix] 모든 주택 관련 테이블을 초기화하여, 시트가 비어있더라도 클린업이 실행되도록 함
     rows_by_table: Dict[str, List[Dict[str, Any]]] = {
@@ -176,29 +195,64 @@ def sync_housing_sheets_to_supabase(
         count = 0
         uuid_updates = []
 
-        for idx, row in enumerate(data_rows, start=2): # 1행은 헤더이므로 데이터는 2행부터
+        # 1. 시트를 읽어 UUID별로 그룹화 (중복 여부 파악)
+        from collections import defaultdict
+        uuid_groups = defaultdict(list)
+        for idx, row in enumerate(data_rows, start=2):
             rec = row_to_listing_housing(sheet_name, idx, header_row, row)
-            if rec:
+            if rec: uuid_groups[rec["id"]].append(rec)
+
+        # 2. 지능형 중복 식별 (Smart Resolution)
+        for uid, recs in uuid_groups.items():
+            if len(recs) == 1:
+                # 단일 행: 정상 처리
+                rec = recs[0]
                 if rec.pop("is_new_uuid", False):
                     import gspread
-                    uuid_updates.append({
-                        'range': gspread.utils.rowcol_to_a1(idx, uuid_col_idx + 1),
-                        'values': [[rec["id"]]]
-                    })
-                
+                    uuid_updates.append({'range': gspread.utils.rowcol_to_a1(rec["raw_row_index"], uuid_col_idx + 1), 'values': [[uid]]})
                 table_name = rec.pop("table_name")
-                if table_name not in rows_by_table:
-                    rows_by_table[table_name] = []
                 rows_by_table[table_name].append(rec)
                 count += 1
+            else:
+                # 중복 행 발견 (복붙 시나리오)
+                table_name = recs[0]["table_name"]
+                db_addr = db_existing.get(table_name, {}).get(uid)
+                
+                # DB 주소와 일치하는 것을 원본으로 선정
+                original_rec = next((r for r in recs if r["address_full"] == db_addr), None)
+                if not original_rec: original_rec = recs[0] # 아무도 안맞으면 무작위 첫번째
+                
+                # 원본은 그대로 저장
+                o_uid = original_rec["id"]
+                original_rec.pop("is_new_uuid", False)
+                original_rec.pop("table_name", None)
+                rows_by_table[table_name].append(original_rec)
+                count += 1
+                
+                # 복사본들 처리
+                for r in recs:
+                    if r is original_rec: continue
+                    r.pop("is_new_uuid", False)
+                    r.pop("table_name", None)
+                    if r["address_full"] == original_rec["address_full"]:
+                        # 아직 안 고친 쌍둥이: 대기 (아무 처리 안 함, DB 에러 회피)
+                        pass
+                    else:
+                        # 고친 녀석: 가차없이 새 UUID 발급
+                        import gspread
+                        new_uid = str(uuid.uuid4())
+                        r["id"] = new_uid
+                        uuid_updates.append({'range': gspread.utils.rowcol_to_a1(r["raw_row_index"], uuid_col_idx + 1), 'values': [[new_uid]]})
+                        rows_by_table[table_name].append(r)
+                        count += 1
         
-        # 신규 UUID 시트 써기 (배치 업데이트)
+        # 신규 UUID 시트 쓰기 (배치 업데이트)
         if uuid_updates:
             ws.batch_update(uuid_updates)
             
         result["by_sheet"][sheet_name] = count
 
-    if not rows_by_table:
+    if not rows_by_table["listings_housing_sale"] and not rows_by_table["listings_housing_lease"] and not rows_by_table["listings_housing_oneroom"]:
         result["success"] = True
         result["total_rows"] = 0
         return result
@@ -232,13 +286,20 @@ def sync_housing_sheets_to_supabase(
             except Exception as e:
                 result["errors"].append(f"{table_name} 배치 저장 실패: {e}")
 
-        # 2. 🚀 [Ghost Record Cleanup] 차집합 삭제 (전수조사 개선안)
-        # 🚀 [Bug Fix] current_ids가 비어있더라도(시트가 비었더라도) 클린업을 위해 항상 실행
+        # 2. 🚀 [Ghost Record Cleanup] 차집합 삭제 (500건 제약 해제)
         try:
-            # 1. 현재 테이블의 모든 주택 매물 ID 조회
-            db_res = supabase.table(table_name).select("id").execute()
-            db_ids = set([r["id"] for r in db_res.data]) if db_res.data else set()
-            # 2. 삭제 대상 선별 (DB에는 있고 시트에는 없는 ID)
+            # DB 전체 ID 조회 (Pagination)
+            db_ids = set()
+            p_size = 1000
+            p_num = 0
+            while True:
+                db_res = supabase.table(table_name).select("id").range(p_num * p_size, (p_num + 1) * p_size - 1).execute()
+                if not db_res.data: break
+                db_ids.update(r["id"] for r in db_res.data)
+                if len(db_res.data) < p_size: break
+                p_num += 1
+            
+            # 삭제 대상 선별
             to_delete = list(db_ids - set(current_ids))
             if to_delete:
                 # 🔥 [Fix] 매물 삭제 전 사진 cascade 삭제 (Storage + DB)
