@@ -35,6 +35,9 @@ HOUSING_SHEET_CONFIG = {
 HOUSING_SHEET_ID = os.getenv("HOUSING_SHEET_ID", "1KZ7aLN_Vzfnp0MhnOsJXuCtPtGIPuVj-UaHB2xP7JRs")
 
 class CommercialSyncService:
+    # 클래스 레벨 락 (동시성 제어용)
+    _sync_locks: Dict[str, bool] = {}
+
     def __init__(self):
         self.supabase = self._get_supabase_client()
         self.gs = self._get_google_sheets_client()
@@ -516,13 +519,30 @@ class CommercialSyncService:
 
 
     def update_listing_status_in_sheet(self, listing_id: str, new_status: str) -> Dict[str, Any]:
-        """UUID를 기반으로 시트의 현황을 직접 업데이트 (상가 및 주택 모두 지원)"""
+        """
+        UUID를 기반으로 DB와 시트의 현황을 동기화 업데이트 (상가 및 주택 모두 지원)
+
+        트랜잭션 흐름:
+        1. 락 획득 (동시성 제어)
+        2. DB 업데이트 (원본 데이터)
+        3. 시트 업데이트
+        4. 시트 실패 시 DB 롤백
+        5. 락 해제
+        """
+        # 1. 동시성 제어: 락 획득
+        lock_key = f"status_update:{listing_id}"
+        if CommercialSyncService._sync_locks.get(lock_key):
+            return {"success": False, "error": "이미 처리 중인 요청입니다. 잠시 후 다시 시도해주세요."}
+
+        CommercialSyncService._sync_locks[lock_key] = True
+        old_status = None  # 롤백용
+
         try:
-            # 1. DB에서 해당 매물 정보 조회 (상가 -> 주택 순서로 조회)
+            # 2. DB에서 해당 매물 정보 조회 (상가 -> 주택 순서로 조회)
             record = None
             found_table = None
             is_housing = False
-            
+
             # 상가 테이블 먼저 검색
             for sheet_name, table_name in SHEET_CONFIG.items():
                 res = self.supabase.table(table_name).select("*").eq("id", listing_id).execute()
@@ -531,7 +551,7 @@ class CommercialSyncService:
                     record["sheet_name"] = sheet_name # 동적 할당
                     found_table = table_name
                     break
-            
+
             # 상가에 없으면 주택 테이블 검색
             if not record:
                 for sheet_name, table_name in HOUSING_SHEET_CONFIG.items():
@@ -545,84 +565,115 @@ class CommercialSyncService:
 
             if not record:
                 return {"success": False, "error": f"매물을 찾을 수 없습니다. (ID: {listing_id})"}
-            
+
+            # 기존 현황 저장 (롤백용)
+            old_status = record.get("status_raw")
+
             slot_id = record.get("slot_id")
             sheet_name = record.get("sheet_name")
-            
+
+            # 3. DB 먼저 업데이트 (원본 데이터 보호)
+            try:
+                self.supabase.table(found_table).update({"status_raw": new_status}).eq("id", listing_id).execute()
+                logger.info(f"✅ DB 현황 업데이트 성공: {listing_id} -> '{new_status}'")
+            except Exception as db_err:
+                logger.error(f"❌ DB 업데이트 실패: {db_err}")
+                return {"success": False, "error": f"DB 업데이트 실패: {str(db_err)}"}
+
+            # 4. 시트 정보 확인
             if is_housing:
                 # 주택 매물은 고정 시트 ID 사용
                 sheet_url = f"https://docs.google.com/spreadsheets/d/{HOUSING_SHEET_ID}"
             else:
                 # 상가 매물은 슬롯 정보에서 시트 URL 확인
                 if not slot_id or not sheet_name:
-                    return {"success": False, "error": "상가 매물의 슬롯 또는 시트 정보가 누락되었습니다."}
-                    
+                    # 시트 정보 없으면 DB만 업데이트하고 성공 처리 (시트 동기화는 별도)
+                    logger.warning(f"⚠️ 시트 정보 없음 - DB만 업데이트: {listing_id}")
+                    return {"success": True, "message": f"현황이 '{new_status}'로 변경되었습니다. (DB 반영 완료, 시트 정보 없음)"}
+
                 slot_res = self.supabase.table("sheet_registry").select("sheet_url").eq("slot_id", slot_id).execute()
                 if not slot_res.data:
-                    return {"success": False, "error": f"슬롯 {slot_id}의 등록 정보를 찾을 수 없습니다."}
-                
+                    logger.warning(f"⚠️ 슬롯 등록 정보 없음 - DB만 업데이트: {listing_id}")
+                    return {"success": True, "message": f"현황이 '{new_status}'로 변경되었습니다. (DB 반영 완료)"}
+
                 sheet_url = slot_res.data[0]["sheet_url"]
-            
-            # 3. 구글 시트 오픈
-            m = re.search(r"/d/([a-zA-Z0-9-_]+)", sheet_url)
-            if not m:
-                return {"success": False, "error": "잘못된 시트 URL 형식입니다."}
-            
-            spreadsheet = self.gs.open_by_key(m.group(1))
+
+            # 5. 구글 시트 업데이트 시도
+            sheet_error = None
             try:
-                worksheet = spreadsheet.worksheet(sheet_name)
-            except Exception:
-                # 공백 등 처리를 위해 루프 탐색
-                all_ws = {ws.title.strip(): ws for ws in spreadsheet.worksheets()}
-                worksheet = all_ws.get(sheet_name.strip())
-                
-            if not worksheet:
-                return {"success": False, "error": f"시트 '{sheet_name}'를 찾을 수 없습니다."}
-                
-            # 4. UUID 컬럼 및 해당 행 찾기
-            values = worksheet.get_all_values()
-            if not values:
-                return {"success": False, "error": "시트 데이터가 비어 있습니다."}
-                
-            headers = values[0] # 임시로 첫 행을 헤더로 가정 (정교화 가능)
-            
-            # 헤더 인덱스 찾기 (정규화된 이름으로)
-            norm_headers = [self.normalize_header(h) for h in headers]
-            uuid_norm = self.normalize_header("UUID")
-            status_norm = self.normalize_header("현황")
-            
-            if uuid_norm not in norm_headers:
-                return {"success": False, "error": "시트에 UUID 컬럼이 없습니다."}
-                
-            uuid_col_idx = norm_headers.index(uuid_norm)
-            
-            # 행(Row) 찾기
-            row_idx = -1
-            for i, row in enumerate(values):
-                if i == 0: continue # 헤더 생략
-                if len(row) > uuid_col_idx and row[uuid_col_idx] == listing_id:
-                    row_idx = i + 1 # 1-based index
-                    break
-            
-            if row_idx == -1:
-                return {"success": False, "error": f"시트에서 매물(UUID: {listing_id})을 찾을 수 없습니다."}
-                
-            # '현황' 컬럼 인덱스 찾기
-            if status_norm not in norm_headers:
-                # 만약 현황 컬럼이 없으면 에러
-                return {"success": False, "error": "시트에 '현황' 컬럼이 없습니다."}
-            
-            status_col_idx = norm_headers.index(status_norm)
-            
-            # 5. 셀 업데이트
-            worksheet.update_cell(row_idx, status_col_idx + 1, new_status)
-            
-            logger.info(f"✅ 시트 업데이트 성공: UUID {listing_id} 의 현황을 '{new_status}'로 변경 (Row: {row_idx})")
-            return {"success": True, "message": f"현황이 '{new_status}'로 변경되었습니다. (시트 반영 완료)"}
-            
+                m = re.search(r"/d/([a-zA-Z0-9-_]+)", sheet_url)
+                if not m:
+                    raise ValueError("잘못된 시트 URL 형식")
+
+                spreadsheet = self.gs.open_by_key(m.group(1))
+                try:
+                    worksheet = spreadsheet.worksheet(sheet_name)
+                except Exception:
+                    # 공백 등 처리를 위해 루프 탐색
+                    all_ws = {ws.title.strip(): ws for ws in spreadsheet.worksheets()}
+                    worksheet = all_ws.get(sheet_name.strip())
+
+                if not worksheet:
+                    raise ValueError(f"시트 '{sheet_name}'를 찾을 수 없음")
+
+                # UUID 컬럼 및 해당 행 찾기
+                values = worksheet.get_all_values()
+                if not values:
+                    raise ValueError("시트 데이터가 비어 있음")
+
+                headers = values[0]
+                norm_headers = [self.normalize_header(h) for h in headers]
+                uuid_norm = self.normalize_header("UUID")
+                status_norm = self.normalize_header("현황")
+
+                if uuid_norm not in norm_headers:
+                    raise ValueError("시트에 UUID 컬럼이 없음")
+
+                uuid_col_idx = norm_headers.index(uuid_norm)
+
+                # 행(Row) 찾기
+                row_idx = -1
+                for i, row in enumerate(values):
+                    if i == 0: continue # 헤더 생략
+                    if len(row) > uuid_col_idx and row[uuid_col_idx] == listing_id:
+                        row_idx = i + 1 # 1-based index
+                        break
+
+                if row_idx == -1:
+                    raise ValueError(f"시트에서 매물(UUID: {listing_id})을 찾을 수 없음")
+
+                # '현황' 컬럼 인덱스 찾기
+                if status_norm not in norm_headers:
+                    raise ValueError("시트에 '현황' 컬럼이 없음")
+
+                status_col_idx = norm_headers.index(status_norm)
+
+                # 셀 업데이트
+                worksheet.update_cell(row_idx, status_col_idx + 1, new_status)
+                logger.info(f"✅ 시트 업데이트 성공: UUID {listing_id} 의 현황을 '{new_status}'로 변경 (Row: {row_idx})")
+
+            except Exception as sheet_err:
+                sheet_error = sheet_err
+                logger.error(f"❌ 시트 업데이트 실패, DB 롤백 시도: {sheet_err}")
+
+                # 6. 시트 실패 시 DB 롤백
+                try:
+                    self.supabase.table(found_table).update({"status_raw": old_status}).eq("id", listing_id).execute()
+                    logger.info(f"🔄 DB 롤백 완료: {listing_id} -> '{old_status}'")
+                except Exception as rollback_err:
+                    logger.error(f"🚨 DB 롤백 실패! 데이터 불일치 가능성: {rollback_err}")
+
+                return {"success": False, "error": f"시트 동기화 실패: {str(sheet_error)}"}
+
+            return {"success": True, "message": f"현황이 '{new_status}'로 변경되었습니다. (DB+시트 반영 완료)"}
+
         except Exception as e:
-            logger.error(f"시트 업데이트 중 오류 발생: {e}")
+            logger.error(f"현황 업데이트 중 오류 발생: {e}")
             return {"success": False, "error": f"업데이트 실패: {str(e)}"}
+
+        finally:
+            # 7. 락 해제
+            CommercialSyncService._sync_locks.pop(lock_key, None)
 
     def _load_geocode_cache(self):
         """Supabase에서 지오코딩 캐시를 메모리로 로드"""
