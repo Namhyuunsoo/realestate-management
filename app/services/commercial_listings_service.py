@@ -238,7 +238,7 @@ def fetch_all_commercial_listings(subtype: Optional[str] = None, select_format: 
                 if min_lng is not None and max_lng is not None:
                     q = q.gte("coords->lng", min_lng).lte("coords->lng", max_lng)
                 
-                q = q.order("fields->접수일", desc=True)
+                q = q.order("fields->raw_row_index", desc=True)  # raw_row_index는 더 안정적 정렀로 사용
                 res = q.range(offset, offset + page_size - 1).execute()
                 
                 if not res.data:

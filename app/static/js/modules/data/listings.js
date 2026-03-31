@@ -153,35 +153,28 @@ async function fetchListings(force = false) {
       const status_raw = (statusEl && statusEl.value && statusEl.value.trim()) ? statusEl.value.trim() : "생";
       _lastCommercialStatusRaw = status_raw;
 
-      // 1단계: 스켈레톤(검색용 핵심 필드) 데이터 먼저 로드
-      dbg("🚀 [Hybrid Phase 1] 스켈레톤 데이터 요청...");
-      data = await getCachedListings(status_raw, force, "search_skeleton");
+      // 🔥 최적화: 단일 API 호출로 변경 (스켈레톤 로딩 제거, 전체 데이터 한 번에 로드)
+      // 기존 3단계 로딩(Phase 1, 1.5, 2)이 총 20초+ 걸리던 문제 해결
+      dbg("🚀 [Optimized] 전체 매물 데이터 로드 시작...");
+      data = await getCachedListings(status_raw, force);
       items = await processListingData(data);
-      
-      // 1단계 데이터 즉시 렌더링
+
+      // 상가 모드도 여기서 바로 처리 (하이브리드 로딩 제거)
       ORIGINAL_LIST = items;
       LISTINGS = ORIGINAL_LIST.map(x => ({ ...x }));
       window.LISTINGS = LISTINGS;
       window.ORIGINAL_LIST = ORIGINAL_LIST;
-
       if (window.assignTempCoords) await window.assignTempCoords();
       window.applyAllFilters();
-      
-      updateAppProgressBar(50, true, "마커 표시 완료, 상세 정보 로드 중...");
-      dbg(`✅ [Hybrid Phase 1] 완료: ${items.length}개 마커 즉시 표시됨`);
-
-      // 1.5단계: 현재 화면 영역(BBox)의 상세 데이터 우선 로드
-      loadBBoxData(status_raw);
-
-      // 2단계: 백그라운드 전체 상세 데이터 로드 (비동기)
-      loadFullDataInBackground(status_raw, force);
+      updateAppProgressBar(100, false);
+      dbg(`✅ [Optimized] 완료: ${items.length}개 매물 로드됨`);
     }
 
     if (!items || items.length === 0) {
-      if (!isHybridMode) throw new Error("매물 데이터를 가져올 수 없습니다.");
+      throw new Error("매물 데이터를 가져올 수 없습니다.");
     }
 
-    // 주택 모드인 경우에만 여기서 나머지 처리 (상가는 이미 위에서 처리함)
+    // 주택 모드인 경우에만 여기서 나머지 처리 (상가는 이미 위에서 처리됨)
     if (UI_STATE.listingMode === "housing") {
       ORIGINAL_LIST = items;
       LISTINGS = ORIGINAL_LIST.map(x => ({ ...x }));
