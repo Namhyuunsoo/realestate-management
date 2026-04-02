@@ -3,6 +3,8 @@
 import os
 import uuid
 import time
+import json
+import base64
 import logging
 from typing import Dict, Any, Optional
 from google.oauth2.service_account import Credentials
@@ -14,23 +16,51 @@ logger = logging.getLogger(__name__)
 
 class SheetsWebhookService:
     """Google Sheets 변경 감지를 위한 웹훅 서비스"""
-    
+
     def __init__(self):
         self.service_account_file = os.getenv("SERVICE_ACCOUNT_FILE", "service_account.json")
         self.webhook_base_url = os.getenv("WEBHOOK_BASE_URL", "")  # https://skrealestate.duckdns.org
         self.drive_service = None
         self._authenticate()
-    
+
     def _authenticate(self):
-        """Google Drive API 인증"""
+        """Google Drive API 인증 (환경변수 우선, 파일 폴백)"""
         try:
             scopes = ['https://www.googleapis.com/auth/drive']
-            credentials = Credentials.from_service_account_file(
-                self.service_account_file, 
-                scopes=scopes
-            )
+            credentials = None
+
+            # 1. 환경변수에서 인증 정보 로드 (우선)
+            sa_json = os.getenv("GOOGLE_SERVICE_ACCOUNT_JSON")
+            if sa_json:
+                try:
+                    # Base64 인코딩된 JSON인지 확인
+                    try:
+                        decoded = base64.b64decode(sa_json).decode('utf-8')
+                        sa_info = json.loads(decoded)
+                    except Exception:
+                        # 일반 JSON 문자열인 경우
+                        sa_info = json.loads(sa_json)
+
+                    credentials = Credentials.from_service_account_info(
+                        sa_info,
+                        scopes=scopes
+                    )
+                    logger.info("Google Drive API 인증 완료 (환경변수)")
+                except Exception as e:
+                    logger.warning(f"환경변수 인증 실패, 파일로 시도: {e}")
+
+            # 2. 파일에서 인증 정보 로드 (폴백)
+            if not credentials:
+                if os.path.exists(self.service_account_file):
+                    credentials = Credentials.from_service_account_file(
+                        self.service_account_file,
+                        scopes=scopes
+                    )
+                    logger.info("Google Drive API 인증 완료 (파일)")
+                else:
+                    raise FileNotFoundError(f"서비스 계정 파일 없음: {self.service_account_file}")
+
             self.drive_service = build('drive', 'v3', credentials=credentials)
-            logger.info("Google Drive API 인증 완료")
         except Exception as e:
             logger.error(f"Google Drive API 인증 실패: {e}")
             raise
