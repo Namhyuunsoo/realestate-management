@@ -152,7 +152,7 @@ async function renderDetailPanel(item) {
     <div style="background: white; border: 1px solid #e0e0e0; border-radius: 8px; padding: 12px;">
       ${detailRows}
     </div>
-    <input type="file" id="pcPhotoInput" style="display: none;" accept="image/*">
+    <input type="file" id="pcPhotoInput" style="display: none;" accept="image/*" multiple>
   `;
 
   // 브리핑 모드인 경우 민감한 정보 자동 접기 (동기 실행)
@@ -203,33 +203,67 @@ async function renderDetailPanel(item) {
 
 // 사진 업로드 처리 (PC)
 async function handlePhotoUpload(listingId, event) {
-  const file = event.target.files[0];
-  if (!file) return;
+  const files = Array.from(event.target.files);
+  if (files.length === 0) return;
 
   const uploadBtn = document.getElementById('pcPhotoUploadBtn');
   const originalText = uploadBtn.innerHTML;
+  const totalFiles = files.length;
+  let successCount = 0;
+  let failCount = 0;
 
   try {
     uploadBtn.disabled = true;
-    uploadBtn.innerHTML = '<span>⏳</span>...';
+    uploadBtn.innerHTML = `<span>⏳</span> 1/${totalFiles} 업로드 중...`;
 
-    const formData = new FormData();
-    formData.append('file', file);
+    // 병렬 업로드 처리
+    const uploadPromises = files.map(async (file, index) => {
+      const formData = new FormData();
+      formData.append('file', file);
 
-    const response = await fetch(`/api/listings/${listingId}/photos`, {
-      method: 'POST',
-      body: formData,
-      headers: {
-        'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.content || ''
+      try {
+        const response = await fetch(`/api/listings/${listingId}/photos`, {
+          method: 'POST',
+          body: formData,
+          headers: {
+            'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.content || ''
+          }
+        });
+
+        const data = await response.json();
+        if (data.success) {
+          successCount++;
+          // 진행 상황 업데이트
+          if (totalFiles > 1) {
+            uploadBtn.innerHTML = `<span>⏳</span> ${Math.min(index + 1, successCount + failCount)}/${totalFiles} 업로드 중...`;
+          }
+          return { success: true };
+        } else {
+          failCount++;
+          console.error(`업로드 실패 (${file.name}):`, data.error);
+          return { success: false, error: data.error };
+        }
+      } catch (err) {
+        failCount++;
+        console.error(`업로드 오류 (${file.name}):`, err);
+        return { success: false, error: err.message };
       }
     });
 
-    const data = await response.json();
-    if (data.success) {
-      if (typeof showToast === 'function') showToast('사진이 등록되었습니다.', 'success');
+    // 모든 업로드 완료 대기
+    await Promise.all(uploadPromises);
+
+    // 결과 알림
+    if (successCount > 0) {
+      const msg = totalFiles === 1
+        ? '사진이 등록되었습니다.'
+        : `${successCount}장의 사진이 등록되었습니다.${failCount > 0 ? ` (${failCount}장 실패)` : ''}`;
+      if (typeof showToast === 'function') showToast(msg, failCount > 0 ? 'warning' : 'success');
       loadAndRenderPhotos(listingId);
-    } else {
-      alert('업로드 실패: ' + (data.error || '알 수 없는 오류'));
+    }
+
+    if (failCount > 0 && successCount === 0) {
+      alert('모든 사진 업로드에 실패했습니다.');
     }
   } catch (error) {
     console.error('사진 업로드 중 오류:', error);

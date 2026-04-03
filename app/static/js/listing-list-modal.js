@@ -509,7 +509,7 @@ class ListingListModalManager {
                     <div style="font-size: 14px; color: #666; margin-bottom: 10px;">📍 ${escapeHtml(addr || '주소 정보 없음')}${briefingHtml}</div>
                     
                     <!-- 숨김 파일 입력 -->
-                    <input type="file" id="mobilePhotoInput" style="display: none;" accept="image/*">
+                    <input type="file" id="mobilePhotoInput" style="display: none;" accept="image/*" multiple>
                 </div>
                 <div style="background: white; border: 1px solid #e0e0e0; border-radius: 8px; padding: 12px;">${rows}</div>
             `;
@@ -636,7 +636,7 @@ class ListingListModalManager {
                 </div>
 
                 <!-- 숨김 파일 입력 -->
-                <input type="file" id="mobilePhotoInput" style="display: none;" accept="image/*">
+                <input type="file" id="mobilePhotoInput" style="display: none;" accept="image/*" multiple>
             </div>
 
             <!-- 하단 액션 바 (v6.5: 불투명화 및 하드웨어 가속 강제) -->
@@ -859,34 +859,67 @@ class ListingListModalManager {
     }
 
     async handleMobilePhotoUpload(listingId, event) {
-        const file = event.target.files[0];
-        if (!file) return;
+        const files = Array.from(event.target.files);
+        if (files.length === 0) return;
 
         // 업로드 버튼 찾기 (상세보기 창 또는 편집 창)
         const uploadBtn = document.getElementById('mobilePhotoUploadBtn') || document.getElementById('photoEditUploadBtn');
         const originalText = uploadBtn ? uploadBtn.innerHTML : '';
+        const totalFiles = files.length;
+        let successCount = 0;
+        let failCount = 0;
 
         try {
             // 업로드 중 상태 표시
             if (uploadBtn) {
                 uploadBtn.disabled = true;
-                uploadBtn.innerHTML = '<span>⏳</span> 업로드 중...';
+                uploadBtn.innerHTML = `<span>⏳</span> 1/${totalFiles} 업로드 중...`;
             }
 
-            const formData = new FormData();
-            formData.append('file', file);
+            // 병렬 업로드 처리
+            const uploadPromises = files.map(async (file, index) => {
+                const formData = new FormData();
+                formData.append('file', file);
 
-            const response = await fetch(`/api/listings/${listingId}/photos`, {
-                method: 'POST',
-                body: formData,
-                headers: {
-                    'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.content || ''
+                try {
+                    const response = await fetch(`/api/listings/${listingId}/photos`, {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.content || ''
+                        }
+                    });
+
+                    const data = await response.json();
+                    if (data.success) {
+                        successCount++;
+                        // 진행 상황 업데이트
+                        if (uploadBtn && totalFiles > 1) {
+                            uploadBtn.innerHTML = `<span>⏳</span> ${Math.min(index + 1, successCount + failCount)}/${totalFiles} 업로드 중...`;
+                        }
+                        return { success: true };
+                    } else {
+                        failCount++;
+                        console.error(`업로드 실패 (${file.name}):`, data.error);
+                        return { success: false, error: data.error };
+                    }
+                } catch (err) {
+                    failCount++;
+                    console.error(`업로드 오류 (${file.name}):`, err);
+                    return { success: false, error: err.message };
                 }
             });
 
-            const data = await response.json();
-            if (data.success) {
-                if (typeof showToast === 'function') showToast('사진이 등록되었습니다.', 'success');
+            // 모든 업로드 완료 대기
+            await Promise.all(uploadPromises);
+
+            // 결과 알림
+            if (successCount > 0) {
+                const msg = totalFiles === 1
+                    ? '사진이 등록되었습니다.'
+                    : `${successCount}장의 사진이 등록되었습니다.${failCount > 0 ? ` (${failCount}장 실패)` : ''}`;
+                if (typeof showToast === 'function') showToast(msg, failCount > 0 ? 'warning' : 'success');
+
                 // 갤러리 새로고침 (편집 모드 여부에 따라)
                 if (this.isPhotoEditMode) {
                     const listing = (window.FILTERED_LISTINGS || []).find(l => String(l.id) === String(listingId)) ||
@@ -899,15 +932,19 @@ class ListingListModalManager {
                 } else {
                     await this.loadMobilePhotos(listingId);
                 }
-            } else {
-                alert('업로드 실패: ' + (data.error || '알 수 없는 오류'));
+            }
+
+            if (failCount > 0 && successCount === 0) {
+                alert('모든 사진 업로드에 실패했습니다.');
             }
         } catch (error) {
             console.error('사진 업로드 중 오류:', error);
             alert('사진 업로드 중 오류가 발생했습니다.');
         } finally {
-            uploadBtn.disabled = false;
-            uploadBtn.innerHTML = originalText;
+            if (uploadBtn) {
+                uploadBtn.disabled = false;
+                uploadBtn.innerHTML = originalText;
+            }
             event.target.value = ''; // 초기화
         }
     }
