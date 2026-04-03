@@ -269,8 +269,12 @@ async function handlePhotoUpload(listingId, event) {
     console.error('사진 업로드 중 오류:', error);
     alert('사진 업로드 중 오류가 발생했습니다.');
   } finally {
-    uploadBtn.disabled = false;
-    uploadBtn.innerHTML = originalText;
+    // 🔥 안전하게 DOM에서 다시 조회하여 버튼 상태 복원
+    const currentUploadBtn = document.getElementById('pcPhotoUploadBtn');
+    if (currentUploadBtn) {
+      currentUploadBtn.disabled = false;
+      currentUploadBtn.innerHTML = originalText;
+    }
     event.target.value = '';
   }
 }
