@@ -484,11 +484,37 @@ class ListingListModalManager {
                 ? ((fields['건물명'] || '') + (fields['동'] ? ' ' + fields['동'] : '') + (fields['호수'] ? ' ' + fields['호수'] : '') || '매물명 없음')
                 : (fields['가게명'] || fields['건물명'] || '매물명 없음');
             const statusDisplay = (typeof getStatusDisplay === 'function' ? getStatusDisplay(listing.status_raw) : listing.status_raw) || '-';
+
+            // 🆕 현황 수정 권한 체크 (대소문자 구분 없이)
+            const userRole = (localStorage.getItem("X-USER-ROLE") || "user").toLowerCase();
+            const isAdmin = userRole === "admin";
+            const isManager = userRole === "manager";
+
+            // 어드민과 매니저는 모든 매물 현황 수정 가능
+            const canEditStatus = isAdmin || isManager;
+
+            // 🆕 현황 row 조건부 렌더링 (리팩토링: 내부에서 권한 직접 체크)
+            const rowStatus = () => {
+                const statusValue = statusDisplay || '-';
+                const userRole = (localStorage.getItem("X-USER-ROLE") || "user").toLowerCase();
+                const canEditStatus = userRole === "admin" || userRole === "manager";
+
+                if (canEditStatus) {
+                    return `<div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid #f0f0f0;">
+                        <span style="font-weight: 600; color: #333; min-width: 70px; font-size: 13px;">현황</span>
+                        <span style="color: #007bff; cursor: pointer; text-decoration: underline; font-weight: bold; font-size: 13px;"
+                              onclick="changeListingStatus('${listing.id}', '${listing.status_raw || ''}')">${escapeHtml(String(statusValue))} 📝</span>
+                    </div>`;
+                } else {
+                    return row('현황', statusValue);
+                }
+            };
+
             let rows = "";
             if (isHousingDetail) {
-                rows = row('접수일', fields['접수일']) + row('지역', fields['지역']) + row('지번', fields['지번']) + row('유형', fields['유형']) + row('건물명', fields['건물명']) + row('동', fields['동']) + row('층수', fields['층수']) + row('호수', fields['호수']) + row('향', fields['향']) + row('공급/전용', formatSupplyExclDetail(fields['공급'], fields['전용'])) + row('보증금', fields['보증금']) + row('월세', fields['월세']) + row('관리비', fields['관리비']) + row('매매가', fields['매매가']) + row('방', fields['방']) + row('화장실', fields['화장실']) + row('거래유형', fields['거래유형']) + row('소유자', fields['의뢰인']) + row('소유자관계', fields['관계']) + rowPhone('연락처', fields['연락처']) + rowPhone('임차인 연락처', fields['임차인 연락처']) + row('비고', fields['비고']) + row('현황', statusDisplay) + row('지역2', fields['지역2']);
+                rows = row('접수일', fields['접수일']) + row('지역', fields['지역']) + row('지번', fields['지번']) + row('유형', fields['유형']) + row('건물명', fields['건물명']) + row('동', fields['동']) + row('층수', fields['층수']) + row('호수', fields['호수']) + row('향', fields['향']) + row('공급/전용', formatSupplyExclDetail(fields['공급'], fields['전용'])) + row('보증금', fields['보증금']) + row('월세', fields['월세']) + row('관리비', fields['관리비']) + row('매매가', fields['매매가']) + row('방', fields['방']) + row('화장실', fields['화장실']) + row('거래유형', fields['거래유형']) + row('소유자', fields['의뢰인']) + row('소유자관계', fields['관계']) + rowPhone('연락처', fields['연락처']) + rowPhone('임차인 연락처', fields['임차인 연락처']) + row('비고', fields['비고']) + rowStatus() + row('지역2', fields['지역2']);
             } else {
-                rows = row('접수일', fields['접수일']) + row('지역', fields['지역']) + row('지번', fields['지번']) + row('건물명', fields['건물명']) + row('가게명', fields['가게명']) + row('층수', fields['층수']) + row('실평수', fields['실평수'] ? fields['실평수'] + '평' : '') + row('보증금', fields['보증금']) + row('월세', fields['월세']) + row('권리금', fields['권리금']) + row('비고', fields['비고']) + row('소유자', fields['의뢰인']) + row('소유자관계', fields['비고3']) + rowPhone('연락처', fields['연락처']) + row('현황', statusDisplay) + row('담당자', fields['담당자'] || fields['manager']);
+                rows = row('접수일', fields['접수일']) + row('지역', fields['지역']) + row('지번', fields['지번']) + row('건물명', fields['건물명']) + row('가게명', fields['가게명']) + row('층수', fields['층수']) + row('실평수', fields['실평수'] ? fields['실평수'] + '평' : '') + row('보증금', fields['보증금']) + row('월세', fields['월세']) + row('권리금', fields['권리금']) + row('비고', fields['비고']) + row('소유자', fields['의뢰인']) + row('소유자관계', fields['비고3']) + rowPhone('연락처', fields['연락처']) + rowStatus() + row('담당자', fields['담당자'] || fields['manager']);
             }
             const briefingStatus = typeof getBriefingStatus === 'function' ? getBriefingStatus(listing.id) : 'none';
             const briefingText = typeof getBriefingStatusText === 'function' ? getBriefingStatusText(briefingStatus) : '';
@@ -1595,6 +1621,164 @@ class ListingListModalManager {
         this.isDragging = false;
         document.body.style.overflow = '';
     }
+
+    // ==================== 현황 상태 변경 메서드들 ====================
+
+    /**
+     * 현황 상태 변경 하단 시트 표시
+     */
+    showStatusChangeSheet(listingId, currentStatus) {
+        // 기존 시트 제거
+        const existingSheet = document.getElementById('statusChangeSheet');
+        if (existingSheet) existingSheet.remove();
+
+        const statuses = [
+            { key: '생', label: '생 (진행중)', color: '#28a745' },
+            { key: '완', label: '완 (완료)', color: '#6c757d' },
+            { key: '보류', label: '보류', color: '#ffc107' },
+            { key: '', label: '없음', color: '#17a2b8' }
+        ];
+
+        const optionsHtml = statuses.map(s => `
+            <div class="status-option" data-status="${s.key}"
+                 style="padding: 14px 16px; cursor: pointer; border-bottom: 1px solid #eee; display: flex; align-items: center; gap: 10px; ${s.key === currentStatus ? 'background: #e9ecef;' : ''}"
+                 onclick="window.listingListModalManager && window.listingListModalManager.submitMobileStatusChange('${listingId}', '${s.key}')">
+                <span style="width: 12px; height: 12px; border-radius: 50%; background: ${s.color};"></span>
+                <span style="font-size: 14px;">${s.label}</span>
+                ${s.key === currentStatus ? '<span style="margin-left: auto; color: #007bff;">✓</span>' : ''}
+            </div>
+        `).join('');
+
+        const sheetHtml = `
+            <div id="statusChangeSheet" style="position: fixed; bottom: 0; left: 0; right: 0; z-index: 10001;">
+                <!-- 배경 오버레이 -->
+                <div onclick="window.listingListModalManager && window.listingListModalManager.hideStatusChangeSheet()"
+                     style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 10000;"></div>
+
+                <!-- 시트 본체 -->
+                <div style="position: relative; z-index: 10001; background: white; border-radius: 16px 16px 0 0; box-shadow: 0 -2px 10px rgba(0,0,0,0.1); max-height: 60vh; overflow: hidden;">
+                    <!-- 드래그 핸들 -->
+                    <div style="width: 40px; height: 4px; background: #ddd; border-radius: 2px; margin: 8px auto;"></div>
+
+                    <!-- 헤더 -->
+                    <div style="padding: 12px 16px; border-bottom: 1px solid #eee; text-align: center; font-weight: bold; font-size: 16px;">
+                        현황 상태 변경
+                    </div>
+
+                    <!-- 옵션 목록 -->
+                    <div style="max-height: 300px; overflow-y: auto;">
+                        ${optionsHtml}
+                    </div>
+
+                    <!-- 취소 버튼 -->
+                    <div onclick="window.listingListModalManager && window.listingListModalManager.hideStatusChangeSheet()"
+                         style="padding: 14px; text-align: center; cursor: pointer; color: #666; font-size: 14px; background: #f8f9fa;">
+                        취소
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.body.insertAdjacentHTML('beforeend', sheetHtml);
+
+        // 진입 애니메이션
+        requestAnimationFrame(() => {
+            const sheet = document.getElementById('statusChangeSheet');
+            if (sheet) {
+                sheet.querySelector('div:last-child').style.transform = 'translateY(0)';
+            }
+        });
+    }
+
+    /**
+     * 현황 상태 변경 시트 숨기기
+     */
+    hideStatusChangeSheet() {
+        const sheet = document.getElementById('statusChangeSheet');
+        if (sheet) {
+            sheet.remove();
+        }
+    }
+
+    /**
+     * 현황 상태 변경 API 호출
+     */
+    async submitMobileStatusChange(listingId, newStatus) {
+        try {
+            // 로딩 표시
+            const sheet = document.getElementById('statusChangeSheet');
+            if (sheet) {
+                sheet.querySelectorAll('.status-option').forEach(opt => {
+                    opt.style.opacity = '0.5';
+                    opt.style.pointerEvents = 'none';
+                });
+            }
+
+            const response = await fetch(`/api/listings/${listingId}/status`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.content || ''
+                },
+                body: JSON.stringify({ status: newStatus })
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                // 토스트 표시
+                if (typeof showToast === 'function') {
+                    showToast(data.message || '현황이 변경되었습니다.', 'success');
+                }
+
+                // 시트 닫기
+                this.hideStatusChangeSheet();
+
+                // 전역 데이터 갱신
+                if (window.LISTINGS) {
+                    window.LISTINGS.forEach(i => { if (String(i.id) === String(listingId)) i.status_raw = newStatus; });
+                }
+                if (window.ORIGINAL_LIST) {
+                    window.ORIGINAL_LIST.forEach(i => { if (String(i.id) === String(listingId)) i.status_raw = newStatus; });
+                }
+                if (window.FILTERED_LISTINGS) {
+                    window.FILTERED_LISTINGS.forEach(i => { if (String(i.id) === String(listingId)) i.status_raw = newStatus; });
+                }
+                if (window._listingData) {
+                    const item = window._listingData.find(i => String(i.id) === String(listingId));
+                    if (item) item.status_raw = newStatus;
+                }
+
+                // 필터 재적용
+                if (typeof window.applyAllFilters === 'function') {
+                    window.applyAllFilters();
+                }
+
+                // 상세 화면 갱신
+                const listing = (window.FILTERED_LISTINGS || []).find(l => String(l.id) === String(listingId)) ||
+                                (window.LISTINGS || []).find(l => String(l.id) === String(listingId));
+                if (listing) {
+                    listing.status_raw = newStatus;
+                    this.currentListingId = null; // 캐시 초기화 (재렌더링 허용)
+                    this.showListingDetail(listing);
+                }
+
+            } else {
+                alert('상태 변경 실패: ' + (data.error || '알 수 없는 오류'));
+                // UI 복원
+                if (sheet) {
+                    sheet.querySelectorAll('.status-option').forEach(opt => {
+                        opt.style.opacity = '1';
+                        opt.style.pointerEvents = 'auto';
+                    });
+                }
+            }
+        } catch (error) {
+            console.error('상태 변경 중 오류:', error);
+            alert('상태 변경 중 오류가 발생했습니다.');
+            this.hideStatusChangeSheet();
+        }
+    }
 }
 
 // 모듈 로딩 시스템에서 초기화
@@ -1615,3 +1799,165 @@ if (typeof window !== 'undefined') {
         console.error('❌ ListingListModalManager 즉시 초기화 실패:', error);
     }
 }
+
+// ==================== 현황 상태 변경 전역 함수 (PC와 동일한 패턴) ====================
+
+/**
+ * 현황 상태 변경 하단 시트 표시 (모바일 전용)
+ * PC 버전과 동일한 함수명을 사용하여 일관성 유지
+ */
+async function changeListingStatus(listingId, currentStatus) {
+    // 기존 시트 제거
+    const existingSheet = document.getElementById('statusChangeSheet');
+    if (existingSheet) existingSheet.remove();
+
+    const statuses = [
+        { key: '생', label: '생 (진행중)', color: '#28a745' },
+        { key: '완', label: '완 (완료)', color: '#6c757d' },
+        { key: '보류', label: '보류', color: '#ffc107' },
+        { key: '', label: '없음', color: '#17a2b8' }
+    ];
+
+    const optionsHtml = statuses.map(s => `
+        <div class="status-option" data-status="${s.key}"
+             style="padding: 14px 16px; cursor: pointer; border-bottom: 1px solid #eee; display: flex; align-items: center; gap: 10px; ${s.key === currentStatus ? 'background: #e9ecef;' : ''}"
+             onclick="submitStatusChange('${listingId}', '${s.key}')">
+            <span style="width: 12px; height: 12px; border-radius: 50%; background: ${s.color};"></span>
+            <span style="font-size: 14px;">${s.label}</span>
+            ${s.key === currentStatus ? '<span style="margin-left: auto; color: #007bff;">✓</span>' : ''}
+        </div>
+    `).join('');
+
+    const sheetHtml = `
+        <div id="statusChangeSheet" style="position: fixed; bottom: 0; left: 0; right: 0; z-index: 10001;">
+            <!-- 배경 오버레이 -->
+            <div onclick="closeStatusChangeSheet()"
+                 style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 10000;"></div>
+
+            <!-- 시트 본체 -->
+            <div style="position: relative; z-index: 10001; background: white; border-radius: 16px 16px 0 0; box-shadow: 0 -2px 10px rgba(0,0,0,0.1); max-height: 60vh; overflow: hidden;">
+                <!-- 드래그 핸들 -->
+                <div style="width: 40px; height: 4px; background: #ddd; border-radius: 2px; margin: 8px auto;"></div>
+
+                <!-- 헤더 -->
+                <div style="padding: 12px 16px; border-bottom: 1px solid #eee; text-align: center; font-weight: bold; font-size: 16px;">
+                    현황 상태 변경
+                </div>
+
+                <!-- 옵션 목록 -->
+                <div style="max-height: 300px; overflow-y: auto;">
+                    ${optionsHtml}
+                </div>
+
+                <!-- 취소 버튼 -->
+                <div onclick="closeStatusChangeSheet()"
+                     style="padding: 14px; text-align: center; cursor: pointer; color: #666; font-size: 14px; background: #f8f9fa;">
+                    취소
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.body.insertAdjacentHTML('beforeend', sheetHtml);
+}
+
+/**
+ * 현황 상태 변경 시트 닫기
+ */
+function closeStatusChangeSheet() {
+    const sheet = document.getElementById('statusChangeSheet');
+    if (sheet) {
+        sheet.remove();
+    }
+}
+
+/**
+ * 현황 상태 변경 API 호출 (PC와 동일한 함수명)
+ */
+async function submitStatusChange(listingId, newStatus) {
+    try {
+        // 로딩 표시
+        const sheet = document.getElementById('statusChangeSheet');
+        if (sheet) {
+            sheet.querySelectorAll('.status-option').forEach(opt => {
+                opt.style.opacity = '0.5';
+                opt.style.pointerEvents = 'none';
+            });
+        }
+
+        const response = await fetch(`/api/listings/${listingId}/status`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.content || ''
+            },
+            body: JSON.stringify({ status: newStatus })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            // 토스트 표시
+            if (typeof showToast === 'function') {
+                showToast(data.message || '현황이 변경되었습니다.', 'success');
+            }
+
+            // 시트 닫기
+            closeStatusChangeSheet();
+
+            // 전역 데이터 갱신
+            if (window.LISTINGS) {
+                window.LISTINGS.forEach(i => { if (String(i.id) === String(listingId)) i.status_raw = newStatus; });
+            }
+            if (window.ORIGINAL_LIST) {
+                window.ORIGINAL_LIST.forEach(i => { if (String(i.id) === String(listingId)) i.status_raw = newStatus; });
+            }
+            if (window.FILTERED_LISTINGS) {
+                window.FILTERED_LISTINGS.forEach(i => { if (String(i.id) === String(listingId)) i.status_raw = newStatus; });
+            }
+            if (window._listingData) {
+                const item = window._listingData.find(i => String(i.id) === String(listingId));
+                if (item) item.status_raw = newStatus;
+            }
+
+            // 필터 재적용
+            if (typeof window.applyAllFilters === 'function') {
+                window.applyAllFilters();
+            }
+
+            // 상세 화면 갱신 (모바일 모달 사용 중인 경우)
+            const listing = (window.FILTERED_LISTINGS || []).find(l => String(l.id) === String(listingId)) ||
+                            (window.LISTINGS || []).find(l => String(l.id) === String(listingId));
+            if (listing && window.listingListModalManager) {
+                listing.status_raw = newStatus;
+                window.listingListModalManager.currentListingId = null; // 캐시 초기화 (재렌더링 허용)
+                window.listingListModalManager.showListingDetail(listing);
+            }
+
+            // PC 상세 패널 갱신 (PC에서 사용 중인 경우)
+            if (window.UI_STATE && window.UI_STATE.selectedItem && String(window.UI_STATE.selectedItem.id) === String(listingId)) {
+                window.UI_STATE.selectedItem.status_raw = newStatus;
+                if (typeof renderDetailPanel === 'function') renderDetailPanel(window.UI_STATE.selectedItem);
+            }
+
+        } else {
+            alert('상태 변경 실패: ' + (data.error || '알 수 없는 오류'));
+            // UI 복원
+            if (sheet) {
+                sheet.querySelectorAll('.status-option').forEach(opt => {
+                    opt.style.opacity = '1';
+                    opt.style.pointerEvents = 'auto';
+                });
+            }
+        }
+    } catch (error) {
+        console.error('상태 변경 중 오류:', error);
+        alert('상태 변경 중 오류가 발생했습니다.');
+        closeStatusChangeSheet();
+    }
+}
+
+// 전역 함수 등록
+window.changeListingStatus = changeListingStatus;
+window.submitStatusChange = submitStatusChange;
+window.closeStatusChangeSheet = closeStatusChangeSheet;

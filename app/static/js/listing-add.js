@@ -435,12 +435,17 @@ class ListingAddManager {
     }
 
     async uploadPhotos(listingId) {
-        for (const file of this.selectedFiles) {
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || "";
+        const totalFiles = this.selectedFiles.length;
+        let uploadedCount = 0;
+        let failedFiles = [];
+
+        // 병렬 업로드
+        const uploadPromises = this.selectedFiles.map(async (file, index) => {
             const uploadFd = new FormData();
             uploadFd.append('file', file);
-            
+
             try {
-                const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || "";
                 const res = await fetch(`/api/listings/${listingId}/photos`, {
                     method: 'POST',
                     headers: {
@@ -449,12 +454,36 @@ class ListingAddManager {
                     body: uploadFd
                 });
                 const uploadResult = await res.json();
-                if (!uploadResult.success) {
+
+                if (uploadResult.success) {
+                    uploadedCount++;
+                    this.updateUploadProgress(uploadedCount, totalFiles);
+                    return { success: true, file };
+                } else {
                     console.error(`사진 업로드 실패 (${file.name}):`, uploadResult.error);
+                    failedFiles.push(file.name);
+                    return { success: false, file, error: uploadResult.error };
                 }
             } catch (err) {
                 console.error(`사진 업로드 오류 (${file.name}):`, err);
+                failedFiles.push(file.name);
+                return { success: false, file, error: err.message };
             }
+        });
+
+        // 모든 업로드 완료 대기
+        await Promise.all(uploadPromises);
+
+        // 결과 알림
+        if (failedFiles.length > 0) {
+            this.showErrorMessage(`${failedFiles.length}장 업로드 실패: ${failedFiles.join(', ')}`);
+        }
+    }
+
+    updateUploadProgress(current, total) {
+        const submitBtn = document.getElementById('submitListing');
+        if (submitBtn && total > 1) {
+            submitBtn.innerText = `사진 업로드 중... (${current}/${total})`;
         }
     }
 

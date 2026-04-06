@@ -49,6 +49,15 @@ class WebhookRenewalScheduler:
             return True
 
         self.is_running = True
+
+        # 서버 시작 시 즉시 웹훅 등록 (동기화는 웹훅 수신 시 또는 Cron에서만 실행)
+        self.logger.info("서버 시작 - 웹훅 즉시 등록 시작...")
+        try:
+            self._execute_renewal()
+            self.logger.info("서버 시작 - 웹훅 등록 완료")
+        except Exception as e:
+            self.logger.error(f"서버 시작 - 웹훅 등록 실패: {e}")
+
         self.scheduler_thread = threading.Thread(target=self._run_scheduler, daemon=True)
         self.scheduler_thread.start()
 

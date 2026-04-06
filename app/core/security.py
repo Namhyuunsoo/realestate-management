@@ -34,7 +34,9 @@ class SecurityManager:
         self.sessions: Dict[str, Dict] = {}
         
     def is_ip_allowed(self, ip: str) -> bool:
-        """IP 허용 여부 확인"""
+        """IP 허용 여부 확인 (CIDR 대역 지원)"""
+        import ipaddress
+        
         # 차단된 IP 확인
         if ip in self.blocked_ips:
             block_time = self.blocked_ips[ip]
@@ -45,10 +47,29 @@ class SecurityManager:
         
         # 허용된 IP 목록 확인
         allowed_ips = current_app.config.get('ALLOWED_IPS', [])
-        if allowed_ips and ip not in allowed_ips:
-            return False
+        if not allowed_ips:
+            return True
+
+        # 1. 단순 문자열 매칭 (빠른 확인)
+        if ip in allowed_ips:
+            return True
+
+        # 2. CIDR 대역 매칭 확인
+        try:
+            client_ip = ipaddress.ip_address(ip)
+            for allowed in allowed_ips:
+                if '/' in allowed:
+                    try:
+                        if client_ip in ipaddress.ip_network(allowed, strict=False):
+                            return True
+                    except (ValueError, TypeError):
+                        continue
+        except (ValueError, TypeError):
+            # IP 형식이 아닌 경우 (예: 로컬호스트 등)
+            if ip == "localhost" or ip == "127.0.0.1" or ip == "::1":
+                return True
             
-        return True
+        return False
     
     def check_rate_limit(self, ip: str) -> bool:
         """요청 빈도 제한 확인"""
