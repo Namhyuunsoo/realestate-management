@@ -198,7 +198,7 @@ class UserService:
             from app.services.repositories import get_sheet_registry_repository
             repo = get_sheet_registry_repository()
             slots = repo.get_slots_by_user_id(user_id)
-            return [str(s["slot_id"]) for s in slots if s.get("slot_id")]
+            return [str(s.get("slot_id") or s.get("id")) for s in slots if s.get("slot_id") or s.get("id")]
         except Exception as e:
             print(f"할당된 슬롯 조회 실패: {e}")
             return []
