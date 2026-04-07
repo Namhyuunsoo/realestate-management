@@ -495,8 +495,11 @@ class ListingListModalManager {
                 assignedSlots = JSON.parse(localStorage.getItem("X-USER-ASSIGNED-SLOTS") || "[]");
             } catch (e) {}
 
-            const isAssignedManager = assignedSlots.some(s => String(s) === String(listing.slot_id)) || 
-                                     (fields['담당자'] === userName || fields['manager'] === userName || listing.manager_name === userName);
+            // 슬롯 ID 추출 (다양한 경로 대응)
+            const slotId = listing.slot_id || (listing.fields && listing.fields.slot_id);
+
+            const isAssignedManager = (slotId && assignedSlots.some(s => String(s) === String(slotId))) || 
+                                     (userName && (fields['담당자'] === userName || fields['manager'] === userName || listing.manager_name === userName));
             
             const canEditStatus = isAdmin || isAssignedManager;
 

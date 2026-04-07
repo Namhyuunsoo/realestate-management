@@ -277,11 +277,16 @@ function setCurrentUser(email) {
       // 사용자 역할 설정
       
       // 사용자 정보를 localStorage에 저장 (다른 모듈에서 사용)
-      // 사용자 정보가 있으면 로컬 스토리지에 저장
-      if (data.user && data.user.assigned_slots) {
-        localStorage.setItem('X-USER-ASSIGNED-SLOTS', JSON.stringify(data.user.assigned_slots));
-      } else {
-        localStorage.removeItem('X-USER-ASSIGNED-SLOTS');
+      if (data.user) {
+        if (data.user.assigned_slots) {
+          localStorage.setItem('X-USER-ASSIGNED-SLOTS', JSON.stringify(data.user.assigned_slots));
+        } else {
+          localStorage.removeItem('X-USER-ASSIGNED-SLOTS');
+        }
+        
+        if (data.user.name) {
+          localStorage.setItem('X-USER-NAME', data.user.name);
+        }
       }
 
       // UI 업데이트
@@ -622,11 +627,15 @@ async function checkSessionAndAutoLogin() {
           localStorage.removeItem('X-USER-ADMIN');
         }
 
-        // 담당 슬롯 정보 저장
+        // 담당 슬롯 및 이름 정보 저장
         if (data.user.assigned_slots) {
           localStorage.setItem('X-USER-ASSIGNED-SLOTS', JSON.stringify(data.user.assigned_slots));
         } else {
           localStorage.removeItem('X-USER-ASSIGNED-SLOTS');
+        }
+
+        if (data.user.name) {
+          localStorage.setItem('X-USER-NAME', data.user.name);
         }
         
         // 로그인 화면 숨기고 앱 화면 표시
