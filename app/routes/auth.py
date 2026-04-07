@@ -185,6 +185,7 @@ def login():
         session.clear()
         
         # 세션에 사용자 정보 저장
+        session.permanent = True
         session["user_id"] = user.id
         session["user_email"] = user.email
         session["user_name"] = user.name
@@ -263,6 +264,7 @@ def auto_login():
             return jsonify({"error": "유효하지 않은 사용자입니다."}), 401
         
         # 세션에 사용자 정보 저장
+        session.permanent = True
         session["user_id"] = user.id
         session["user_email"] = user.email
         session["user_name"] = user.name

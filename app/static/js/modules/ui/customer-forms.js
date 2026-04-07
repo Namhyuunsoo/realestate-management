@@ -127,7 +127,7 @@ async function submitCustomerForm(customerId) {
     if (response.ok) {
       const result = await response.json();
       console.log('고객 저장 성공:', result);
-      alert(isEditMode ? '고객정보가 수정되었습니다.' : '고객정보가 저장되었습니다.');
+      // 알림 제거: alert(isEditMode ? '고객정보가 수정되었습니다.' : '고객정보가 저장되었습니다.');
       const secondaryPanel = document.getElementById('secondaryPanel');
       if (secondaryPanel) {
         secondaryPanel.classList.add('hidden');
@@ -259,10 +259,8 @@ async function submitCustomerEditForm(customerId) {
       try {
         const result = await response.json();
         console.log('고객 수정 성공:', result);
-        // 고객정보가 수정되었습니다.
       } catch (jsonError) {
         console.log('JSON 파싱 실패, 하지만 수정은 성공:', jsonError);
-        // 고객정보가 수정되었습니다.
       }
       
       // 패널 닫기

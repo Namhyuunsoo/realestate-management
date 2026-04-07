@@ -690,13 +690,32 @@ def update_customer(cid: str, updates: dict, user_email: str) -> dict:
         print(f"❌ 고객을 찾을 수 없음: ID={cid}")
         return None
     
-    # 업데이트 적용 (빈 값이나 None인 경우 기존 값 유지)
+    # 필드명 매핑 (프론트엔드 _pref 접미사 처리)
+    mapped_updates = {}
+    field_mapping = {
+        'floor_pref': 'floor',
+        'area_pref': 'area',
+        'deposit_pref': 'deposit',
+        'rent_pref': 'rent',
+        'premium_pref': 'premium',
+        'notes': 'note'  # Excel에서는 'note'로 저장되는 경우 대응
+    }
+    
     for key, value in updates.items():
         if key in ['id', 'created_by', 'created_at']:
             continue
+            
+        target_key = field_mapping.get(key, key)
         if value is not None and value != '' and value != 'undefined':
-            df.at[customer_idx[0], key] = value
-            print(f"📝 업데이트: {key} = {value}")
+            # Excel 시트에 해당 컬럼이 있는지 확인 (있을 때만 업데이트)
+            if target_key in df.columns:
+                df.at[customer_idx[0], target_key] = value
+                print(f"📝 업데이트: {target_key} (from {key}) = {value}")
+            else:
+                # 컬럼이 없으면 새로 추가하거나 무시 (여기선 안전하게 무시 또는 추가 선택 가능)
+                # 기존 로직은 그냥 추가했으므로, 매핑되지 않은 키는 그대로 추가
+                df.at[customer_idx[0], target_key] = value
+                print(f"📝 새 컬럼 업데이트: {target_key} = {value}")
         else:
             print(f"⏭️ 빈 값 건너뛰기: {key} = {value}")
     

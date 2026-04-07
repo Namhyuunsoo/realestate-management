@@ -291,17 +291,17 @@ class SupabaseCustomerRepository(CustomerRepository):
                 update_data['region'] = region_parts[0] if len(region_parts) > 0 else ""
                 update_data['region2'] = region_parts[1] if len(region_parts) > 1 else ""
 
-            # 새로 추가된 필드들
-            if 'floor' in updates:
-                update_data['floor'] = updates['floor']
-            if 'area' in updates:
-                update_data['area'] = updates['area']
-            if 'deposit' in updates:
-                update_data['deposit'] = updates['deposit']
-            if 'rent' in updates:
-                update_data['rent'] = updates['rent']
-            if 'premium' in updates:
-                update_data['premium'] = updates['premium']
+            # 새로 추가된 필드들 (접미사 _pref도 허용)
+            if 'floor' in updates or 'floor_pref' in updates:
+                update_data['floor'] = updates.get('floor') or updates.get('floor_pref')
+            if 'area' in updates or 'area_pref' in updates:
+                update_data['area'] = updates.get('area') or updates.get('area_pref')
+            if 'deposit' in updates or 'deposit_pref' in updates:
+                update_data['deposit'] = updates.get('deposit') or updates.get('deposit_pref')
+            if 'rent' in updates or 'rent_pref' in updates:
+                update_data['rent'] = updates.get('rent') or updates.get('rent_pref')
+            if 'premium' in updates or 'premium_pref' in updates:
+                update_data['premium'] = updates.get('premium') or updates.get('premium_pref')
             if 'filter_data' in updates:
                 filter_data = updates['filter_data']
                 if isinstance(filter_data, str):

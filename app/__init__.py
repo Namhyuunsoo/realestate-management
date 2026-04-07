@@ -75,8 +75,13 @@ def create_app(config_object=None):
         from .config import load_config
         load_config(app)
 
-    # 세션 설정 (보안 강화)
-    app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=8)  # 8시간
+    # 세션 설정 (보안 강화 및 사용자 경험 개선)
+    # SESSION_TIMEOUT(초)을 기반으로 세션 수명 설정 (기본 1시간)
+    session_timeout = app.config.get('SESSION_TIMEOUT', 3600)
+    app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(seconds=session_timeout)
+    
+    # 활동 시마다 세션 만료 시간을 상시 초기화 (Sliding Window 기능)
+    app.config['SESSION_REFRESH_EACH_REQUEST'] = True
     
     # HTTPS 설정 (환경변수로 제어)
     require_https = os.getenv("REQUIRE_HTTPS", "false").lower() == "true"
