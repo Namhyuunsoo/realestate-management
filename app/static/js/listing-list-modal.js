@@ -485,19 +485,24 @@ class ListingListModalManager {
                 : (fields['가게명'] || fields['건물명'] || '매물명 없음');
             const statusDisplay = (typeof getStatusDisplay === 'function' ? getStatusDisplay(listing.status_raw) : listing.status_raw) || '-';
 
-            // 🆕 현황 수정 권한 체크 (대소문자 구분 없이)
+            // 🆕 현황 수정 권한 체크 (PC 버전 detail-panel.js와 동일하게 일원화)
             const userRole = (localStorage.getItem("X-USER-ROLE") || "user").toLowerCase();
             const isAdmin = userRole === "admin";
-            const isManager = userRole === "manager";
+            const userName = localStorage.getItem("X-USER-NAME");
+            
+            let assignedSlots = [];
+            try {
+                assignedSlots = JSON.parse(localStorage.getItem("X-USER-ASSIGNED-SLOTS") || "[]");
+            } catch (e) {}
 
-            // 어드민과 매니저는 모든 매물 현황 수정 가능
-            const canEditStatus = isAdmin || isManager;
+            const isAssignedManager = assignedSlots.some(s => String(s) === String(listing.slot_id)) || 
+                                     (fields['담당자'] === userName || fields['manager'] === userName || listing.manager_name === userName);
+            
+            const canEditStatus = isAdmin || isAssignedManager;
 
-            // 🆕 현황 row 조건부 렌더링 (리팩토링: 내부에서 권한 직접 체크)
+            // 🆕 현황 row 조건부 렌더링
             const rowStatus = () => {
                 const statusValue = statusDisplay || '-';
-                const userRole = (localStorage.getItem("X-USER-ROLE") || "user").toLowerCase();
-                const canEditStatus = userRole === "admin" || userRole === "manager";
 
                 if (canEditStatus) {
                     return `<div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid #f0f0f0;">

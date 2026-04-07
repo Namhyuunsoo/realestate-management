@@ -277,16 +277,14 @@ def update_listing_status_api(listing_id):
             # 여기서는 API 진입 시 require_user만 있으므로, 주택 수정은 관리자/매니저면 허용
             if not user.is_admin() and user.role != "manager":
                 return jsonify({"success": False, "error": "주택 매물은 매니저 또는 관리자만 수정 가능합니다."}), 403
-        else:
-            # 상가 매물은 슬롯 권한 체크 (어드민 또는 매니저가 아니면 본인 담당만 수정 가능)
-            if not user.is_manager():
-                from ..services.user_service import UserService
-                user_service = UserService()
-                assigned_slots = user_service.get_assigned_slots(user.id)
-                
-                # 슬롯 일치 여부 확인 (문자열 비교)
-                if str(slot_id) not in [str(s) for s in assigned_slots]:
-                    return jsonify({"success": False, "error": "회원님의 담당 매물이 아니므로 현황을 수정할 수 없습니다."}), 403
+        if not user.is_admin():
+            from ..services.user_service import UserService
+            user_service = UserService()
+            assigned_slots = user_service.get_assigned_slots(user.id)
+            
+            # 슬롯 일치 여부 확인 (문자열 비교)
+            if str(slot_id) not in [str(s) for s in assigned_slots]:
+                return jsonify({"success": False, "error": "회원님의 담당 매물이 아니므로 현황을 수정할 수 없습니다."}), 403
     
     result = sync_service.update_listing_status_in_sheet(db_listing_id, new_status)
     
