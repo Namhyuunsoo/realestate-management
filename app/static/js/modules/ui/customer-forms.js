@@ -86,12 +86,13 @@ async function submitCustomerForm(customerId) {
     name: document.getElementById('frmName')?.value || '',
     phone: document.getElementById('frmPhone')?.value || '',
     regions: document.getElementById('frmRegions')?.value || '',
-    floor: document.getElementById('frmFloor')?.value || '',
-    area: areaVal,
-    deposit: depositVal,
-    rent: rentVal,
-    premium: premiumVal,
+    floor_pref: document.getElementById('frmFloor')?.value || '',
+    area_pref: areaVal,
+    deposit_pref: depositVal,
+    rent_pref: rentVal,
+    premium_pref: premiumVal,
     notes: document.getElementById('frmNotes')?.value || '',
+    status: document.getElementById('frmStatus')?.value || '생',
     // 상단필터 방식의 필터데이터 저장
     filter_data: JSON.stringify(filterData),
     created_by: currentUser,
@@ -214,17 +215,17 @@ async function submitCustomerEditForm(customerId) {
   };
 
   const formData = {
-    manager: cleanValue(document.getElementById('editManager')?.value) || '',
-    name: cleanValue(document.getElementById('editName')?.value) || '',
-    phone: cleanValue(document.getElementById('editPhone')?.value) || '',
-    regions: cleanValue(document.getElementById('editRegions')?.value) || '',
-    floor_pref: cleanValue(document.getElementById('editFloor')?.value) || '',
+    manager: cleanValue(document.getElementById('editManager')?.value),
+    name: cleanValue(document.getElementById('editName')?.value),
+    phone: cleanValue(document.getElementById('editPhone')?.value),
+    regions: cleanValue(document.getElementById('editRegions')?.value),
+    floor_pref: cleanValue(document.getElementById('editFloor')?.value),
     area_pref: areaVal,
     deposit_pref: depositVal,
     rent_pref: rentVal,
     premium_pref: premiumVal,
-    notes: cleanValue(document.getElementById('editNotes')?.value) || '',
-    status: cleanValue(document.getElementById('editStatus')?.value) || '',
+    notes: cleanValue(document.getElementById('editNotes')?.value),
+    status: cleanValue(document.getElementById('editStatus')?.value),
     // 상단필터 방식의 필터데이터 저장
     filter_data: JSON.stringify(filterData)
   };

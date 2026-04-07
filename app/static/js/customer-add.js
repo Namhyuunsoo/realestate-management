@@ -309,7 +309,7 @@ class CustomerAddManager {
             name: this.formContainer.querySelector('#editName')?.value || '',
             phone: this.formContainer.querySelector('#editPhone')?.value || '',
             regions: regionsInput,
-            floor_pref: filterData.floor,
+            floor_pref: this.formContainer.querySelector('#editFloor')?.value || '',
             area_pref: areaVal,
             deposit_pref: depositVal,
             rent_pref: rentVal,

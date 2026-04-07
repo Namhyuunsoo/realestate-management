@@ -5,6 +5,7 @@ from app.core.decorators import handle_errors
 import json
 import os
 import re
+from datetime import datetime, timezone, timedelta
 from typing import Dict, Any, Optional
 
 bp = Blueprint("webhooks", __name__, url_prefix="/api/webhooks")
@@ -262,8 +263,21 @@ def handle_sheets_changed():
                 
                 # 상가 매물은 입력 시트(상가임대차 등)가 워낙 많으므로 
                 # 특정 담당자 시트가 변경되었다는 신호가 오면 즉시 동기화하도록 유동적으로 처리
-                current_app.logger.info(f"상가 매물 변경 웹훅 수신 (슬롯 {slot_id}, 담당자: {manager_name})")
-                
+                # 🚀 [방어막: 1분 디바운싱] 너무 빈번한 웹훅 요청 차단
+                last_synced_str = slot.get("last_synced_at")
+                if last_synced_str:
+                    try:
+                        # ISO 형식 문자열을 datetime 객체로 변환 (UTC 기준)
+                        last_synced = datetime.fromisoformat(last_synced_str.replace('Z', '+00:00'))
+                        now = datetime.now(timezone.utc)
+                        
+                        # 마지막 동기화 후 1분(60초)이 지나지 않았다면 스킵
+                        if now - last_synced < timedelta(seconds=60):
+                            current_app.logger.info(f"동기화 건너뜀 (디바운싱): 슬롯 {slot_id}는 방금({last_synced_str}) 동기화되었습니다. (1분 쿨타임)")
+                            return jsonify({'status': 'skipped', 'message': 'Too frequent requests, debounced.'}), 200
+                    except Exception as e:
+                        current_app.logger.warning(f"디바운싱 시간 체크 중 오류 (무시하고 진행): {e}")
+
                 # 실시간 동기화 실행
                 sync_result = service.sync_single_slot(slot_id, sheet_url, user_id, manager_name)
                 

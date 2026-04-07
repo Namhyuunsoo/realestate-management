@@ -130,9 +130,11 @@ class CommercialSyncService:
                 user_id = slot.get("user_id")
                 manager_name = slot.get("manager_name")
                 
-                # slot_id가 문자열일 수도, 숫자일 수도 있으므로 보정
+                # 🚀 [방어막: 공석 슬롯 스킵] 담당자가 없거나 비활성 상태면 스킵
                 s_id = str(slot_id)
-                if not s_id or not sheet_url: continue
+                if not s_id or not sheet_url or not user_id or manager_name == "공석":
+                    logger.info(f"슬롯 {s_id} (담당자: {manager_name})는 동기화 대상이 아닙니다. (Skip)")
+                    continue
                 
                 logger.info(f"슬롯 {s_id} (담당자: {manager_name}) 동기화 시작...")
                 slot_sync = self.sync_single_slot(s_id, sheet_url, user_id, manager_name)
@@ -391,9 +393,11 @@ class CommercialSyncService:
                 }).execute()
                 
                 # 최종 성공 상태 기록 (락 해제와 별도로 인덱싱용 업데이트)
+                # 🚀 [Bug Fix] 동기화 성공 여부와 관계없이 시도된 시각을 기록하여 웹훅 폭주 방지
+                now_str = datetime.now(timezone.utc).isoformat() if hasattr(timezone, 'utc') else datetime.now().isoformat()
                 status = "success" if res["success"] else "error"
                 self.supabase.table("sheet_registry").update({
-                    "last_synced_at": datetime.now().isoformat(),
+                    "last_synced_at": now_str,
                     "last_sync_status": status
                 }).eq("slot_id", slot_id).execute()
                 
@@ -479,7 +483,8 @@ class CommercialSyncService:
                     new_coords = geo_service.geocode_address(addr_key)
                     
                     if new_coords:
-                        coords = new_coords
+                        # 🚀 [Fix] GeocodingService는 Tuple을 반환하므로 Dict로 변환하여 저장/캐싱
+                        coords = {"lat": float(new_coords[0]), "lng": float(new_coords[1])}
                         geocoded = True
                         self.geocode_cache[addr_key] = coords
                         
@@ -621,7 +626,22 @@ class CommercialSyncService:
                 if not values:
                     raise ValueError("시트 데이터가 비어 있음")
 
-                headers = values[0]
+                # 🚀 [Bug Fix] 헤더 행 동적 탐색 (상위 10행 중 키워드 매칭)
+                header_idx = 0
+                found_header = False
+                for i, row_vals in enumerate(values[:10]):
+                    row_str = " ".join([str(v) for v in row_vals])
+                    keywords = ["지역", "지번", "층", "건물명", "보증금", "월세"]
+                    if len([k for k in keywords if k in row_str]) >= 2:
+                        header_idx = i
+                        found_header = True
+                        break
+                
+                if not found_header:
+                    logger.warning(f"시트 '{sheet_name}'에서 유효한 헤더를 찾을 수 없어 1행을 사용합니다.")
+                    header_idx = 0
+
+                headers = values[header_idx]
                 norm_headers = [self.normalize_header(h) for h in headers]
                 uuid_norm = self.normalize_header("UUID")
                 status_norm = self.normalize_header("현황")
@@ -634,9 +654,10 @@ class CommercialSyncService:
                 # 행(Row) 찾기
                 row_idx = -1
                 for i, row in enumerate(values):
-                    if i == 0: continue # 헤더 생략
-                    if len(row) > uuid_col_idx and row[uuid_col_idx] == listing_id:
-                        row_idx = i + 1 # 1-based index
+                    if i <= header_idx: continue # 헤더 이하부터 검색
+                    # 🚀 [Bug Fix] UUID 비교 시 strip() 필수 적용 (미세 공백 매칭 실패 방지)
+                    if len(row) > uuid_col_idx and row[uuid_col_idx].strip() == listing_id.strip():
+                        row_idx = i + 1 # 1-based index (gspread update_cell용)
                         break
 
                 if row_idx == -1:

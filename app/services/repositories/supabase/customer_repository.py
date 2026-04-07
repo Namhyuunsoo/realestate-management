@@ -85,12 +85,12 @@ def _map_customer_fields(payload: Dict[str, Any], user_email: str) -> Dict[str, 
         'note2': payload.get("note2", ""),
         'note3': payload.get("note3", ""),
         'status': payload.get("status", ""),
-        # 새로 추가된 필드들
-        'floor': payload.get("floor", "") or payload.get("floor_pref", ""),
-        'area': payload.get("area", "") or payload.get("size_pref", ""),
-        'deposit': payload.get("deposit", "") or payload.get("budget", ""),
-        'rent': payload.get("rent", ""),
-        'premium': payload.get("premium", ""),
+        # 새로 추가된 필드들 (프론트엔드 _pref 필드 우선 매핑)
+        'floor': payload.get("floor_pref") if payload.get("floor_pref") is not None else payload.get("floor", ""),
+        'area': payload.get("area_pref") if payload.get("area_pref") is not None else (payload.get("area") or payload.get("size_pref", "")),
+        'deposit': payload.get("deposit_pref") if payload.get("deposit_pref") is not None else (payload.get("deposit") or payload.get("budget", "")),
+        'rent': payload.get("rent_pref") if payload.get("rent_pref") is not None else payload.get("rent", ""),
+        'premium': payload.get("premium_pref") if payload.get("premium_pref") is not None else payload.get("premium", ""),
         'filter_data': filter_data,
     }
     
@@ -292,16 +292,18 @@ class SupabaseCustomerRepository(CustomerRepository):
                 update_data['region2'] = region_parts[1] if len(region_parts) > 1 else ""
 
             # 새로 추가된 필드들 (접미사 _pref도 허용)
+            # v is not None 체크를 통해 명시적으로 전달된 값(빈 문자열 포함)을 수용함
             if 'floor' in updates or 'floor_pref' in updates:
-                update_data['floor'] = updates.get('floor') or updates.get('floor_pref')
+                update_data['floor'] = updates.get('floor_pref') if 'floor_pref' in updates else updates.get('floor')
             if 'area' in updates or 'area_pref' in updates:
-                update_data['area'] = updates.get('area') or updates.get('area_pref')
+                update_data['area'] = updates.get('area_pref') if 'area_pref' in updates else updates.get('area')
             if 'deposit' in updates or 'deposit_pref' in updates:
-                update_data['deposit'] = updates.get('deposit') or updates.get('deposit_pref')
+                update_data['deposit'] = updates.get('deposit_pref') if 'deposit_pref' in updates else updates.get('deposit')
             if 'rent' in updates or 'rent_pref' in updates:
-                update_data['rent'] = updates.get('rent') or updates.get('rent_pref')
+                update_data['rent'] = updates.get('rent_pref') if 'rent_pref' in updates else updates.get('rent')
             if 'premium' in updates or 'premium_pref' in updates:
-                update_data['premium'] = updates.get('premium') or updates.get('premium_pref')
+                update_data['premium'] = updates.get('premium_pref') if 'premium_pref' in updates else updates.get('premium')
+            
             if 'filter_data' in updates:
                 filter_data = updates['filter_data']
                 if isinstance(filter_data, str):
@@ -314,8 +316,8 @@ class SupabaseCustomerRepository(CustomerRepository):
                     filter_data = {}
                 update_data['filter_data'] = filter_data
 
-            # 빈 값이나 None인 경우 제외
-            update_data = {k: v for k, v in update_data.items() if v is not None and v != '' and v != 'undefined'}
+            # 빈 값(empty string)이나 0 등 유효한 값은 포함시키고, None이나 'undefined' 문자열만 필터링
+            update_data = {k: v for k, v in update_data.items() if v is not None and v != 'undefined'}
 
             if not update_data:
                 # 업데이트할 데이터가 없으면 조회만
