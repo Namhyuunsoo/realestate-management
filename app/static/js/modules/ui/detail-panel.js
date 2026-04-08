@@ -73,8 +73,10 @@ async function renderDetailPanel(item) {
     console.error("담당 슬롯 정보 파싱 실패:", e);
   }
   
-  const isAssignedManager = assignedSlots.some(s => String(s) === String(item.slot_id)) || 
-                             (item.fields && (item.fields['담당자'] === localStorage.getItem("X-USER-NAME") || item.fields['manager'] === localStorage.getItem("X-USER-NAME")));
+  const userName = localStorage.getItem("X-USER-NAME");
+  const slotId = item.slot_id || (fields && fields.slot_id);
+  const isAssignedManager = (slotId && assignedSlots.some(s => String(s) === String(slotId))) || 
+                             (userName && (fields['담당자'] === userName || fields['manager'] === userName || item.manager_name === userName));
   const canEditStatus = isAdmin || isAssignedManager;
 
   const sensitiveFields = ['비고', '연락처', '비고3'];
