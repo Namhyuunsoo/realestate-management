@@ -602,13 +602,26 @@ async function checkSessionAndAutoLogin() {
   
   try {
     // 서버에 세션 상태 확인 요청
-    const response = await fetch('/api/auth/check-session', {
+    let response = await fetch('/api/auth/check-session', {
       method: 'GET',
       credentials: 'include',
       headers: {
         'Content-Type': 'application/json'
       }
     });
+    
+    // 503(서버 일시 오류) 시 1회 재시도
+    if (response.status === 503) {
+      console.warn("⚠️ 세션 체크 서버 일시 오류, 1초 후 재시도...");
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      response = await fetch('/api/auth/check-session', {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+    }
     
     if (response.ok) {
       const data = await response.json();

@@ -223,7 +223,13 @@ def check_session():
         if 'user_id' in session:
             user_service = get_user_service()
             if user_service:
-                user = user_service.get_user_by_id(session['user_id'])
+                try:
+                    user = user_service.get_user_by_id(session['user_id'])
+                except Exception as e:
+                    # DB 에러 시: 세션은 존재하지만 DB를 확인할 수 없음 → 503
+                    current_app.logger.error(f"세션 확인 중 DB 오류: {str(e)}")
+                    return jsonify({"logged_in": False, "error": "서버 일시 오류", "retry": True}), 503
+                
                 if user and user.is_active():
                     current_app.logger.info(f"세션 확인 성공: {user.email}")
                     return jsonify({
@@ -243,7 +249,7 @@ def check_session():
         
     except Exception as e:
         current_app.logger.error(f"세션 확인 중 오류 발생: {str(e)}")
-        return jsonify({"logged_in": False, "user": None, "error": str(e)})
+        return jsonify({"logged_in": False, "error": "서버 일시 오류", "retry": True}), 503
 
 @bp.post("/auto-login")
 @handle_errors()
@@ -311,9 +317,16 @@ def get_current_user():
         return jsonify({"error": "로그인이 필요합니다."}), 401
     
     user_service = get_user_service()
-    user = user_service.get_user_by_id(user_id)
+    
+    try:
+        user = user_service.get_user_by_id(user_id)
+    except Exception as e:
+        # 시스템 오류(DB 연결 실패 등) → 세션 유지, 503 반환
+        current_app.logger.error(f"/api/auth/me DB 조회 오류: {str(e)}")
+        return jsonify({"error": "일시적인 서버 오류입니다."}), 503
     
     if not user or not user.is_active():
+        # DB 조회 성공 후 사용자가 없거나 비활성 → 정당한 세션 파기
         session.clear()
         return jsonify({"error": "유효하지 않은 세션입니다."}), 401
     

@@ -37,13 +37,15 @@ def require_user():
                 
                 current_user = user_service.get_user_by_id(user_id)
                 if not current_user or not current_user.is_active():
+                    # DB 조회 성공 후 사용자가 없거나 비활성 → 정당한 세션 파기
                     session.clear()
                     log_security_event('INVALID_SESSION', f'Invalid session {user_id} from IP {ip}')
                     return jsonify({"error": "유효하지 않은 세션입니다."}), 401
             except Exception as e:
-                log_security_event('SESSION_ERROR', f'Session error for {user_id} from IP {ip}: {str(e)}')
-                session.clear()
-                return jsonify({"error": "세션 오류가 발생했습니다."}), 401
+                # 시스템 오류(DB 연결 실패 등) → 세션은 유지하고 503 반환
+                # session.clear() 호출 금지: 일시적 오류로 멀쩡한 세션을 파기하면 안 됨
+                log_security_event('SESSION_ERROR', f'DB error during session check for {user_id} from IP {ip}: {str(e)}')
+                return jsonify({"error": "일시적인 서버 오류입니다. 잠시 후 다시 시도해주세요."}), 503
             
             # 사용자 객체를 request에 추가하여 중복 조회 방지
             request.current_user = current_user

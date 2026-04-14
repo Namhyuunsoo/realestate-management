@@ -27,7 +27,7 @@ class SupabaseUserRepository(UserRepository):
             return None
         except Exception as e:
             if has_app_context() and current_app: current_app.logger.error(f"Supabase get_user_by_email 오류: {e}")
-            return None
+            raise  # DB 오류를 상위로 전파하여 '사용자 없음'과 구분
 
     def get_user_by_id(self, user_id: str) -> Optional[User]:
         try:
@@ -37,7 +37,7 @@ class SupabaseUserRepository(UserRepository):
             return None
         except Exception as e:
             if has_app_context() and current_app: current_app.logger.error(f"Supabase get_user_by_id 오류: {e}")
-            return None
+            raise  # DB 오류를 상위로 전파하여 '사용자 없음'과 구분
 
     def get_all_users(self, include_inactive: bool = False) -> List[User]:
         try:

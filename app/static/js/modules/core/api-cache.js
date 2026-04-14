@@ -83,18 +83,31 @@ async function cachedFetch(url, options = {}) {
     }
   };
 
-  // API 호출
-  const response = await fetch(url, mergedOptions);
+  // API 호출 (1회 재시도 포함)
+  let response = await fetch(url, mergedOptions);
+
+  // 401 또는 503 시: 일시적 서버 오류일 수 있으므로 1회 재시도
+  if (response.status === 401 || response.status === 503) {
+    console.warn(`⚠️ API 응답 ${response.status}, 1회 재시도 중: ${url}`);
+    // 짧은 대기 후 재시도 (서버 복구 여유)
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    response = await fetch(url, mergedOptions);
+  }
 
   if (!response.ok) {
     if (response.status === 401) {
-      // 세션 만료 처리 (로그인 페이지로 이동)
+      // 재시도 후에도 401 → 진짜 세션 만료
       if (!window._isRedirectingToLogin) {
         window._isRedirectingToLogin = true;
         alert('세션이 만료되었습니다. 다시 로그인해주세요.');
         window.location.href = '/login';
       }
       throw new Error('Unauthorized');
+    }
+    if (response.status === 503) {
+      // 재시도 후에도 503 → 서버 일시 장애 (세션은 유효할 수 있음)
+      console.error('⚠️ 서버 일시 오류 (503), 세션은 유지됩니다.');
+      throw new Error('서버 일시 오류');
     }
     throw new Error(`API 실패: ${response.status}`);
   }
