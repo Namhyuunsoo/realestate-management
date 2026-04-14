@@ -25,6 +25,8 @@ class AppConfig:
     SECRET_KEY: str = os.getenv("SECRET_KEY", secrets.token_hex(32))
     JSON_AS_ASCII: bool = False
     JSON_SORT_KEYS: bool = False
+    SESSION_COOKIE_NAME: str = os.getenv("SESSION_COOKIE_NAME", "re_mgmt_session_secure")
+
     
     # 사용자 권한 설정
     ALLOWED_USERS: List[str] = field(default_factory=lambda: parse_csv_env(os.getenv("ALLOWED_USERS", "")))
@@ -122,6 +124,8 @@ def load_config(app):
     app.config['SECRET_KEY'] = config.SECRET_KEY
     app.config['JSON_AS_ASCII'] = config.JSON_AS_ASCII
     app.config['JSON_SORT_KEYS'] = config.JSON_SORT_KEYS
+    app.config['SESSION_COOKIE_NAME'] = config.SESSION_COOKIE_NAME
+
     
     # 사용자 권한 설정
     app.config['ALLOWED_USERS'] = config.ALLOWED_USERS

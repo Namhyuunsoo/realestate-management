@@ -83,11 +83,18 @@ def create_app(config_object=None):
     # 활동 시마다 세션 만료 시간을 상시 초기화 (Sliding Window 기능)
     app.config['SESSION_REFRESH_EACH_REQUEST'] = True
     
-    # HTTPS 설정 (환경변수로 제어)
+    # HTTPS 및 쿠키 설정
+    # Vercel은 항상 HTTPS이므로 Secure 쿠키 강제 적용 (SameSite 이슈 방지)
+    is_prod = os.environ.get("VERCEL", "0") == "1"
     require_https = os.getenv("REQUIRE_HTTPS", "false").lower() == "true"
-    app.config['SESSION_COOKIE_SECURE'] = require_https  # HTTPS 환경에서만 Secure 쿠키
-    app.config['SESSION_COOKIE_HTTPONLY'] = True  # XSS 방지
-    app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'  # CSRF 방지 완화 (Vercel 교차 도메인 및 401 이슈 대응)
+    
+    app.config['SESSION_COOKIE_SECURE'] = is_prod or require_https
+    app.config['SESSION_COOKIE_HTTPONLY'] = True
+    app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+    # 고유 쿠키 이름 적용 (config에서 로드됨)
+    if 'SESSION_COOKIE_NAME' not in app.config:
+        app.config['SESSION_COOKIE_NAME'] = 're_mgmt_session_secure'
+
     
     if require_https:
         print("🔒 HTTPS 모드 활성화 - Secure 쿠키 사용")

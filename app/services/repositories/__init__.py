@@ -48,15 +48,28 @@ def _get_supabase_client() -> Optional[Any]:
     return None
 
 def get_user_repository() -> UserRepository:
-    client = _get_supabase_client()
-    if client:
-        try:
-            return SupabaseUserRepository(client)
-        except Exception as e:
-            if has_app_context() and current_app:
-                current_app.logger.error(f"SupabaseUserRepository 초기화 실패: {e}")
+    # Supabase 사용 여부 확인
+    use_supabase = os.getenv('USE_SUPABASE_USERS', 'false').strip().lower() in ('true', '1')
     
+    if use_supabase:
+        client = _get_supabase_client()
+        if client:
+            try:
+                return SupabaseUserRepository(client)
+            except Exception as e:
+                if has_app_context() and current_app:
+                    current_app.logger.error(f"SupabaseUserRepository 초기화 실패: {e}")
+                raise RuntimeError(f"SupabaseUserRepository 초기화 실패: {e}")
+        else:
+            # Vercel 환경에서 파일 저장소로 넘어가면 휘발성 데이터로 인해 세션이 파기됨
+            error_msg = "Supabase 사용 설정이 되어있으나 클라이언트를 생성할 수 없습니다. 환경변수를 확인하세요."
+            if has_app_context() and current_app:
+                current_app.logger.error(error_msg)
+            raise RuntimeError(error_msg)
+    
+    # Supabase를 사용하지 않을 때만 파일 저장소 반환
     return FileUserRepository(data_dir=AppConfig.DATA_DIR)
+
 
 def get_customer_repository() -> CustomerRepository:
     client = _get_supabase_client()
