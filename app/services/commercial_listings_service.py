@@ -84,13 +84,12 @@ def _load_sheet_registry() -> Dict[str, Dict[str, Any]]:
         
         for slot in slots:
             uid = slot.get("user_id")
+            sid = slot.get("slot_id") or slot.get("id")
             if uid:
                 mapping[uid] = {
                     "manager_name": slot.get("manager_name"),
-                    "slot_id": slot.get("id")
+                    "slot_id": sid
                 }
-            # 슬롯 ID 기반 매핑도 추가 (동기화 시 slot_X 형태로 저장될 경우 대비)
-            sid = slot.get("id")
             if sid:
                 mapping[f"slot_{sid}"] = {
                     "manager_name": slot.get("manager_name"),

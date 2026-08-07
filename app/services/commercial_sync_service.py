@@ -5,7 +5,7 @@ import json
 import re
 import logging
 from typing import List, Dict, Any, Optional
-from datetime import datetime
+from datetime import datetime, timezone
 from dotenv import load_dotenv
 from supabase import create_client, Client
 import gspread
@@ -132,8 +132,11 @@ class CommercialSyncService:
                 
                 # 🚀 [방어막: 공석 슬롯 스킵] 담당자가 없거나 비활성 상태면 스킵
                 s_id = str(slot_id)
-                if not s_id or not sheet_url or not user_id or manager_name == "공석":
-                    logger.info(f"슬롯 {s_id} (담당자: {manager_name})는 동기화 대상이 아닙니다. (Skip)")
+                if not s_id or not sheet_url or manager_name == "공석":
+                    if manager_name == "공석":
+                        logger.info(f"슬롯 {s_id} (공석): 싱크 스킵 (데이터 보호)")
+                    else:
+                        logger.info(f"슬롯 {s_id}: 필수 정보 없음 - Skip")
                     continue
                 
                 logger.info(f"슬롯 {s_id} (담당자: {manager_name}) 동기화 시작...")
@@ -158,8 +161,15 @@ class CommercialSyncService:
             "success": False,
             "total_count": 0,
             "sheets": {},
-            "errors": []
+            "errors": [],
+            "geocode_updates": 0
         }
+        # 후처리 지오코딩 대상: (table_name, record_id, address_full)
+        geocode_pending: List[tuple] = []
+        
+        # 지오코딩 캐시 미리 로드 (API 호출 방지)
+        if not self.geocode_cache:
+            self._load_geocode_cache()
         
         # 동기화 작업 중복 실행 방지 (DB 레벨 자가 복구 락 사용)
         import uuid
@@ -184,24 +194,28 @@ class CommercialSyncService:
             res["errors"].append(f"RPC Lock Error: {e}")
             return res
 
-        # === [전체 매물 DB 캐싱 (중복 UUID 지능형 식별 목적)] ===
-        logger.info(f"🔄 슬롯 {slot_id} 기존 DB 매물 주소록 캐싱 중...")
+        # === [전체 매물 DB 캐싱 (id → {address_full, coords}) — per-row 쿼리 제거] ===
+        logger.info(f"🔄 슬롯 {slot_id} 기존 DB 매물 캐싱 중 (id, address_full, coords)...")
         db_existing = {}
+        db_coords = {}
         for t_name in SHEET_CONFIG.values():
             db_existing[t_name] = {}
             try:
                 p_size = 1000
                 p_num = 0
                 while True:
-                    db_cache_res = self.supabase.table(t_name).select("id, address_full").eq("slot_id", slot_id).range(p_num * p_size, (p_num + 1) * p_size - 1).execute()
+                    db_cache_res = self.supabase.table(t_name).select("id, address_full, coords").eq("slot_id", slot_id).range(p_num * p_size, (p_num + 1) * p_size - 1).execute()
                     if not db_cache_res.data: break
                     for r in db_cache_res.data:
                         db_existing[t_name][r["id"]] = r.get("address_full")
+                        rc = r.get("coords")
+                        if rc and isinstance(rc, dict) and rc.get("lat") and rc.get("lng"):
+                            db_coords[r["id"]] = rc
                     if len(db_cache_res.data) < p_size: break
                     p_num += 1
             except Exception as e:
                 logger.error(f"DB 초기 캐싱 실패 ({t_name}): {e}")
-        logger.info("✅ DB 캐싱 완료")
+        logger.info(f"✅ DB 캐싱 완료 (existing={sum(len(v) for v in db_existing.values())}, coords={len(db_coords)})")
 
         try:
             m = re.search(r"/d/([a-zA-Z0-9-_]+)", sheet_url)
@@ -281,8 +295,18 @@ class CommercialSyncService:
                         from collections import defaultdict
                         uuid_groups = defaultdict(list)
                         
+                        # DB 캐시 맵 (id → {address_full, coords}) 전달
+                        target_table_name = SHEET_CONFIG.get(sheet_name, "listings_rent")
+                        db_lookup = db_existing.get(target_table_name, {})
+                        db_coords_lookup = db_coords  # 전체 coords
+
                         for idx, row in enumerate(data_rows, start=header_idx + 2):
-                            record = self._process_row_v3(slot_id, sheet_name, idx, row, header_map, user_id, manager_name)
+                            record = self._process_row_v3(
+                                slot_id, sheet_name, idx, row, header_map,
+                                user_id, manager_name,
+                                db_existing_map=db_lookup,
+                                db_coords_map=db_coords_lookup
+                            )
                             if record: uuid_groups[record["id"]].append(record)
 
                         # 지능형 중복 식별 (Smart Resolution)
@@ -342,8 +366,14 @@ class CommercialSyncService:
                             self.supabase.table(table_name).upsert(batch_data).execute()
                             logger.info(f"슬롯 {slot_id} ({sheet_name}) Upsert 완료: {len(batch_data)}개")
 
-                        # 🚀 [Ghost Record Cleanup] 시트에서 사라진 모든 데이터 정리
-                        # 1. 500건 제약을 패치하여 페이지네이션으로 전수 ID 추출
+                            # 후처리 지오코딩 대상 수집 (주소 있고 coords 없는 것)
+                            for item in batch_data:
+                                if item.get("address_full") and not item.get("coords"):
+                                    geocode_pending.append((table_name, item["id"], item["address_full"]))
+
+# 🚀 [Ghost Record Cleanup] 시트에서 사라진 데이터 정리
+                        # 다른 슬롯에 같은 UUID가 있으면(=이관 완료) 안전하게 삭제
+                        # 다른 슬롯에 없으면(=고아 데이터) 삭제하지 않고 경고만 남김
                         db_ids = set()
                         p_size = 1000
                         p_num = 0
@@ -353,35 +383,95 @@ class CommercialSyncService:
                             db_ids.update(r["id"] for r in db_res.data)
                             if len(db_res.data) < p_size: break
                             p_num += 1
-                        
-                        # 2. 삭제 대상 선별 (DB에는 있고 시트에는 없는 ID)
-                        # current_ids가 비어있으면 해당 슬롯의 모든 데이터가 삭제됨 (정상 동작)
-                        to_delete = list(db_ids - set(current_ids))
-                        if to_delete:
-                            # 🔥 [Fix] 매물 삭제 전 사진 cascade 삭제 (Storage + DB)
-                            try:
-                                from .storage_service import storage_service
-                                deleted_photos = storage_service.delete_photos_by_listing_ids(to_delete)
-                                if deleted_photos > 0:
-                                    logger.info(f"🗑️ 슬롯 {slot_id} ({sheet_name}): 사진 {deleted_photos}개 cascade 삭제 완료")
-                            except Exception as photo_err:
-                                logger.warning(f"⚠️ 슬롯 {slot_id} ({sheet_name}): 사진 cascade 삭제 실패 (매물 삭제는 계속 진행): {photo_err}")
-                                
-                            for i in range(0, len(to_delete), 100):
-                                chunk = to_delete[i:i+100]
-                                self.supabase.table(table_name).delete().in_("id", chunk).execute()
-                            logger.info(f"🗑️ 슬롯 {slot_id} ({sheet_name}) 고스트 데이터 {len(to_delete)}개 정리 완료")
+
+                        to_remove = list(db_ids - set(current_ids))
+                        if to_remove:
+                            # 다른 슬롯에 이관된 UUID인지 확인
+                            safe_to_delete = []
+                            orphan_ids = []
+                            for i in range(0, len(to_remove), 500):
+                                chunk = to_remove[i:i+500]
+                                check_res = self.supabase.table(table_name).select("id").in_("id", chunk).neq("slot_id", slot_id).execute()
+                                reassigned_ids = {r["id"] for r in (check_res.data or [])}
+                                for rid in chunk:
+                                    if rid in reassigned_ids:
+                                        safe_to_delete.append(rid)
+                                    else:
+                                        orphan_ids.append(rid)
+
+                            # 이관 완료: 이전 슬롯에서만 삭제 (사진은 유지)
+                            if safe_to_delete:
+                                for i in range(0, len(safe_to_delete), 100):
+                                    chunk = safe_to_delete[i:i+100]
+                                    self.supabase.table(table_name).delete().in_("id", chunk).eq("slot_id", slot_id).execute()
+                                logger.info(f"🔄 슬롯 {slot_id} ({sheet_name}): 이관 완료 데이터 {len(safe_to_delete)}개 정리")
+
+                            # 고아 데이터: 삭제하지 않고 경고만
+                            if orphan_ids:
+                                logger.warning(f"⚠️ 슬롯 {slot_id} ({sheet_name}): 고아 데이터 {len(orphan_ids)}개 - 다른 슬롯에도 없어 삭제 스킵 (수동 확인 필요): {orphan_ids[:5]}...")
                     except Exception as sync_err:
                         logger.error(f"슬롯 {slot_id} 동기화/클린업 중 치명적 오류: {sync_err}")
                         res["errors"].append(str(sync_err))
 
-                        res["sheets"][sheet_name] = len(batch_data)
-                        res["total_count"] += len(batch_data)
-                        
+                    # sheets/total_count 기록 (정상 종료 시)
+                    try:
+                        bd_len = len(batch_data)
+                    except Exception:
+                        bd_len = 0
+                    res["sheets"][sheet_name] = bd_len
+                    res["total_count"] += bd_len
+
                 except Exception as e:
                     res["errors"].append(f"시트 {sheet_name} 처리 실패: {e}")
             
             res["success"] = True
+
+            # === [후처리 지오코딩] DB upsert 완료 후, coords가 없는 매물만 지오코딩 ===
+            if geocode_pending:
+                logger.info(f"🗺️ 후처리 지오코딩 시작: {len(geocode_pending)}건")
+                try:
+                    from .geocoding_service import GeocodingService
+                    geo_service = GeocodingService()
+                    geo_updates = []
+                    for t_name, rec_id, addr in geocode_pending:
+                        try:
+                            new_coords = geo_service.geocode_address(addr)
+                            if new_coords:
+                                coords = {"lat": float(new_coords[0]), "lng": float(new_coords[1])}
+                                self.geocode_cache[addr] = coords
+                                geo_updates.append({"id": rec_id, "coords": coords})
+                                # DB 지오코딩 캐시 테이블도 갱신
+                                try:
+                                    self.supabase.table("address_geocode_cache").upsert({
+                                        "address_full": addr,
+                                        "lat": coords["lat"],
+                                        "lng": coords["lng"]
+                                    }, on_conflict="address_full").execute()
+                                except Exception:
+                                    pass
+                        except Exception as geo_err:
+                            logger.error(f"지오코딩 실패 ({addr}): {geo_err}")
+
+                    # coords 업데이트를 테이블별로 배치
+                    if geo_updates:
+                        # 테이블별로 그룹화
+                        from collections import defaultdict
+                        table_groups = defaultdict(list)
+                        for t_name, rec_id, addr in geocode_pending:
+                            for gu in geo_updates:
+                                if gu["id"] == rec_id:
+                                    table_groups[t_name].append(gu)
+                                    break
+                        for t_name, updates in table_groups.items():
+                            try:
+                                self.supabase.table(t_name).upsert(updates, on_conflict="id").execute()
+                            except Exception as up_err:
+                                logger.error(f"coords 업데이트 실패 ({t_name}): {up_err}")
+                        logger.info(f"✅ 후처리 지오코딩 완료: {len(geo_updates)}/{len(geocode_pending)}건 좌표 획득")
+                        res["geocode_updates"] = len(geo_updates)
+                except Exception as geo_fatal:
+                    logger.error(f"후처리 지오코딩 중 치명적 오류: {geo_fatal}")
+                    res["errors"].append(f"Geocoding error: {geo_fatal}")
         except Exception as e:
             res["errors"].append(f"Fatal Error: {e}")
         finally:
@@ -408,22 +498,21 @@ class CommercialSyncService:
         return res
 
     def _process_row_v3(self, slot_id: str, sheet_name: str, row_idx: int, row: List[str], header_map: Dict[str, int], 
-                       user_id: Optional[str] = None, manager_name: Optional[str] = None) -> Optional[Dict[str, Any]]:
-        """UUID 우선, 없으면 슬롯 기반 고유 ID를 사용하는 개선된 행 처리 로직"""
+                       user_id: Optional[str] = None, manager_name: Optional[str] = None,
+                       db_existing_map: Optional[Dict[str, str]] = None,
+                       db_coords_map: Optional[Dict[str, Any]] = None) -> Optional[Dict[str, Any]]:
+        """UUID 우선, 없으면 새로 생성. per-row DB 쿼리/지오코딩 제거 — 메모리 캐시로 대체."""
         try:
             fields = {}
             for h, i in header_map.items():
                 fields[h] = row[i].strip() if i < len(row) else ""
             
-            # UUID 확인 (최우선)
             listing_uuid = fields.get("UUID", "").strip()
             
-            # 🚀 [Legacy ID Filtering] 만약 ID가 레거시 형식이면(c_..._slot...) 무시하고 새로 생성하도록 유도
             if listing_uuid and listing_uuid.startswith("c_") and "_slot" in listing_uuid:
-                logger.info(f"♻️ 레거시 ID 감지 ({listing_uuid}): UUID로 강제 전환을 위해 무시 처리함")
+                logger.info(f"♻️ UUID 강제 전환을 위해 무시: {listing_uuid}")
                 listing_uuid = ""
 
-            # 주소 추출
             region2 = fields.get("지역2", fields.get("시군구", ""))
             region = fields.get("지역", "")
             lot = fields.get("지번", "")
@@ -433,76 +522,26 @@ class CommercialSyncService:
                 record_id = listing_uuid
                 is_new_uuid = False
             else:
-                # 🚀 [UUID Auto-Generation] UUID가 없으면 새로 생성하여 박제 준비
                 import uuid
                 listing_uuid = str(uuid.uuid4())
                 record_id = listing_uuid
                 is_new_uuid = True
-                # fields에도 반영하여 저장 시 함께 들어가게 함
                 fields["UUID"] = listing_uuid
-            
-            # 지오코딩 처리 (주소 변경 시 강제 갱신 로직 포함)
-            addr_key = address_full.strip()
-            
-            # 기존 DB 레코드 확인 (주소 변경 여부 판단 및 누락된 좌표 보충용)
-            existing_record = None
-            try:
-                # SHEET_CONFIG를 참조하여 정확한 테이블명 가져오기 (결정론적 ID 매칭)
-                target_table = SHEET_CONFIG.get(sheet_name, "listings_rent")
-                exist_res = self.supabase.table(target_table).select("address_full, coords").eq("id", record_id).execute()
-                if exist_res.data:
-                    existing_record = exist_res.data[0]
-            except Exception:
-                pass
 
+            # 좌표: DB 캐시에서 먼저, 그 다음 지오코딩 캐시에서, 없으면 None (지오코딩은 후처리)
             coords = None
             geocoded = False
-            
-            # 🚀 [강제 갱신 조건]: 기존 주소와 현재 주소가 다른 경우 '무조건' 새로 지오코딩
-            force_re_geocode = False
-            if addr_key and existing_record and existing_record.get("address_full") != addr_key:
-                logger.info(f"🔄 주소 변경 감지 ({existing_record.get('address_full')} -> {addr_key}): 지오코딩 강제 갱신 수행")
-                force_re_geocode = True
 
-            # 🚀 [보충 조건]: 기존에 주소는 있는데 좌표가 없는 경우에도 재시도 대상으로 간주
-            if addr_key and existing_record and not existing_record.get("coords"):
-                logger.info(f"📍 좌표 누락 매물 재지오코딩 시도: {addr_key}")
-                force_re_geocode = True
-
-            # 강제 갱신이 아닐 때만 캐시 확인
-            if not force_re_geocode and addr_key:
-                coords = self.geocode_cache.get(addr_key)
-                if coords:
-                    geocoded = True
-            
-            # 캐시가 없거나 강제 갱신이 필요한 경우 실시간 지오코딩 수행
-            if not coords and addr_key:
-                try:
-                    from .geocoding_service import GeocodingService
-                    geo_service = GeocodingService()
-                    new_coords = geo_service.geocode_address(addr_key)
-                    
-                    if new_coords:
-                        # 🚀 [Fix] GeocodingService는 Tuple을 반환하므로 Dict로 변환하여 저장/캐싱
-                        coords = {"lat": float(new_coords[0]), "lng": float(new_coords[1])}
+            if db_coords_map and record_id in db_coords_map:
+                coords = db_coords_map[record_id]
+                geocoded = True
+            else:
+                addr_key = address_full.strip()
+                if addr_key and self.geocode_cache:
+                    c = self.geocode_cache.get(addr_key)
+                    if c:
+                        coords = c
                         geocoded = True
-                        self.geocode_cache[addr_key] = coords
-                        
-                        # DB 캐시 저장
-                        try:
-                            self.supabase.table("address_geocode_cache").upsert({
-                                "address_full": addr_key,
-                                "lat": coords["lat"],
-                                "lng": coords["lng"],
-                                "last_updated": datetime.now().isoformat()
-                            }).execute()
-                            logger.info(f"✨ 지오코딩 성공 및 캐시 저장: {addr_key}")
-                        except Exception as cache_err:
-                            logger.error(f"지오코딩 캐시 저장 실패: {cache_err}")
-                    else:
-                        logger.warning(f"⚠️ 지오코딩 실패 (결과 없음): {addr_key}")
-                except Exception as geo_err:
-                    logger.error(f"지오코딩 도중 오류 발생 ({addr_key}): {geo_err}")
 
             return {
                 "id": record_id,
@@ -513,7 +552,7 @@ class CommercialSyncService:
                 "address_full": address_full or None,
                 "address_comp": {"region2": region2, "region": region, "lot": lot},
                 "fields": fields,
-                "status_raw": fields.get("현황", "").strip() if fields.get("현황") else "",  # 🚀 현황 필드 공백 제거 클렌징
+                "status_raw": fields.get("현황", "").strip() if fields.get("현황") else "",
                 "coords": coords,
                 "geocoded": geocoded,
                 "is_new_uuid": is_new_uuid

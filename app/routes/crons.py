@@ -6,6 +6,17 @@ from app.core.decorators import handle_errors
 
 bp = Blueprint("crons", __name__, url_prefix="/api/crons")
 
+def _verify_cron_secret():
+    """Vercel Cron 인증 검증 (공통 로직)"""
+    target_secret = os.getenv('CRON_SECRET')
+    auth_header = request.headers.get('Authorization')
+    
+    if target_secret:
+        if not auth_header or auth_header != f"Bearer {target_secret}":
+            current_app.logger.warning("Vercel Cron 엔드포인트 접근이 거부되었습니다. (토큰 불일치)")
+            return False
+    return True
+
 @bp.route("/sync-all", methods=['GET', 'POST'])
 @handle_errors()
 def sync_all_data():
@@ -13,15 +24,8 @@ def sync_all_data():
     Vercel Cron Job 용 데이터 동기화 엔드포인트
     일정 시간마다 실행되어 전체 시트/DB 동기화를 백그라운드에서 수행
     """
-    # Vercel Cron 요청 인증 확인
-    # Vercel 환경 변수인 CRON_SECRET과 Authorization Bearer 요청 헤더를 비교
-    target_secret = os.getenv('CRON_SECRET')
-    auth_header = request.headers.get('Authorization')
-    
-    if target_secret:
-        if not auth_header or auth_header != f"Bearer {target_secret}":
-            current_app.logger.warning("Vercel Cron 엔드포인트 접근이 거부되었습니다. (토큰 불일치)")
-            return jsonify({'error': 'Unauthorized', 'message': 'Invalid Cron Secret'}), 401
+    if not _verify_cron_secret():
+        return jsonify({'error': 'Unauthorized', 'message': 'Invalid Cron Secret'}), 401
     
     current_app.logger.info("정기 데이터 동기화 Cron이 실행되었습니다.")
     
@@ -68,3 +72,51 @@ def sync_all_data():
         'message': 'Cron sync and geocoding completed',
         'results': sync_results
     }), 200
+
+@bp.route("/register-webhooks", methods=['GET', 'POST'])
+@handle_errors()
+def register_webhooks():
+    """
+    Vercel Cron 용 웹훅 등록 엔드포인트
+    Google Sheets 변경 감지를 위한 Push Notification 채널을 등록
+    (Vercel serverless에서는 백그라운드 스레드가 불가능하므로 cron으로 등록)
+    """
+    if not _verify_cron_secret():
+        return jsonify({'error': 'Unauthorized', 'message': 'Invalid Cron Secret'}), 401
+    
+    webhook_base_url = os.getenv("WEBHOOK_BASE_URL", "").strip()
+    if not webhook_base_url:
+        return jsonify({'error': 'WEBHOOK_BASE_URL not configured'}), 500
+    
+    results = {"housing": None, "commercial": None}
+    
+    try:
+        from app.services.sheets_webhook_service import SheetsWebhookService
+        service = SheetsWebhookService()
+        
+        # 1. 주택매물장 웹훅 등록
+        housing_result = service.register_housing_sheet_webhook(expiration_hours=24)
+        results["housing"] = housing_result
+        
+        # 2. 상가 매물 슬롯 웹훅 등록
+        commercial_results = service.register_all_commercial_webhooks(expiration_hours=24)
+        results["commercial"] = commercial_results
+        
+        success_count = commercial_results.get("success", 0) if commercial_results else 0
+        total_count = commercial_results.get("total", 0) if commercial_results else 0
+        
+        current_app.logger.info(f"웹훅 등록 완료: housing={housing_result is not None}, commercial={success_count}/{total_count}")
+        
+        return jsonify({
+            'status': 'ok',
+            'message': 'Webhook registration completed',
+            'results': results
+        }), 200
+        
+    except Exception as e:
+        current_app.logger.error(f"웹훅 등록 실패: {e}")
+        return jsonify({
+            'status': 'error',
+            'message': str(e),
+            'results': results
+        }), 200

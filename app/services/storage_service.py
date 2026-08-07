@@ -124,9 +124,9 @@ class StorageService:
 
     def delete_photos_by_listing_ids(self, listing_ids: list) -> int:
         """
-        🔥 [Fix] 매물 삭제 시 사진 cascade 삭제.
-        동기화 엔진에서 고스트 매물 삭제 직전에 호출한다.
-        Storage 파일 + listing_photos DB 레코드 모두 삭제.
+        매물 삭제 시 사진 cascade 삭제.
+        주의: 이 함수는 관리자 API를 통해서만 호출되어야 함.
+        Ghost Cleanup에서는 호출하지 않음 (이관 데이터 사진 유지 위해).
         Returns: 삭제된 사진 수
         """
         if not self.supabase or not listing_ids:
