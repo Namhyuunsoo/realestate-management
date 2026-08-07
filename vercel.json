@@ -15,7 +15,7 @@
     "crons": [
         {
             "path": "/api/crons/sync-all",
-            "schedule": "0 */6 * * *"
+            "schedule": "0 6 * * *"
         },
         {
             "path": "/api/crons/register-webhooks",
