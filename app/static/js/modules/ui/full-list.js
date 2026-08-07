@@ -195,11 +195,18 @@ function renderFullList() {
               [BRIEFING_STATUS.COMPLETED]: '#4caf50',
               [BRIEFING_STATUS.ONHOLD]: '#9e9e9e'
             }[briefingStatus];
+            const rowBgColor = {
+              [BRIEFING_STATUS.NORMAL]: 'white',
+              [BRIEFING_STATUS.PENDING]: '#fff9db',
+              [BRIEFING_STATUS.COMPLETED]: '#ebfbee',
+              [BRIEFING_STATUS.ONHOLD]: '#f1f3f5'
+            }[briefingStatus] || 'white';
+            
             return `
-              <tr style="border-bottom:1px solid #eee;cursor:pointer;background:white;"
+              <tr style="border-bottom:1px solid #eee;cursor:pointer;background:${rowBgColor};"
                   onclick="selectFullListItem('${item.id}')"
                   onmouseenter="highlightFullListItem('${item.id}', true); this.style.backgroundColor='#f8f9fa';"
-                  onmouseleave="highlightFullListItem('${item.id}', false); this.style.backgroundColor='white';">
+                  onmouseleave="highlightFullListItem('${item.id}', false); this.style.backgroundColor='${rowBgColor}';">
                 <td style="padding:6px 8px;">${escapeHtml(fields['접수일'] || '-')}</td>
                 <td style="padding:6px 8px;">${escapeHtml(fields['지역'] || '-')}</td>
                 <td style="padding:6px 8px;">${escapeHtml(fields['지번'] || '-')}</td>
@@ -240,7 +247,7 @@ function renderFullList() {
 
 function setupBriefingStatusCells() {
   const briefingCells = document.querySelectorAll('.briefing-status-cell');
-  const hasSelectedCustomer = window.SELECTED_CUSTOMER && window.SELECTED_CUSTOMER.id;
+  const hasSelectedCustomer = window.selectedCustomer && window.selectedCustomer.id;
   
   briefingCells.forEach(cell => {
     if (hasSelectedCustomer) {

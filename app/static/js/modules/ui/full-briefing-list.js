@@ -212,11 +212,18 @@ function renderFullBriefingList() {
             const modifiedFields = FULL_BRIEFING_EDITED_DATA[item.id] || {};
             const isModified = (fieldName) => modifiedFields.hasOwnProperty(fieldName);
             
+            const rowBgColor = {
+              [BRIEFING_STATUS.NORMAL]: 'white',
+              [BRIEFING_STATUS.PENDING]: '#fff9db',
+              [BRIEFING_STATUS.COMPLETED]: '#ebfbee',
+              [BRIEFING_STATUS.ONHOLD]: '#f1f3f5'
+            }[briefingStatus] || 'white';
+            
             return `
-              <tr style="border-bottom:1px solid #eee;cursor:pointer;background:white;"
+              <tr style="border-bottom:1px solid #eee;cursor:pointer;background:${rowBgColor};"
                   onclick="selectFullBriefingListItem('${item.id}')"
                   onmouseenter="highlightFullBriefingListItem('${item.id}', true); this.style.backgroundColor='#f8f9fa';"
-                  onmouseleave="highlightFullBriefingListItem('${item.id}', false); this.style.backgroundColor='white';">
+                  onmouseleave="highlightFullBriefingListItem('${item.id}', false); this.style.backgroundColor='${rowBgColor}';">
                 <td data-field="접수일" class="${isModified('접수일') ? 'modified' : ''}" style="padding:6px 8px;" ondblclick="editFullBriefingCell('${item.id}', '접수일', event)">${escapeHtml(displayFields['접수일'] || '-')}</td>
                 <td data-field="지역" class="${isModified('지역') ? 'modified' : ''}" style="padding:6px 8px;" ondblclick="editFullBriefingCell('${item.id}', '지역', event)">${escapeHtml(displayFields['지역'] || '-')}</td>
                 <td data-field="지번" class="${isModified('지번') ? 'modified' : ''}" style="padding:6px 8px;" ondblclick="editFullBriefingCell('${item.id}', '지번', event)">${escapeHtml(displayFields['지번'] || '-')}</td>
@@ -257,7 +264,7 @@ function renderFullBriefingList() {
 
 function setupBriefingStatusCells() {
   const briefingCells = document.querySelectorAll('.briefing-status-cell');
-  const hasSelectedCustomer = window.SELECTED_CUSTOMER && window.SELECTED_CUSTOMER.id;
+  const hasSelectedCustomer = window.selectedCustomer && window.selectedCustomer.id;
   
   briefingCells.forEach(cell => {
     if (hasSelectedCustomer) {

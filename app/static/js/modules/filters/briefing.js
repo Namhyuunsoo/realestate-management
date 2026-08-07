@@ -104,8 +104,14 @@ function updateListingItemBriefingStatus(listItem, status) {
   indicator.className = 'briefing-status-indicator';
   indicator.classList.add(`briefing-${status}`);
 
+  // 리스트 아이템 배경색 클래스 갱신 (예정/완료/보류)
+  listItem.classList.remove('briefing-bg-pending', 'briefing-bg-completed', 'briefing-bg-onhold');
+  if (status && status !== BRIEFING_STATUS.NORMAL) {
+    listItem.classList.add(`briefing-bg-${status}`);
+  }
+
   // 고객선택 상태에 따른 클릭 기능 제어
-  const hasSelectedCustomer = window.SELECTED_CUSTOMER && window.SELECTED_CUSTOMER.id;
+  const hasSelectedCustomer = window.selectedCustomer && window.selectedCustomer.id;
 
   if (hasSelectedCustomer) {
     // 고객선택 시: 클릭 기능 활성화
@@ -147,7 +153,7 @@ function updateDetailPanelBriefingStatus(status) {
     statusElement.textContent = getBriefingStatusText(status);
 
     // 고객선택 상태에 따른 클릭 기능 제어
-    const hasSelectedCustomer = window.SELECTED_CUSTOMER && window.SELECTED_CUSTOMER.id;
+    const hasSelectedCustomer = window.selectedCustomer && window.selectedCustomer.id;
 
     if (hasSelectedCustomer) {
       // 고객선택 시: 클릭 기능 활성화
@@ -384,7 +390,7 @@ window.toggleBriefingFilter = toggleBriefingFilter;
 
 // 고객선택 상태 변경 시 모든 색인표시 업데이트
 function updateAllBriefingStatusIndicators() {
-  const hasSelectedCustomer = window.SELECTED_CUSTOMER && window.SELECTED_CUSTOMER.id;
+  const hasSelectedCustomer = window.selectedCustomer && window.selectedCustomer.id;
 
   // 매물 리스트의 색인표시 업데이트
   const listingItems = document.querySelectorAll('#listingList li');

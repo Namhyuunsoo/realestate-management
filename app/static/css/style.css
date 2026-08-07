@@ -5814,3 +5814,8 @@ body.hybrid-mode #topbar {
   object-fit: contain;
   transform: translateZ(0);
 }
+
+/* 브리핑 상태별 옅은 파스텔톤 배경색 */
+#listingList li.briefing-bg-pending, #clusterItemList li.briefing-bg-pending { background-color: #fff9db !important; }
+#listingList li.briefing-bg-completed, #clusterItemList li.briefing-bg-completed { background-color: #ebfbee !important; }
+#listingList li.briefing-bg-onhold, #clusterItemList li.briefing-bg-onhold { background-color: #f1f3f5 !important; }
